@@ -198,12 +198,74 @@ class Ui_MainWindow(object):
         self.groupBox.setSizePolicy(sizePolicy3)
         self.gridLayout_6 = QGridLayout(self.groupBox)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.comboBox_channel_num = QComboBox(self.groupBox)
+        self.comboBox_channel_num.addItem("")
+        self.comboBox_channel_num.addItem("")
+        self.comboBox_channel_num.addItem("")
+        self.comboBox_channel_num.setObjectName(u"comboBox_channel_num")
+
+        self.gridLayout_6.addWidget(self.comboBox_channel_num, 0, 1, 1, 1)
+
+        self.spinBox_roiy = QSpinBox(self.groupBox)
+        self.spinBox_roiy.setObjectName(u"spinBox_roiy")
+        self.spinBox_roiy.setMinimum(500)
+        self.spinBox_roiy.setMaximum(999999)
+        self.spinBox_roiy.setSingleStep(200)
+
+        self.gridLayout_6.addWidget(self.spinBox_roiy, 0, 8, 1, 1)
+
+        self.label = QLabel(self.groupBox)
+        self.label.setObjectName(u"label")
+
+        self.gridLayout_6.addWidget(self.label, 0, 6, 1, 1)
+
+        self.label_10 = QLabel(self.groupBox)
+        self.label_10.setObjectName(u"label_10")
+
+        self.gridLayout_6.addWidget(self.label_10, 0, 2, 1, 1)
+
+        self.label_3 = QLabel(self.groupBox)
+        self.label_3.setObjectName(u"label_3")
+
+        self.gridLayout_6.addWidget(self.label_3, 0, 4, 1, 1)
+
+        self.label_9 = QLabel(self.groupBox)
+        self.label_9.setObjectName(u"label_9")
+
+        self.gridLayout_6.addWidget(self.label_9, 0, 0, 1, 1)
+
         self.pg_hdl_img2d = ImageView(self.groupBox)
         self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
         sizePolicy3.setHeightForWidth(self.pg_hdl_img2d.sizePolicy().hasHeightForWidth())
         self.pg_hdl_img2d.setSizePolicy(sizePolicy3)
 
-        self.gridLayout_6.addWidget(self.pg_hdl_img2d, 0, 0, 1, 1)
+        self.gridLayout_6.addWidget(self.pg_hdl_img2d, 1, 1, 1, 8)
+
+        self.spinBox_roix = QSpinBox(self.groupBox)
+        self.spinBox_roix.setObjectName(u"spinBox_roix")
+        self.spinBox_roix.setMinimum(5)
+
+        self.gridLayout_6.addWidget(self.spinBox_roix, 0, 7, 1, 1)
+
+        self.comboBox_cmap = QComboBox(self.groupBox)
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.setObjectName(u"comboBox_cmap")
+
+        self.gridLayout_6.addWidget(self.comboBox_cmap, 0, 5, 1, 1)
+
+        self.comboBox_target = QComboBox(self.groupBox)
+        self.comboBox_target.addItem("")
+        self.comboBox_target.addItem("")
+        self.comboBox_target.addItem("")
+        self.comboBox_target.setObjectName(u"comboBox_target")
+
+        self.gridLayout_6.addWidget(self.comboBox_target, 0, 3, 1, 1)
 
 
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 1)
@@ -259,6 +321,13 @@ class Ui_MainWindow(object):
         sizePolicy8.setVerticalStretch(1)
         sizePolicy8.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
         self.groupBox_4.setSizePolicy(sizePolicy8)
+        self.gridLayout_10 = QGridLayout(self.groupBox_4)
+        self.gridLayout_10.setObjectName(u"gridLayout_10")
+        self.pg_hdl_zoomin = PlotWidget(self.groupBox_4)
+        self.pg_hdl_zoomin.setObjectName(u"pg_hdl_zoomin")
+
+        self.gridLayout_10.addWidget(self.pg_hdl_zoomin, 0, 0, 1, 1)
+
 
         self.gridLayout.addWidget(self.groupBox_4, 1, 1, 1, 1)
 
@@ -281,7 +350,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Rawdata", None))
         self.pushButton_select_rawfolder.setText(QCoreApplication.translate("MainWindow", u"select raw data", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.pushButton_select_outputfolder.setText(QCoreApplication.translate("MainWindow", u"select output folder", None))
@@ -296,9 +365,29 @@ class Ui_MainWindow(object):
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"File index range", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Plot", None))
         self.pushButton_process.setText(QCoreApplication.translate("MainWindow", u"Process", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
-        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
-        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
+        self.comboBox_channel_num.setItemText(0, QCoreApplication.translate("MainWindow", u"1", None))
+        self.comboBox_channel_num.setItemText(1, QCoreApplication.translate("MainWindow", u"2", None))
+        self.comboBox_channel_num.setItemText(2, QCoreApplication.translate("MainWindow", u"0", None))
+
+        self.label.setText(QCoreApplication.translate("MainWindow", u"ROI(x-y)", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Target", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"colormap", None))
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Channel", None))
+        self.comboBox_cmap.setItemText(0, QCoreApplication.translate("MainWindow", u"jet", None))
+        self.comboBox_cmap.setItemText(1, QCoreApplication.translate("MainWindow", u"viridis", None))
+        self.comboBox_cmap.setItemText(2, QCoreApplication.translate("MainWindow", u"plasma", None))
+        self.comboBox_cmap.setItemText(3, QCoreApplication.translate("MainWindow", u"inferno", None))
+        self.comboBox_cmap.setItemText(4, QCoreApplication.translate("MainWindow", u"magma", None))
+        self.comboBox_cmap.setItemText(5, QCoreApplication.translate("MainWindow", u"Greys", None))
+        self.comboBox_cmap.setItemText(6, QCoreApplication.translate("MainWindow", u"Blues", None))
+
+        self.comboBox_target.setItemText(0, QCoreApplication.translate("MainWindow", u"normalized", None))
+        self.comboBox_target.setItemText(1, QCoreApplication.translate("MainWindow", u"sub-groundstate", None))
+        self.comboBox_target.setItemText(2, QCoreApplication.translate("MainWindow", u"raw", None))
+
+        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Vertical linecut", None))
+        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal linecut", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"zoomin", None))
     # retranslateUi
 

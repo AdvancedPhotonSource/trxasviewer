@@ -20,7 +20,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_6">
         <property name="title">
-         <string>GroupBox</string>
+         <string>Rawdata</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="1" column="1" colspan="3">
@@ -206,10 +206,70 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>GroupBox</string>
+         <string>Time-resolved XAS</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_channel_num">
+           <item>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>2</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="0" column="8">
+          <widget class="QSpinBox" name="spinBox_roiy">
+           <property name="minimum">
+            <number>500</number>
+           </property>
+           <property name="maximum">
+            <number>999999</number>
+           </property>
+           <property name="singleStep">
+            <number>200</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="6">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>ROI(x-y)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Target</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>colormap</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="0">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Channel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1" colspan="8">
           <widget class="ImageView" name="pg_hdl_img2d" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -217,6 +277,71 @@
              <verstretch>2</verstretch>
             </sizepolicy>
            </property>
+          </widget>
+         </item>
+         <item row="0" column="7">
+          <widget class="QSpinBox" name="spinBox_roix">
+           <property name="minimum">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="5">
+          <widget class="QComboBox" name="comboBox_cmap">
+           <item>
+            <property name="text">
+             <string>jet</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>viridis</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>plasma</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>inferno</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>magma</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Greys</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Blues</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QComboBox" name="comboBox_target">
+           <item>
+            <property name="text">
+             <string>normalized</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>sub-groundstate</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>raw</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>
@@ -231,7 +356,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>GroupBox</string>
+         <string>Vertical linecut</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_8">
          <item row="0" column="0">
@@ -256,7 +381,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>GroupBox</string>
+         <string>Horizontal linecut</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_7">
          <item row="0" column="0">
@@ -281,8 +406,13 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>GroupBox</string>
+         <string>zoomin</string>
         </property>
+        <layout class="QGridLayout" name="gridLayout_10">
+         <item row="0" column="0">
+          <widget class="PlotWidget" name="pg_hdl_zoomin" native="true"/>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
