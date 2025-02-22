@@ -109,6 +109,11 @@ class TrXASDataset:
 
         self.shape = shape
         self.xas_data = xas_full
+        # self.normalize()
+    
+    def get_energy_vs_time(self, channel=0):
+        xas_full = self.xas_data.reshape(self.num_energys, self.shape[0], -1)
+        return xas_full[:, channel]
     
     def get(self, label):
         index = self.labels.index(label)
@@ -127,8 +132,8 @@ class TrXASDataset:
             xas_data = -np.log(1.0 - offset)
 
         xas_data = xas_data.reshape(self.num_energys, *self.shape)          # (rows, channel, orbital, bunch)
-        ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=2)                #  rows x bunch 
-        xas_data[:, 1:] /= ortial_mean_ch0[:, np.newaxis, :, np.newaxis]    # normalize other channels
+        ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)                #  rows x bunch 
+        xas_data[:, 1:] /= ortial_mean_ch0[:, np.newaxis, np.newaxis, :]    # normalize other channels
         self.xas_data = xas_data.reshape(self.num_energys, -1)
         self.normalized = True
 
