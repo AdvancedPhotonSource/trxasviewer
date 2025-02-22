@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout, QGroupBox,
     QMenuBar, QPushButton, QSizePolicy, QSpacerItem,
     QSpinBox, QSplitter, QStatusBar, QWidget)
 
+from pyqtgraph import (ImageView, PlotWidget)
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
@@ -162,50 +164,74 @@ class Ui_MainWindow(object):
         self.gridLayout_5.addItem(self.verticalSpacer, 2, 0, 1, 1)
 
         self.splitter.addWidget(self.groupBox_5)
-        self.widget = QWidget(self.splitter)
-        self.widget.setObjectName(u"widget")
-        self.gridLayout = QGridLayout(self.widget)
+        self.layoutWidget = QWidget(self.splitter)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.gridLayout = QGridLayout(self.layoutWidget)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
-        self.groupBox = QGroupBox(self.widget)
+        self.groupBox = QGroupBox(self.layoutWidget)
         self.groupBox.setObjectName(u"groupBox")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy1.setHorizontalStretch(1)
-        sizePolicy1.setVerticalStretch(1)
+        sizePolicy1.setHorizontalStretch(2)
+        sizePolicy1.setVerticalStretch(2)
         sizePolicy1.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
         self.groupBox.setSizePolicy(sizePolicy1)
+        self.gridLayout_6 = QGridLayout(self.groupBox)
+        self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.pg_hdl_img2d = ImageView(self.groupBox)
+        self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
+
+        self.gridLayout_6.addWidget(self.pg_hdl_img2d, 0, 0, 1, 1)
+
 
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 1)
 
-        self.groupBox_3 = QGroupBox(self.widget)
+        self.groupBox_3 = QGroupBox(self.layoutWidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
-        sizePolicy1.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
-        self.groupBox_3.setSizePolicy(sizePolicy1)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(1)
+        sizePolicy2.setVerticalStretch(1)
+        sizePolicy2.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
+        self.groupBox_3.setSizePolicy(sizePolicy2)
+        self.gridLayout_8 = QGridLayout(self.groupBox_3)
+        self.gridLayout_8.setObjectName(u"gridLayout_8")
+        self.pg_hdl_vline = PlotWidget(self.groupBox_3)
+        self.pg_hdl_vline.setObjectName(u"pg_hdl_vline")
+
+        self.gridLayout_8.addWidget(self.pg_hdl_vline, 0, 0, 1, 1)
+
 
         self.gridLayout.addWidget(self.groupBox_3, 0, 1, 1, 1)
 
-        self.groupBox_2 = QGroupBox(self.widget)
+        self.groupBox_2 = QGroupBox(self.layoutWidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
-        sizePolicy1.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
-        self.groupBox_2.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
+        self.groupBox_2.setSizePolicy(sizePolicy2)
+        self.gridLayout_7 = QGridLayout(self.groupBox_2)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.pg_hdl_hline = PlotWidget(self.groupBox_2)
+        self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
+
+        self.gridLayout_7.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
+
 
         self.gridLayout.addWidget(self.groupBox_2, 1, 0, 1, 1)
 
-        self.groupBox_4 = QGroupBox(self.widget)
+        self.groupBox_4 = QGroupBox(self.layoutWidget)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy1.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy2)
 
         self.gridLayout.addWidget(self.groupBox_4, 1, 1, 1, 1)
 
-        self.splitter.addWidget(self.widget)
+        self.splitter.addWidget(self.layoutWidget)
 
         self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1309, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1309, 33))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
