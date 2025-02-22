@@ -1,8 +1,10 @@
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QLabel, QVBoxLayout, 
-    QHBoxLayout, QLineEdit, QFileDialog, QMessageBox, QCheckBox, QComboBox
+    QHBoxLayout, QLineEdit, QFileDialog, QMessageBox, QCheckBox, QComboBox,
 )
 from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QFileSystemModel
+from PySide6.QtCore import QDir, Qt
 import sys
 import os
 import numpy as np
@@ -27,6 +29,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.current_dataset.normalize()
         self.setup_imageview()
         self.plot_dataset()
+
+        self.model = QFileSystemModel()
+        self.model.setRootPath(QDir.homePath())
+        # self.model.setNameFilterDisables(False) #enable the filters.
+        self.treeView_fs.setModel(self.model)
+        self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
+        self.treeView_fs.hideColumn(2)  # hide type
+        # self.treeView_fs.hideColumn(3)  # hide Date
 
     def init_ui(self):
         self.pushButton_select_rawfolder.clicked.connect(self.select_rawfolder)
@@ -91,6 +101,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             indexes = [int(f[-5:]) for f in flist]
             self.spinBox_fileindex_min.setValue(min(indexes))
             self.spinBox_fileindex_max.setValue(max(indexes))
+            self.model.setRootPath(folder_path)
+            self.treeView_fs.setRootIndex(self.model.index(folder_path))
 
     def select_outputfolder(self):
         folder_path = QFileDialog.getExistingDirectory(self, "Select OutputFolder")
