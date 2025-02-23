@@ -66,14 +66,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Add crosshair
         self.view = self.pg_hdl_img2d.getView()
-        self.vLine = pg.InfiniteLine(angle=90, movable=False)
-        self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen("r"))
+        self.hLine = pg.InfiniteLine(angle=0, movable=False, pen=pg.mkPen("b"))
         self.view.addItem(self.vLine, ignoreBounds=True)
         self.view.addItem(self.hLine, ignoreBounds=True)
         # Initialize plots
-        self.h_curve = self.pg_hdl_hline.plot(pen="r")
+        self.h_curve = self.pg_hdl_hline.plot(pen="b")
         self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
-        self.v_curve = self.pg_hdl_vline.plot(pen="b")
+        self.v_curve = self.pg_hdl_vline.plot(pen="r")
         self.pg_hdl_vline.setLabel("left", "Time", units="μs")
         self.zoomin_image = pg.ImageItem()
         self.pg_hdl_zoomin.addItem(self.zoomin_image)
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # value is a positional placeholder for the signal. It is not used.
         roi_size = (self.spinBox_roix.value(), self.spinBox_roiy.value())
         if self.roi is None:
-            self.roi = pg.RectROI([0, 0], roi_size, pen="r")
+            self.roi = pg.RectROI([0, 0], roi_size, pen="k", hoverPen="k")
             self.pg_hdl_img2d.addItem(self.roi)
 
         # update size
