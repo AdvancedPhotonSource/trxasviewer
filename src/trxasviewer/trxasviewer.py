@@ -1,4 +1,3 @@
-import glob
 import os
 import sys
 
@@ -6,12 +5,11 @@ import numpy as np
 import pyqtgraph as pg
 from generated_ui import Ui_MainWindow
 from PySide6.QtCore import QDir, Qt
-from PySide6.QtGui import QAction, QFont
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog,
-                               QFileSystemModel, QHBoxLayout, QLabel,
-                               QLineEdit, QMainWindow, QMessageBox,
-                               QPushButton, QVBoxLayout, QWidget)
-from trxas_dataset import TrXASDataset, TrXASDatasetManager
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
+                               QMainWindow)
+
+from trxas_dataset import TrXASDatasetManager
 
 pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
