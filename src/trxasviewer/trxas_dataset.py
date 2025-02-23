@@ -101,16 +101,27 @@ class TrXASDatasetManager:
             return None, None, None
 
         data = []
+        shapes = []
         for fname in self.flist: 
             if fname not in self.dsets_cache:
                 self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
             t_data, energy, dt_ns = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
             data.append(t_data)
+            shapes.append(t_data.shape)
 
-        data = np.mean(np.stack(data, axis=0), axis=0)
-        self.energy_axis = energy
-        self.dt_ns = dt_ns
-        return data, energy, dt_ns
+        shapes = np.array(shapes)
+        shape_full = np.max(shapes, axis=0)
+        data_full = np.full((len(self.flist), *shape_full), np.nan)
+
+        for i, d in enumerate(data):
+            data_full[i, :d.shape[0], :d.shape[1]] = d
+        data_avg = np.nanmean(data_full, axis=0)
+
+        good_idx = np.argmin(np.prod(shapes, axis=1) == np.prod(shape_full))
+
+        self.energy_axis = self.dsets_cache[self.flist[good_idx]].energy
+        self.delta_t_ns = self.dsets_cache[self.flist[good_idx]].delta_t_ns 
+        return data_avg, self.energy_axis, self.delta_t_ns 
 
 
 class TrXASDataset:
