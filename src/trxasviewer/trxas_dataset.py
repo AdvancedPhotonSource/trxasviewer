@@ -92,14 +92,30 @@ class TrXASDatasetManager:
         self.ignore_incomplete = ignore_incomplete
         self.energy_axis = None
         self.delta_t_ns = None
+        self.data_avg = None
+        self.analysis_kwargs = None
     
     def update_flist(self, flist):
         self.flist = flist
     
+    def save_results(self, fname):
+        if self.analysis_kwargs is None:
+            return
+
+        results = {
+            'flist': self.flist,
+            'analysis_type': 'average_energy_vs_time',
+            'diff_data': self.data_avg,
+            'analysis_kwargs': self.analysis_kwargs,
+            'energy_axis': self.energy_axis,
+            'delta_t_ns': self.delta_t_ns,
+        }
+        np.savez(fname, **results)
+    
     def get_energy_vs_time(self, **kwargs): 
         if len(self.flist) == 0:
             return None, None, None
-
+        self.analysis_kwargs = kwargs 
         data = []
         shapes = []
         for fname in self.flist: 
@@ -121,6 +137,7 @@ class TrXASDatasetManager:
 
         self.energy_axis = self.dsets_cache[self.flist[good_idx]].energy
         self.delta_t_ns = self.dsets_cache[self.flist[good_idx]].delta_t_ns 
+        self.data_avg = data_avg
         return data_avg, self.energy_axis, self.delta_t_ns 
 
 

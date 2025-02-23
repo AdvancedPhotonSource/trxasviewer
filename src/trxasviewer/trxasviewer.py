@@ -47,6 +47,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_channel_num.currentIndexChanged.connect(self.plot_dataset)
         self.comboBox_target.currentIndexChanged.connect(self.plot_dataset)
         self.pushButton_replot.clicked.connect(self.plot_dataset)
+        self.pushButton_select_savefname.clicked.connect(self.select_savefname)
 
     def selection_changed(self, selected, deselected):
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
@@ -57,7 +58,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def init_ui(self):
         self.pushButton_select_rawfolder.clicked.connect(self.select_rawfolder)
-        self.pushButton_select_outputfolder.clicked.connect(self.select_outputfolder)
     
     def setup_imageview(self):
         # self.img2d_axes = pg.PlotItem()
@@ -190,11 +190,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.spinBox_fileindex_max.setValue(max(indexes))
             self.model.setRootPath(folder_path)
             self.treeView_fs.setRootIndex(self.model.index(folder_path))
+    
+    def select_savefname(self):
+        """
+        Opens a QFileDialog to allow the user to select a save location for an NPZ file.
+        Returns the selected file path with a '.npz' extension.
+        """
+        file_filter = "NumPy Compressed File (*.npz)"
+    
+        # Open the file dialog
+        filename, _ = QFileDialog.getSaveFileName(
+            None,  # Parent widget (None for standalone)
+            "Save File",  # Dialog title
+            "",  # Default directory
+            file_filter  # Filter to only show .npz files
+        )
 
-    def select_outputfolder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select OutputFolder")
-        if folder_path:
-            self.lineEdit_outputfolder.setText(folder_path)
+        if filename and not filename.endswith(".npz"):
+            filename += ".npz"
+        if filename:
+            self.dset_manager.save_results(filename)
 
 
 if __name__ == "__main__":
