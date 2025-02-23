@@ -18,11 +18,15 @@ classifiers = [
 ]
 license = {text = "MIT license"}
 dependencies = [
-  
+    "numpy",
+    "pyqtgraph",
+    "PySide6",
+    "matplotlib",
 ]
 
+
 [project.scripts]
-trxasviewer = "trxasviewer.cli:main"  # Creates `mycli` command
+trxasviewer = "trxasviewer.cli:main"
 
 
 [project.optional-dependencies]

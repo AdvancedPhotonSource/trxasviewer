@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
-P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. time of one orbit
+P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
 
 
 def is_sample_data(fname):
@@ -20,8 +20,54 @@ def is_sample_data(fname):
 
 @lru_cache(maxsize=128)
 def process_header(header_line):
-    # a typical header line
-    # "#L N  Epoch  Energy  mono  monoE  undE ..."
+    """
+    Processes a header line to determine the dataset type and extract relevant metadata.
+
+    This function extracts the dataset type (either "Energy" or "laserd") from the header line, 
+    parses labels, and computes indexing information for a structured dataset.
+
+    Parameters
+    ----------
+    header_line : str
+        A header string, typically starting with `#L`, followed by column labels.
+
+    Returns
+    -------
+    dset_type : str
+        The dataset type, either "Energy" or "laserd".
+    shape : tuple of int
+        The shape of the dataset inferred from parsed indices, given as (channels, orbitals, bunches).
+    labels : list of str
+        The cleaned column labels after processing.
+    labels_mask : numpy.ndarray
+        A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
+    payload_mask : numpy.ndarray
+        A boolean mask of the dataset shape, marking valid payload indices.
+
+    Raises
+    ------
+    ValueError
+        If the dataset type cannot be determined from the header.
+
+    Notes
+    -----
+    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
+    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
+    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
+
+    Examples
+    --------
+    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
+    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
+    >>> print(dset_type)
+    'Energy'
+    >>> print(shape)
+    (2, 2, 2)
+    >>> print(labels)
+    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
+    >>> print(payload_mask.shape)
+    (8,)  # Flattened shape of (2, 2, 2)
+    """
     header = header_line[3:].strip()
     if re.match(r".* Energy ", header):
         dset_type = "Energy"
