@@ -225,7 +225,7 @@ class TrXASDataset:
         if do_perbunch == 'per_bunch':
             diff = data - preavg[:, np.newaxis, :]
         elif do_perbunch == 'avg_bunch': 
-            diff = data - np.mean(preavg, axis=1)[:, np.newaxis]
+            diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
         else:
             raise ValueError("Unknown do_perbunch value %s method")
         
