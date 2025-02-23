@@ -118,13 +118,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
                 x_positions = self.dset_manager.energy_axis
-                y_positions = np.arange(len(vertical_data)) * self.dset_manager.dt_ns / 1000 # us
+                y_positions = np.arange(len(vertical_data)) * self.dset_manager.delta_t_ns / 1000 # us
                 # Update horizontal cut
                 self.h_curve.setData(x_positions, horizontal_data)
-                self.v_curve.setData(vertical_data, y_positions)
+                self.v_curve.setData(vertical_data, y_positions[::-1])
                 self.update_roi(None, position=(x, y))
                 energy = self.dset_manager.energy_axis[x]
-                t_time = (len(vertical_data) - y) * self.dset_manager.dt_ns / 1000
+                t_time = (len(vertical_data) - y) * self.dset_manager.delta_t_ns / 1000
                 self.pg_hdl_zoomin.setTitle(f"Energy: {energy:.4f} keV, Time: {t_time:.3f} μs")
             self.update_zoomed_view()
 
@@ -155,7 +155,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 'aft_avg_bunches': self.spinBox_compress_bunches.value(),
             }
             kwargs['norm_kwargs'] = norm_kwargs
-        data, energy, dt_ns = self.dset_manager.get_energy_vs_time(**kwargs)
+        if kwargs['target'] in ['normalized-GS', 'normalized']:
+            self.comboBox_channel_num.setEnabled(False)
+        else:
+            self.comboBox_channel_num.setEnabled(True)
+
+        data, energy, delta_t_ns = self.dset_manager.get_energy_vs_time(**kwargs)
         if data is not None:
             data = data.T
             if self.image is None or data.shape != self.image.shape:
@@ -166,8 +171,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # adjust  roi size
                 self.spinBox_roix.setValue(data.shape[1] // 10)
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
+
+            if kwargs['target'] in ['normalized-GS']:
+                vmin, vmax = np.percentile(data.ravel(), [0.1, 99.9])
+            else:
+                vmin, vmax = np.percentile(data.ravel(), [0, 100])
             self.image = np.flipud(data)
-            self.pg_hdl_img2d.setImage(self.image)
+            self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
     
     def select_rawfolder(self, folder_path=None):
         if folder_path is None:

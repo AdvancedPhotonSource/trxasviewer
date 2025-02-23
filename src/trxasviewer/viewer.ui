@@ -298,6 +298,9 @@
          </item>
          <item row="0" column="4">
           <widget class="QComboBox" name="comboBox_channel_num">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <item>
             <property name="text">
              <string>1</string>
