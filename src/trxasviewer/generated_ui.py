@@ -27,7 +27,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1326, 814)
+        MainWindow.resize(2003, 1099)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_9 = QGridLayout(self.centralwidget)
@@ -84,24 +84,19 @@ class Ui_MainWindow(object):
         self.spinBox_compress_bunches.setMaximum(99999)
         self.spinBox_compress_bunches.setValue(5)
 
-        self.gridLayout_4.addWidget(self.spinBox_compress_bunches, 4, 5, 1, 2)
+        self.gridLayout_4.addWidget(self.spinBox_compress_bunches, 4, 3, 1, 2)
 
         self.comboBox_groundstate_method = QComboBox(self.groupBox_5)
         self.comboBox_groundstate_method.addItem("")
         self.comboBox_groundstate_method.addItem("")
         self.comboBox_groundstate_method.setObjectName(u"comboBox_groundstate_method")
 
-        self.gridLayout_4.addWidget(self.comboBox_groundstate_method, 2, 5, 1, 2)
+        self.gridLayout_4.addWidget(self.comboBox_groundstate_method, 2, 3, 1, 2)
 
         self.pushButton_replot = QPushButton(self.groupBox_5)
         self.pushButton_replot.setObjectName(u"pushButton_replot")
 
-        self.gridLayout_4.addWidget(self.pushButton_replot, 6, 4, 1, 3)
-
-        self.pushButton_process = QPushButton(self.groupBox_5)
-        self.pushButton_process.setObjectName(u"pushButton_process")
-
-        self.gridLayout_4.addWidget(self.pushButton_process, 6, 0, 1, 3)
+        self.gridLayout_4.addWidget(self.pushButton_replot, 5, 2, 1, 3)
 
         self.spinBox_orbitals_number = QSpinBox(self.groupBox_5)
         self.spinBox_orbitals_number.setObjectName(u"spinBox_orbitals_number")
@@ -109,39 +104,34 @@ class Ui_MainWindow(object):
         self.spinBox_orbitals_number.setMaximum(999999)
         self.spinBox_orbitals_number.setValue(5)
 
-        self.gridLayout_4.addWidget(self.spinBox_orbitals_number, 3, 5, 1, 2)
+        self.gridLayout_4.addWidget(self.spinBox_orbitals_number, 3, 3, 1, 2)
 
         self.label_6 = QLabel(self.groupBox_5)
         self.label_6.setObjectName(u"label_6")
 
-        self.gridLayout_4.addWidget(self.label_6, 3, 0, 1, 5)
-
-        self.label_8 = QLabel(self.groupBox_5)
-        self.label_8.setObjectName(u"label_8")
-
-        self.gridLayout_4.addWidget(self.label_8, 5, 0, 1, 5)
+        self.gridLayout_4.addWidget(self.label_6, 3, 0, 1, 3)
 
         self.label_7 = QLabel(self.groupBox_5)
         self.label_7.setObjectName(u"label_7")
 
-        self.gridLayout_4.addWidget(self.label_7, 4, 0, 1, 5)
+        self.gridLayout_4.addWidget(self.label_7, 4, 0, 1, 3)
 
         self.spinBox_syncbunch_number = QSpinBox(self.groupBox_5)
         self.spinBox_syncbunch_number.setObjectName(u"spinBox_syncbunch_number")
         self.spinBox_syncbunch_number.setMaximum(999999)
         self.spinBox_syncbunch_number.setValue(1820)
 
-        self.gridLayout_4.addWidget(self.spinBox_syncbunch_number, 1, 5, 1, 2)
+        self.gridLayout_4.addWidget(self.spinBox_syncbunch_number, 1, 3, 1, 2)
 
         self.label_4 = QLabel(self.groupBox_5)
         self.label_4.setObjectName(u"label_4")
 
-        self.gridLayout_4.addWidget(self.label_4, 1, 0, 1, 5)
+        self.gridLayout_4.addWidget(self.label_4, 1, 0, 1, 3)
 
         self.label_2 = QLabel(self.groupBox_5)
         self.label_2.setObjectName(u"label_2")
 
-        self.gridLayout_4.addWidget(self.label_2, 0, 0, 1, 5)
+        self.gridLayout_4.addWidget(self.label_2, 0, 0, 1, 3)
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
@@ -158,25 +148,17 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.spinBox_fileindex_max)
 
 
-        self.gridLayout_4.addLayout(self.horizontalLayout, 0, 5, 1, 2)
+        self.gridLayout_4.addLayout(self.horizontalLayout, 0, 3, 1, 2)
 
         self.label_5 = QLabel(self.groupBox_5)
         self.label_5.setObjectName(u"label_5")
 
-        self.gridLayout_4.addWidget(self.label_5, 2, 0, 1, 5)
-
-        self.spinBox_output_points = QSpinBox(self.groupBox_5)
-        self.spinBox_output_points.setObjectName(u"spinBox_output_points")
-        self.spinBox_output_points.setMinimum(1)
-        self.spinBox_output_points.setMaximum(99999)
-        self.spinBox_output_points.setValue(20)
-
-        self.gridLayout_4.addWidget(self.spinBox_output_points, 5, 5, 1, 2)
+        self.gridLayout_4.addWidget(self.label_5, 2, 0, 1, 3)
 
         self.pushButton_select_outputfolder = QPushButton(self.groupBox_5)
         self.pushButton_select_outputfolder.setObjectName(u"pushButton_select_outputfolder")
 
-        self.gridLayout_4.addWidget(self.pushButton_select_outputfolder, 6, 3, 1, 1)
+        self.gridLayout_4.addWidget(self.pushButton_select_outputfolder, 5, 0, 1, 2)
 
 
         self.gridLayout_5.addLayout(self.gridLayout_4, 0, 0, 1, 1)
@@ -343,7 +325,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1326, 24))
+        self.menubar.setGeometry(QRect(0, 0, 2003, 24))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -360,13 +342,11 @@ class Ui_MainWindow(object):
         self.comboBox_groundstate_method.setItemText(1, QCoreApplication.translate("MainWindow", u"avg_bunch", None))
 
         self.pushButton_replot.setText(QCoreApplication.translate("MainWindow", u"RePlot", None))
-        self.pushButton_process.setText(QCoreApplication.translate("MainWindow", u"Process", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Number of orbitals for ground state", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Number of porints to output", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches to compress", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Sync bunch number", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Number of orbitals as the ground state", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches for binning", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Index of the sync bunch", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"File index range", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Ground State Method", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Ground state averaging method", None))
         self.pushButton_select_outputfolder.setText(QCoreApplication.translate("MainWindow", u"select output folder", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
         self.comboBox_cmap.setItemText(0, QCoreApplication.translate("MainWindow", u"jet", None))
@@ -380,7 +360,7 @@ class Ui_MainWindow(object):
         self.comboBox_cmap.setItemText(8, QCoreApplication.translate("MainWindow", u"Blues", None))
 
         self.comboBox_target.setItemText(0, QCoreApplication.translate("MainWindow", u"normalized", None))
-        self.comboBox_target.setItemText(1, QCoreApplication.translate("MainWindow", u"sub-groundstate", None))
+        self.comboBox_target.setItemText(1, QCoreApplication.translate("MainWindow", u"normalized-GS", None))
         self.comboBox_target.setItemText(2, QCoreApplication.translate("MainWindow", u"raw", None))
 
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"colormap", None))

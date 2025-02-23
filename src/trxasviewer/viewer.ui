@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1326</width>
-    <height>814</height>
+    <width>2003</width>
+    <height>1099</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -70,7 +70,7 @@
         <layout class="QGridLayout" name="gridLayout_5">
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_4">
-           <item row="4" column="5" colspan="2">
+           <item row="4" column="3" colspan="2">
             <widget class="QSpinBox" name="spinBox_compress_bunches">
              <property name="minimum">
               <number>1</number>
@@ -83,7 +83,7 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="5" colspan="2">
+           <item row="2" column="3" colspan="2">
             <widget class="QComboBox" name="comboBox_groundstate_method">
              <item>
               <property name="text">
@@ -97,21 +97,14 @@
              </item>
             </widget>
            </item>
-           <item row="6" column="4" colspan="3">
+           <item row="5" column="2" colspan="3">
             <widget class="QPushButton" name="pushButton_replot">
              <property name="text">
               <string>RePlot</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="0" colspan="3">
-            <widget class="QPushButton" name="pushButton_process">
-             <property name="text">
-              <string>Process</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="5" colspan="2">
+           <item row="3" column="3" colspan="2">
             <widget class="QSpinBox" name="spinBox_orbitals_number">
              <property name="minimum">
               <number>1</number>
@@ -124,28 +117,21 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="0" colspan="5">
+           <item row="3" column="0" colspan="3">
             <widget class="QLabel" name="label_6">
              <property name="text">
-              <string>Number of orbitals for ground state</string>
+              <string>Number of orbitals as the ground state</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0" colspan="5">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Number of porints to output</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0" colspan="5">
+           <item row="4" column="0" colspan="3">
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Number of bunches to compress</string>
+              <string>Number of bunches for binning</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="5" colspan="2">
+           <item row="1" column="3" colspan="2">
             <widget class="QSpinBox" name="spinBox_syncbunch_number">
              <property name="maximum">
               <number>999999</number>
@@ -155,21 +141,21 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0" colspan="5">
+           <item row="1" column="0" colspan="3">
             <widget class="QLabel" name="label_4">
              <property name="text">
-              <string>Sync bunch number</string>
+              <string>Index of the sync bunch</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0" colspan="5">
+           <item row="0" column="0" colspan="3">
             <widget class="QLabel" name="label_2">
              <property name="text">
               <string>File index range</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="5" colspan="2">
+           <item row="0" column="3" colspan="2">
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
               <widget class="QSpinBox" name="spinBox_fileindex_min">
@@ -187,27 +173,14 @@
              </item>
             </layout>
            </item>
-           <item row="2" column="0" colspan="5">
+           <item row="2" column="0" colspan="3">
             <widget class="QLabel" name="label_5">
              <property name="text">
-              <string>Ground State Method</string>
+              <string>Ground state averaging method</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="5" colspan="2">
-            <widget class="QSpinBox" name="spinBox_output_points">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>99999</number>
-             </property>
-             <property name="value">
-              <number>20</number>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="3">
+           <item row="5" column="0" colspan="2">
             <widget class="QPushButton" name="pushButton_select_outputfolder">
              <property name="text">
               <string>select output folder</string>
@@ -293,7 +266,7 @@
            </item>
            <item>
             <property name="text">
-             <string>sub-groundstate</string>
+             <string>normalized-GS</string>
             </property>
            </item>
            <item>
@@ -464,7 +437,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1326</width>
+     <width>2003</width>
      <height>24</height>
     </rect>
    </property>

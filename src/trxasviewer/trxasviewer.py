@@ -58,7 +58,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def init_ui(self):
         self.pushButton_select_rawfolder.clicked.connect(self.select_rawfolder)
         self.pushButton_select_outputfolder.clicked.connect(self.select_outputfolder)
-        self.pushButton_process.clicked.connect(self.process)
     
     def setup_imageview(self):
         # self.img2d_axes = pg.PlotItem()
@@ -148,13 +147,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             'channel': int(self.comboBox_channel_num.currentText()),
             'target': self.comboBox_target.currentText(),
         }
-        if kwargs['target'] in ['sub-groundstate']:
+        if kwargs['target'] in ['normalized-GS']:
             norm_kwargs = {
                 'trig_index': self.spinBox_syncbunch_number.value(),
                 'do_perbunch': self.comboBox_groundstate_method.currentText(),
                 'pre_avg_orbitals': self.spinBox_orbitals_number.value(),
                 'aft_avg_bunches': self.spinBox_compress_bunches.value(),
-                'n_pnt': self.spinBox_output_points.value(),
             }
             kwargs['norm_kwargs'] = norm_kwargs
         data, energy, dt_ns = self.dset_manager.get_energy_vs_time(**kwargs)
@@ -187,20 +185,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         folder_path = QFileDialog.getExistingDirectory(self, "Select OutputFolder")
         if folder_path:
             self.lineEdit_outputfolder.setText(folder_path)
-    
-    def process(self):
-        kwargs = {
-            "rawfolder": self.lineEdit_rawfolder.text(),
-            "outputfolder": self.lineEdit_outputfolder.text(),
-            "fileindex_min": self.spinBox_fileindex_min.value(),
-            "fileindex_max": self.spinBox_fileindex_max.value(),
-            "spinBox_syncbunch_number": self.spinBox_syncbunch_number.value(),
-            "comboBox_groundstate_method": self.comboBox_groundstate_method.currentText(),
-            "spinBox_orbitals_number": self.spinBox_orbitals_number.value(),
-            "spinBox_compress_bunches": self.spinBox_compress_bunches.value(),
-            "spinBox_output_points": self.spinBox_output_points.value(),
-        } 
-        print(kwargs)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

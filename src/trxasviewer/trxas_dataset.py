@@ -147,7 +147,7 @@ class TrXASDataset:
             return self.xas_data[:, channel], self.energy, self.delta_t_ns
         elif target == 'normalized':
             return self.xas_data_norm, self.energy, self.delta_t_ns
-        elif target == 'sub-groundstate':
+        elif target == 'normalized-GS':
             if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get('norm_kwargs'):
                 avg, diff, dt_ns = self.process_energy(**norm_kwargs)
                 self.xas_data_subgs = {
@@ -196,7 +196,7 @@ class TrXASDataset:
         plt.show()
         
     def process_energy(self, fileout=None, trig_index=1820, pre_avg_orbitals=5, 
-                       aft_avg_bunches=11, n_pnt=17, do_perbunch='per_bunch'):
+                       aft_avg_bunches=11, do_perbunch='per_bunch'):
         if self.dset_type != "Energy":
             raise TypeError(f"Expect Energy scan, but the file is {self.dset_type} scan.")
 
