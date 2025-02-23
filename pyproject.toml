@@ -1,22 +1,37 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "trxasviewer"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A python GUI for visualizing Time Resolved X-ray Absorption Spectroscopy datasets"
 readme = "README.rst"
-authors = [
-  {name = "Miaoqi Chu", email = "mqichu@anl.gov"}
-]
-maintainers = [
-  {name = "Miaoqi Chu", email = "mqichu@anl.gov"}
-]
-classifiers = [
+authors = [{name = "Miaoqi Chu", email = "mqichu@anl.gov"}]
+maintainers = [{name = "Miaoqi Chu", email = "mqichu@anl.gov"}]
 
+classifiers = [
+    "Development Status :: 4 - Beta",  
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Natural Language :: English"
 ]
-license = {text = "MIT license"}
+
+license = {text = "MIT"}
+keywords = ["X-ray absorption", "spectroscopy", "synchrotron", "visualization", "science"]
+
 dependencies = [
     "numpy",
     "pyqtgraph",
@@ -24,21 +39,23 @@ dependencies = [
     "matplotlib",
 ]
 
-
 [project.scripts]
 trxasviewer = "trxasviewer.cli:main"
 
-
 [project.optional-dependencies]
 dev = [
-    "coverage",  # testing
-    "mypy",  # linting
-    "pytest",  # testing
-    "ruff"  # linting
+    "coverage",
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "ruff"
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme"
 ]
 
 [project.urls]
-
 bugs = "https://github.com/AZjk/trxasviewer/issues"
 changelog = "https://github.com/AZjk/trxasviewer/blob/master/changelog.md"
 homepage = "https://github.com/AZjk/trxasviewer"
@@ -46,26 +63,21 @@ homepage = "https://github.com/AZjk/trxasviewer"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-timestamp"
+
 [tool.setuptools.package-data]
 "*" = ["*.*"]
 
-
-
-
 # Mypy
-# ----
-
 [tool.mypy]
 files = "."
-
-# Use strict defaults
 strict = true
 warn_unreachable = true
 warn_no_return = true
 
 [[tool.mypy.overrides]]
-# Don't require test functions to include types
 module = "tests.*"
 allow_untyped_defs = true
 disable_error_code = "attr-defined"
-
