@@ -84,6 +84,27 @@ def fix_incomplete_dataset(payload_mask, shape, xas_data):
     return xas_data, new_shape
 
 
+class TrXASDatasetManager:
+    def __init__(self, ignore_incomplete=True):
+        self.flist = []
+        self.dsets_cache = {}
+        self.ignore_incomplete = ignore_incomplete
+    
+    def update_flist(self, flist):
+        self.flist = flist
+    
+    def get_energy_vs_time(self, **kwargs): 
+        if len(self.flist) == 0:
+            return None
+
+        data = []
+        for fname in self.flist: 
+            if fname not in self.dsets_cache:
+                self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
+            data.append(self.dsets_cache[fname].get_energy_vs_time(**kwargs))
+        return np.mean(np.stack(data, axis=0), axis=0)
+
+
 class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True):
         self.fname = fname
@@ -108,12 +129,26 @@ class TrXASDataset:
             xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
 
         self.shape = shape
-        self.xas_data = xas_full
-        # self.normalize()
+        self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
+        self.xas_data_norm = self.normalize()
+        self.xas_data_subgs = None
     
-    def get_energy_vs_time(self, channel=0):
-        xas_full = self.xas_data.reshape(self.num_energys, self.shape[0], -1)
-        return xas_full[:, channel]
+    def get_energy_vs_time(self, channel=0, target='raw', norm_kwargs=None):
+        if target == 'raw':
+            return self.xas_data[:, channel]
+        elif target == 'normalized':
+            return self.xas_data_norm
+        elif target == 'sub-groundstate':
+            if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get('norm_kwargs'):
+                avg, diff = self.process_energy(**norm_kwargs)
+                self.xas_data_subgs = {
+                    'norm_kwargs': norm_kwargs,
+                    'avg_data': avg,
+                    'diff_data': diff,
+                }
+            return self.xas_data_subgs['diff_data'] #[:, channel]
+        else:
+            raise ValueError("Unknown target")
     
     def get(self, label):
         index = self.labels.index(label)
@@ -126,7 +161,8 @@ class TrXASDataset:
 
     def normalize(self, repeat_rate=0):
         acquire_time = self.get('Seconds')
-        xas_data = self.xas_data
+        xas_data = np.copy(self.xas_data)
+
         if repeat_rate > 0:
             offset = xas_data / (repeat_rate * acquire_time)
             xas_data = -np.log(1.0 - offset)
@@ -134,66 +170,65 @@ class TrXASDataset:
         xas_data = xas_data.reshape(self.num_energys, *self.shape)          # (rows, channel, orbital, bunch)
         ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)                #  rows x bunch 
         xas_data[:, 1:] /= ortial_mean_ch0[:, np.newaxis, np.newaxis, :]    # normalize other channels
-        self.xas_data = xas_data.reshape(self.num_energys, -1)
-        self.normalized = True
+        norm_data = xas_data.reshape(self.num_energys, self.shape[0], -1)
+        return np.mean(norm_data[:, 1:3], axis=(1,))    # average over channels 1 and 2
 
     def plot(self, channel=0, orbital=0, bunch=0):
         num_channels = self.shape[0]
         fig, ax = plt.subplots(1, num_channels, figsize=(4 * num_channels, 3))
-        xas_data = self.xas_data.reshape(self.num_energys, *self.shape)
         extent=(self.energys[0], self.energys[-1], 0, np.prod(self.shape[1:]))
 
         for i in range(num_channels):
-            ax[i].imshow(xas_data[:, i].reshape(self.num_energys, -1).T, aspect='auto', extent=extent)
+            ax[i].imshow(self.xas_data[:, i].T, aspect='auto', extent=extent)
             ax[i].set_title(f'Channel {i}')
             ax[i].set_xlabel('Energy (keV)')
             ax[i].set_ylabel('XAS')
         plt.show()
-
-    def process_energy(self, fileout, trig_index=1820, pre_avg_orbitals=5, 
-                       aft_avg_bunches=11, n_pnt=17, do_perbunch=True):
+        
+    def process_energy(self, fileout=None, trig_index=1820, pre_avg_orbitals=5, 
+                       aft_avg_bunches=11, n_pnt=17, do_perbunch='per_bunch'):
         if self.dset_type != "Energy":
             raise TypeError(f"Expect Energy scan, but the file is {self.dset_type} scan.")
 
-        extra_cols = ["Energy"]
-        header_cols = []
-        header_cols.extend(extra_cols)
-
-        for j in range(n_pnt):
-            header_cols.append("b%d" % j)
-            header_cols.append("b%d-diff" % j)
-
-        data = self.xas_data.reshape(self.num_energys, self.shape[0], -1)
+        # average over the channels 1 and channel 2
+        data = self.xas_data_norm # num_energys * (orbitals * bunches)
+        num_orbitals = self.shape[1]
         num_bunches = self.shape[2]
 
-        # average before the laser trigger, used as normalization factor
-        # for the ground state
-        avg_before_slice_orbit0 = slice(trig_index - pre_avg_orbitals * num_bunches, trig_index)
-        new_shape = (self.num_energys, 2, pre_avg_orbitals, num_bunches)
-        data_roi = data[:, 1:, avg_before_slice_orbit0].reshape(new_shape)
-        back12 = np.mean(data_roi, axis=(1, 2))  # average over channel and orbital     
+        def get_multiples(size, pos, unit_len):
+            assert 0 < pos < size
+            start = pos - pos // unit_len * unit_len
+            end = pos + (size - pos) // unit_len * unit_len
+            pos = pos - start
+            return pos, slice(start, end)
+        
+        trig_index, slice_pre = get_multiples(num_bunches * num_orbitals,
+                                              trig_index, num_bunches) 
+        data = data[:, slice_pre]    # num_energys * -1
+        data = data.reshape(self.num_energys, -1, num_bunches)
 
-        # average after the laser trigger, used as the excited state 
-        avg_after_slice_orbit0 = slice(trig_index, trig_index + n_pnt * aft_avg_bunches)
-        new_shape = (self.num_energys, 2, n_pnt, aft_avg_bunches)
-        data_roi = data[:, 1:, avg_after_slice_orbit0].reshape(new_shape)
-        forward12 = np.mean(data_roi, axis=(1, 3))  # average over channel and orbital     
+        preavg_orbit_idx = trig_index // num_bunches
+        preavg_slice = slice(max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx)
+        # average along orbitals
+        preavg = np.mean(data[:, preavg_slice], axis=(1,))  # num_energys * bunches
 
-        if do_perbunch:
-            # extract the per-bunch data
-            diff = forward12 - back12[:, 0: n_pnt]
-        else: 
-            diff = forward12 - np.mean(back12)
-
-        data_out = np.empty([self.num_energys, len(header_cols)])
-        num_extra = len(extra_cols)
-        for i, label in enumerate(extra_cols):
-            data_out[:, i] = self.get(label) 
-        for i in range(n_pnt):
-            data_out[:, num_extra + i * 2] = forward12[:, i]
-            data_out[:, num_extra + i * 2 + 1] = diff[:, i]
-        if fileout:
-            np.savetxt(fileout, data_out, header=' '.join(header_cols), fmt='%.6f', comments='')
+        if do_perbunch == 'per_bunch':
+            diff = data - preavg[:, np.newaxis, :]
+        elif do_perbunch == 'avg_bunch': 
+            diff = data - np.mean(preavg, axis=1)[:, np.newaxis]
+        else:
+            raise ValueError("Unknown do_perbunch value %s method")
+        
+        # apply binning 
+        result = []
+        num_elements = slice_pre.stop - slice_pre.start
+        bin_index, slice_aft = get_multiples(num_elements, trig_index, aft_avg_bunches)
+        for x in [data, diff]:
+            x = x.reshape(self.num_energys, -1)
+            x = x[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
+            x = np.mean(x, axis=(2,))
+            result.append(x)
+        return result
 
     def process_laserd(self, fileout, trig_index=1820, pre_avg_orbitals=5, 
                        aft_avg_bunches=11, n_pnt=17, do_perbunch=True):
@@ -213,6 +248,6 @@ if __name__ == '__main__':
         dset = TrXASDataset('/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099')
         dset.normalize()
         # dset.plot()
-        # dset.process_energy('test.txt')
+        dset.process_energy()
         t1 = time.perf_counter()
         print(f"Time elapsed: {t1 - t0:.2f} seconds")

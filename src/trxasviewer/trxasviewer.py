@@ -10,7 +10,7 @@ import os
 import numpy as np
 from generated_ui import Ui_MainWindow
 import glob
-from trxas_dataset import TrXASDataset
+from trxas_dataset import TrXASDataset, TrXASDatasetManager
 import pyqtgraph as pg
 
 pg.setConfigOption('background', 'w')
@@ -26,8 +26,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.init_ui()
         self.image = None
         self.roi = None
-        self.current_dataset = TrXASDataset('/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099')
-        self.current_dataset.normalize()
+        self.dset_manager = TrXASDatasetManager()
+
         self.setup_imageview()
         self.update_colormap()
         self.plot_dataset()
@@ -44,14 +44,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_cmap.currentIndexChanged.connect(self.update_colormap)
         self.spinBox_roix.valueChanged.connect(self.update_roi)
         self.spinBox_roiy.valueChanged.connect(self.update_roi)
+        self.comboBox_channel_num.currentIndexChanged.connect(self.plot_dataset)
+        self.comboBox_target.currentIndexChanged.connect(self.plot_dataset)
+        self.pushButton_replot.clicked.connect(self.plot_dataset)
 
     def selection_changed(self, selected, deselected):
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
         if indexes:
-            index = indexes[0]
-            file_path = self.model.filePath(index)
-            self.current_dataset = TrXASDataset(file_path)
-            self.current_dataset.normalize()
+            flist = [self.model.filePath(index) for index in indexes]
+            self.dset_manager.update_flist(list(set(flist)))
             self.plot_dataset()
 
     def init_ui(self):
@@ -60,23 +61,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_process.clicked.connect(self.process)
     
     def setup_imageview(self):
-        # Get the ViewBox from ImageView
-        self.view = self.pg_hdl_img2d.getView()
+        # self.img2d_axes = pg.PlotItem()
+        # self.pg_hdl_img2d.addItem(self.img2d_axes)
+        self.pg_hdl_img2d.getView().setAspectLocked(False)
+
         # Add crosshair
+        self.view = self.pg_hdl_img2d.getView()
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.view.addItem(self.vLine, ignoreBounds=True)
         self.view.addItem(self.hLine, ignoreBounds=True)
-        # Connect mouse events
-        self.proxy = pg.SignalProxy(self.view.scene().sigMouseMoved,
-                                  rateLimit=60,
-                                  slot=self.mouseMoved)
                 # Initialize plots
         self.h_curve = self.pg_hdl_hline.plot(pen='r')
         self.v_curve = self.pg_hdl_vline.plot(pen='b')
         self.zoomin_image = pg.ImageItem()
         self.pg_hdl_zoomin.addItem(self.zoomin_image)
         self.pg_hdl_zoomin.setAspectLocked(False)
+        # Connect mouse events
+        self.proxy = pg.SignalProxy(self.view.scene().sigMouseMoved,
+                                  rateLimit=60,
+                                  slot=self.mouseMoved)
     
     def update_roi(self, value, position=None):
         # value is a positional placeholder for the signal. It is not used.
@@ -126,10 +130,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_zoomed_view(self):
         if self.roi is None:
             return
-        image_data = self.image 
+        image_data = self.image
         roi_data = self.roi.getArrayRegion(image_data, self.pg_hdl_img2d.getImageItem())
         if roi_data.size > 0:
-            self.zoomin_image.setImage(roi_data) 
+            self.zoomin_image.setImage(np.flipud(roi_data))
     
     def update_colormap(self):
         cmap = self.comboBox_cmap.currentText()
@@ -138,10 +142,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.zoomin_image.setColorMap(cmap)
     
     def plot_dataset(self):
-        data = self.current_dataset.get_energy_vs_time(channel=1).T
-        self.pg_hdl_img2d.getView().setAspectLocked(False)
-        self.pg_hdl_img2d.setImage(data)
-        self.image = data
+        kwargs = {
+            'channel': int(self.comboBox_channel_num.currentText()),
+            'target': self.comboBox_target.currentText(),
+        }
+        if kwargs['target'] in ['sub-groundstate']:
+            norm_kwargs = {
+                'trig_index': self.spinBox_syncbunch_number.value(),
+                'do_perbunch': self.comboBox_groundstate_method.currentText(),
+                'pre_avg_orbitals': self.spinBox_orbitals_number.value(),
+                'aft_avg_bunches': self.spinBox_compress_bunches.value(),
+                'n_pnt': self.spinBox_output_points.value(),
+            }
+            kwargs['norm_kwargs'] = norm_kwargs
+        data = self.dset_manager.get_energy_vs_time(**kwargs)
+        if data is not None:
+            data = data.T
+            if self.image is None or data.shape != self.image.shape:
+                # remove roi
+                if self.roi is not None:
+                    self.pg_hdl_img2d.removeItem(self.roi)
+                    self.roi = None
+                # adjust  roi size
+                self.spinBox_roix.setValue(data.shape[1] // 10)
+                self.spinBox_roiy.setValue(data.shape[0] // 10)
+            self.image = np.flipud(data)
+            self.pg_hdl_img2d.setImage(self.image)
     
     def select_rawfolder(self, folder_path=None):
         if folder_path is None:
