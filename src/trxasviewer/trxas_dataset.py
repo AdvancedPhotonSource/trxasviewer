@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import time
 from functools import lru_cache
 TRXAS_PATTERN = re.compile(r'c(\d+)o(\d+)b(\d+)')
+P0 = 271555.0 # 271.555 kHz is P0 for APS, i.e. time of one orbit
 
 
 def is_sample_data(fname):
@@ -89,20 +90,27 @@ class TrXASDatasetManager:
         self.flist = []
         self.dsets_cache = {}
         self.ignore_incomplete = ignore_incomplete
+        self.energy_axis = None
+        self.delta_t_ns = None
     
     def update_flist(self, flist):
         self.flist = flist
     
     def get_energy_vs_time(self, **kwargs): 
         if len(self.flist) == 0:
-            return None
+            return None, None, None
 
         data = []
         for fname in self.flist: 
             if fname not in self.dsets_cache:
                 self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
-            data.append(self.dsets_cache[fname].get_energy_vs_time(**kwargs))
-        return np.mean(np.stack(data, axis=0), axis=0)
+            t_data, energy, dt_ns = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
+            data.append(t_data)
+
+        data = np.mean(np.stack(data, axis=0), axis=0)
+        self.energy_axis = energy
+        self.dt_ns = dt_ns
+        return data, energy, dt_ns
 
 
 class TrXASDataset:
@@ -129,24 +137,26 @@ class TrXASDataset:
             xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
 
         self.shape = shape
+        self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9
         self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
         self.xas_data_subgs = None
     
     def get_energy_vs_time(self, channel=0, target='raw', norm_kwargs=None):
         if target == 'raw':
-            return self.xas_data[:, channel]
+            return self.xas_data[:, channel], self.energy, self.delta_t_ns
         elif target == 'normalized':
-            return self.xas_data_norm
+            return self.xas_data_norm, self.energy, self.delta_t_ns
         elif target == 'sub-groundstate':
             if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get('norm_kwargs'):
-                avg, diff = self.process_energy(**norm_kwargs)
+                avg, diff, dt_ns = self.process_energy(**norm_kwargs)
                 self.xas_data_subgs = {
                     'norm_kwargs': norm_kwargs,
                     'avg_data': avg,
                     'diff_data': diff,
+                    'dt_ns': dt_ns
                 }
-            return self.xas_data_subgs['diff_data'] #[:, channel]
+            return self.xas_data_subgs['diff_data'], self.energy, self.xas_data_subgs['dt_ns'] 
         else:
             raise ValueError("Unknown target")
     
@@ -228,17 +238,7 @@ class TrXASDataset:
             x = x[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
             x = np.mean(x, axis=(2,))
             result.append(x)
-        return result
-
-    def process_laserd(self, fileout, trig_index=1820, pre_avg_orbitals=5, 
-                       aft_avg_bunches=11, n_pnt=17, do_perbunch=True):
-        if self.type != "laserd":
-            raise Exception("Expect laserd scan, but the file is %s scan." % self.type)
-
-        extra_cols = ["laserd"]
-        header_cols = []
-        header_cols.extend(extra_cols)
-        header_cols.append("diff")
+        return result[0], result[1], self.delta_t_ns * aft_avg_bunches
 
             
 if __name__ == '__main__':

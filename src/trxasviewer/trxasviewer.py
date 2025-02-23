@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QLabel, QVBoxLayout, 
     QHBoxLayout, QLineEdit, QFileDialog, QMessageBox, QCheckBox, QComboBox,
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import QFileSystemModel
 from PySide6.QtCore import QDir, Qt
 import sys
@@ -73,14 +73,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.view.addItem(self.hLine, ignoreBounds=True)
                 # Initialize plots
         self.h_curve = self.pg_hdl_hline.plot(pen='r')
+        self.pg_hdl_hline.setLabel('bottom', 'Energy', units='keV')
         self.v_curve = self.pg_hdl_vline.plot(pen='b')
+        self.pg_hdl_vline.setLabel('left', 'Time', units='μs')
         self.zoomin_image = pg.ImageItem()
         self.pg_hdl_zoomin.addItem(self.zoomin_image)
         self.pg_hdl_zoomin.setAspectLocked(False)
-        # Connect mouse events
+        self.pg_hdl_zoomin.hideAxis("bottom")
+        self.pg_hdl_zoomin.hideAxis("left")
         self.proxy = pg.SignalProxy(self.view.scene().sigMouseMoved,
-                                  rateLimit=60,
-                                  slot=self.mouseMoved)
+                                    rateLimit=60,
+                                    slot=self.mouseMoved)
     
     def update_roi(self, value, position=None):
         # value is a positional placeholder for the signal. It is not used.
@@ -99,6 +102,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def mouseMoved(self, evt):
         pos = evt[0]
+        if self.image is None: return
         if self.view.sceneBoundingRect().contains(pos):
             mouse_point = self.view.mapSceneToView(pos)
             x = int(mouse_point.x())
@@ -114,17 +118,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = np.arange(len(horizontal_data))
-                y_positions = np.arange(len(vertical_data))
-                
+                x_positions = self.dset_manager.energy_axis
+                y_positions = np.arange(len(vertical_data)) * self.dset_manager.dt_ns / 1000 # us
                 # Update horizontal cut
                 self.h_curve.setData(x_positions, horizontal_data)
                 self.v_curve.setData(vertical_data, y_positions)
-                
-                # Optional: Update plot ranges
-                self.pg_hdl_hline.setRange(xRange=[0, self.image.shape[1]])
-                # self.pg_hdl_vline.setRange(xRange=[0, self.image.shape[0]])
                 self.update_roi(None, position=(x, y))
+                energy = self.dset_manager.energy_axis[x]
+                t_time = (len(vertical_data) - y) * self.dset_manager.dt_ns / 1000
+                self.pg_hdl_zoomin.setTitle(f"Energy: {energy:.4f} keV, Time: {t_time:.3f} μs")
             self.update_zoomed_view()
 
     def update_zoomed_view(self):
@@ -155,7 +157,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 'n_pnt': self.spinBox_output_points.value(),
             }
             kwargs['norm_kwargs'] = norm_kwargs
-        data = self.dset_manager.get_energy_vs_time(**kwargs)
+        data, energy, dt_ns = self.dset_manager.get_energy_vs_time(**kwargs)
         if data is not None:
             data = data.T
             if self.image is None or data.shape != self.image.shape:
