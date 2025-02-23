@@ -3,13 +3,13 @@ import sys
 
 import numpy as np
 import pyqtgraph as pg
-from generated_ui import Ui_MainWindow
+from .generated_ui import Ui_MainWindow
 from PySide6.QtCore import QDir, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
 
-from trxas_dataset import TrXASDatasetManager
+from .trxas_dataset import TrXASDatasetManager
 
 pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
@@ -217,8 +217,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.dset_manager.save_results(filename)
 
 
-if __name__ == "__main__":
+def main_gui():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main_gui()

@@ -1,21 +1,9 @@
 """Console script for trxasviewer."""
-import trxasviewer
-
-import typer
-from rich.console import Console
-
-app = typer.Typer()
-console = Console()
-
-
-@app.command()
+import sys
 def main():
-    """Console script for trxasviewer."""
-    console.print("Replace this message by putting your code into "
-               "trxasviewer.cli.main")
-    console.print("See Typer documentation at https://typer.tiangolo.com/")
-    
+    from trxasviewer import main_gui
+    sys.exit(main_gui())
 
 
 if __name__ == "__main__":
-    app()
+    main()

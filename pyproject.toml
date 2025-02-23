@@ -21,6 +21,10 @@ dependencies = [
   
 ]
 
+[project.scripts]
+trxasviewer = "trxasviewer.cli:main"  # Creates `mycli` command
+
+
 [project.optional-dependencies]
 dev = [
     "coverage",  # testing
