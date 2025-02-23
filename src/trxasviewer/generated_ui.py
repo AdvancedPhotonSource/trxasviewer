@@ -155,10 +155,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.label_5, 2, 0, 1, 3)
 
-        self.pushButton_select_outputfolder = QPushButton(self.groupBox_5)
-        self.pushButton_select_outputfolder.setObjectName(u"pushButton_select_outputfolder")
+        self.pushButton_select_savefname = QPushButton(self.groupBox_5)
+        self.pushButton_select_savefname.setObjectName(u"pushButton_select_savefname")
 
-        self.gridLayout_4.addWidget(self.pushButton_select_outputfolder, 5, 0, 1, 2)
+        self.gridLayout_4.addWidget(self.pushButton_select_savefname, 5, 0, 1, 2)
 
 
         self.gridLayout_5.addLayout(self.gridLayout_4, 0, 0, 1, 1)
@@ -220,6 +220,7 @@ class Ui_MainWindow(object):
         self.comboBox_channel_num.addItem("")
         self.comboBox_channel_num.addItem("")
         self.comboBox_channel_num.setObjectName(u"comboBox_channel_num")
+        self.comboBox_channel_num.setEnabled(False)
 
         self.gridLayout_6.addWidget(self.comboBox_channel_num, 0, 4, 1, 1)
 
@@ -347,7 +348,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Index of the sync bunch", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"File index range", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Ground state averaging method", None))
-        self.pushButton_select_outputfolder.setText(QCoreApplication.translate("MainWindow", u"select output folder", None))
+        self.pushButton_select_savefname.setText(QCoreApplication.translate("MainWindow", u"select output folder", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
         self.comboBox_cmap.setItemText(0, QCoreApplication.translate("MainWindow", u"jet", None))
         self.comboBox_cmap.setItemText(1, QCoreApplication.translate("MainWindow", u"coolwarm", None))
