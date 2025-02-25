@@ -180,7 +180,7 @@ class TrXASDatasetManager:
             data_full[i, : d.shape[0], : d.shape[1]] = d
         data_avg = np.nanmean(data_full, axis=0)
 
-        good_idx = np.argmin(np.prod(shapes, axis=1) == np.prod(shape_full))
+        good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
 
         self.energy_axis = self.dsets_cache[self.flist[good_idx]].energy
         self.delta_t_ns = self.dsets_cache[self.flist[good_idx]].delta_t_ns

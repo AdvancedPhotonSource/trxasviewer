@@ -119,7 +119,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.dset_manager.energy_axis
+                x_positions = self.dset_manager.energy_axis[0:horizontal_data.size]
                 y_positions = (
                     np.arange(len(vertical_data)) * self.dset_manager.delta_t_ns / 1000
                 )  # us
