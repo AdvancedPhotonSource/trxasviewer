@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.0
+## Created by: Qt User Interface Compiler version 6.8.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -335,7 +335,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"TrXASViewer", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Rawdata", None))
         self.pushButton_select_rawfolder.setText(QCoreApplication.translate("MainWindow", u"select", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
@@ -348,7 +348,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Index of the sync bunch", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"File index range", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Ground state averaging method", None))
-        self.pushButton_select_savefname.setText(QCoreApplication.translate("MainWindow", u"select output folder", None))
+        self.pushButton_select_savefname.setText(QCoreApplication.translate("MainWindow", u"Save results", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
         self.comboBox_cmap.setItemText(0, QCoreApplication.translate("MainWindow", u"jet", None))
         self.comboBox_cmap.setItemText(1, QCoreApplication.translate("MainWindow", u"coolwarm", None))

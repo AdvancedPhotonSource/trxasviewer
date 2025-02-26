@@ -17,9 +17,9 @@ pg.setConfigOptions(antialias=True)
 pg.setConfigOptions(imageAxisOrder="row-major")
 
 
-class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
+class TrXASViewer(QMainWindow, Ui_MainWindow):
+    def __init__(self, rawfolder=None):
+        super(TrXASViewer, self).__init__()
         self.setupUi(self)
         self.init_ui()
         self.image = None
@@ -40,7 +40,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.treeView_fs.selectionModel().selectionChanged.connect(
             self.selection_changed
         )
-        # self.select_rawfolder('/Users/mqichu/Documents/trxas/XTA_data')
         self.comboBox_cmap.currentIndexChanged.connect(self.update_colormap)
         self.spinBox_roix.valueChanged.connect(self.update_roi)
         self.spinBox_roiy.valueChanged.connect(self.update_roi)
@@ -48,6 +47,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_target.currentIndexChanged.connect(self.plot_dataset)
         self.pushButton_replot.clicked.connect(self.plot_dataset)
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
+
+        if rawfolder:
+            self.select_rawfolder(folder_path=rawfolder)
 
     def selection_changed(self, selected, deselected):
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
@@ -185,8 +187,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.image = np.flipud(data)
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
 
-    def select_rawfolder(self, folder_path=None):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
+    def select_rawfolder(self, placeholder=None, folder_path=None):
+        print(placeholder, folder_path)
+        if not folder_path or not os.path.isdir(folder_path):
+            folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
             flist = os.listdir(folder_path)
@@ -217,9 +221,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.dset_manager.save_results(filename)
 
 
-def main_gui():
+def main_gui(rawfolder=None):
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = TrXASViewer(rawfolder=rawfolder)
     window.show()
     sys.exit(app.exec())
 
