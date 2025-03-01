@@ -1,4 +1,5 @@
 import re
+import os
 import time
 from functools import lru_cache
 
@@ -10,12 +11,19 @@ P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
 
 
 def is_sample_data(fname):
-    with open(fname, "r") as f:
-        line = f.readline()
-        if re.match(r"#L .* Energy ", line):
-            return True
-        else:
-            return False
+    """Check if a file contains a line starting with '#L ' followed by 'Energy '."""
+    if not os.path.isfile(fname):
+        return False
+
+    try:
+        with open(fname, "r", encoding="utf-8", errors="replace") as f:  # Safe reading
+            for line in f:
+                if re.match(r"#L .* Energy ", line):
+                    return True
+    except (OSError, IOError):
+        return False
+
+    return False
 
 
 @lru_cache(maxsize=128)
@@ -166,11 +174,15 @@ class TrXASDatasetManager:
         data = []
         shapes = []
         for fname in self.flist:
+            if not is_sample_data(fname):
+                continue
             if fname not in self.dsets_cache:
                 self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
             t_data, energy, dt_ns = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
             data.append(t_data)
             shapes.append(t_data.shape)
+        if len(data) == 0:
+            return None, None, None
 
         shapes = np.array(shapes)
         shape_full = np.max(shapes, axis=0)
@@ -343,7 +355,9 @@ if __name__ == "__main__":
     # read_trsaxs_dataset('/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099')
     for n in range(1):
         t0 = time.perf_counter()
-        dset = TrXASDataset("/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099")
+        fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
+        dset = TrXASDataset(fname)
+        print(is_sample_data(fname))
         dset.normalize()
         # dset.plot()
         dset.process_energy()

@@ -4,17 +4,38 @@ import sys
 import numpy as np
 import pyqtgraph as pg
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import QDir, Qt
-from PySide6.QtGui import QFont
+from PySide6.QtCore import QDir, QSortFilterProxyModel
+
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
 
-from .trxas_dataset import TrXASDatasetManager
+from .trxas_dataset import TrXASDatasetManager, is_sample_data
+from .utilities import get_valid_file_index
+
 
 pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 pg.setConfigOptions(antialias=True)
 pg.setConfigOptions(imageAxisOrder="row-major")
+
+
+class DatasetFilterModel(QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        """Override this method to filter out non-dataset files."""
+        model = self.sourceModel()
+        index = model.index(source_row, 0, source_parent)
+        
+        if not index.isValid():
+            return False
+        
+        file_path = model.filePath(index)
+
+        # Allow directories
+        if os.path.isdir(file_path):
+            return True 
+
+        # Filter files using is_sample_data function
+        return is_sample_data(file_path)
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
@@ -32,9 +53,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.homePath())
+        # Create filter proxy model
+        self.proxy_model = DatasetFilterModel()
+        self.proxy_model.setSourceModel(self.model)
         # self.model.setNameFilterDisables(False) #enable the filters.
-        self.treeView_fs.setModel(self.model)
-        self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
+        self.treeView_fs.setModel(self.proxy_model)
+
+        # self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
         self.treeView_fs.hideColumn(2)  # hide type
         # self.treeView_fs.hideColumn(3)  # hide Date
         self.treeView_fs.selectionModel().selectionChanged.connect(
@@ -53,9 +78,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def selection_changed(self, selected, deselected):
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
-        if indexes:
-            flist = [self.model.filePath(index) for index in indexes]
-            self.dset_manager.update_flist(list(set(flist)))
+        file_paths = []
+        for proxy_index in indexes:
+            source_index = self.proxy_model.mapToSource(proxy_index)
+            if source_index.isValid():
+                file_paths.append(self.model.filePath(source_index))
+        if file_paths:
+            self.dset_manager.update_flist(list(set(file_paths)))
             self.plot_dataset()
 
     def init_ui(self):
@@ -188,17 +217,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
 
     def select_rawfolder(self, placeholder=None, folder_path=None):
-        print(placeholder, folder_path)
         if not folder_path or not os.path.isdir(folder_path):
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            flist = os.listdir(folder_path)
-            indexes = [int(f[-5:]) for f in flist]
+            indexes = get_valid_file_index(folder_path)
             self.spinBox_fileindex_min.setValue(min(indexes))
             self.spinBox_fileindex_max.setValue(max(indexes))
-            self.model.setRootPath(folder_path)
-            self.treeView_fs.setRootIndex(self.model.index(folder_path))
+
+            fs_root_index = self.model.index(folder_path)
+            proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
+            self.treeView_fs.setRootIndex(proxy_root_index)
 
     def select_savefname(self):
         """
