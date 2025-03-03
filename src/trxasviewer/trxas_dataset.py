@@ -193,10 +193,8 @@ class TrXASDatasetManager:
         data_avg = np.nanmean(data_full, axis=0)
 
         good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
-
-        self.energy_axis = self.dsets_cache[self.flist[good_idx]].energy
-        self.delta_t_ns = self.dsets_cache[self.flist[good_idx]].delta_t_ns
-        self.data_avg = data_avg
+        good_dset = self.dsets_cache[self.flist[good_idx]]
+        _, self.energy_axis, self.delta_t_ns = good_dset.get_energy_vs_time(**kwargs)
         return data_avg, self.energy_axis, self.delta_t_ns
 
 
