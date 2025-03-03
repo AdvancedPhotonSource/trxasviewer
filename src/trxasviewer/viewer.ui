@@ -6,401 +6,539 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2003</width>
-    <height>1099</height>
+    <width>1370</width>
+    <height>729</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>TrXASViewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_9">
+   <layout class="QGridLayout" name="gridLayout_3">
     <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QGroupBox" name="groupBox_6">
-        <property name="title">
-         <string>Rawdata</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="1">
-          <widget class="QPushButton" name="pushButton_select_rawfolder">
-           <property name="text">
-            <string>select</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2" colspan="2">
-          <widget class="QLineEdit" name="lineEdit_rawfolder">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1" colspan="3">
-          <widget class="QTreeView" name="treeView_fs">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>1</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="groupBox_5">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Settings</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_5">
-         <item row="0" column="0">
-          <layout class="QGridLayout" name="gridLayout_4">
-           <item row="4" column="3" colspan="2">
-            <widget class="QSpinBox" name="spinBox_compress_bunches">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>99999</number>
-             </property>
-             <property name="value">
-              <number>5</number>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="3" colspan="2">
-            <widget class="QComboBox" name="comboBox_groundstate_method">
-             <item>
-              <property name="text">
-               <string>per_bunch</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>avg_bunch</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="5" column="2" colspan="3">
-            <widget class="QPushButton" name="pushButton_replot">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Rawdata</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButton_select_rawfolder">
              <property name="text">
-              <string>RePlot</string>
+              <string>select</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="3" colspan="2">
-            <widget class="QSpinBox" name="spinBox_orbitals_number">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>999999</number>
-             </property>
-             <property name="value">
-              <number>5</number>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEdit_rawfolder">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
             </widget>
            </item>
-           <item row="3" column="0" colspan="3">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Number of orbitals as the ground state</string>
+           <item row="1" column="0" colspan="2">
+            <widget class="QTreeView" name="treeView_fs">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
              </property>
-            </widget>
-           </item>
-           <item row="4" column="0" colspan="3">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Number of bunches for binning</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="3" colspan="2">
-            <widget class="QSpinBox" name="spinBox_syncbunch_number">
-             <property name="maximum">
-              <number>999999</number>
-             </property>
-             <property name="value">
-              <number>1820</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="3">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Index of the sync bunch</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" colspan="3">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>File index range</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3" colspan="2">
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <widget class="QSpinBox" name="spinBox_fileindex_min">
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinBox_fileindex_max">
-               <property name="maximum">
-                <number>99999</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="2" column="0" colspan="3">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Ground state averaging method</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0" colspan="2">
-            <widget class="QPushButton" name="pushButton_select_savefname">
-             <property name="text">
-              <string>Save results</string>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
              </property>
             </widget>
            </item>
           </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="0" column="1">
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
-       <widget class="QGroupBox" name="groupBox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>2</horstretch>
-          <verstretch>2</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Time-resolved XAS</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_6">
-         <item row="0" column="8">
-          <widget class="QComboBox" name="comboBox_cmap">
-           <item>
-            <property name="text">
-             <string>jet</string>
-            </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Settings</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0" colspan="2">
+            <widget class="QGroupBox" name="groupBox_7">
+             <property name="title">
+              <string>sync timing</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_5">
+              <property name="leftMargin">
+               <number>2</number>
+              </property>
+              <property name="topMargin">
+               <number>2</number>
+              </property>
+              <property name="rightMargin">
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QRadioButton" name="radioButton_sync_time">
+                <property name="text">
+                 <string>Time</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="doubleSpinBox_sync_time_us">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="decimals">
+                 <number>6</number>
+                </property>
+                <property name="maximum">
+                 <double>999999.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QRadioButton" name="radioButton_sync_bunch">
+                <property name="text">
+                 <string>Bunch</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QSpinBox" name="spinBox_syncbunch_number">
+                <property name="maximum">
+                 <number>999999</number>
+                </property>
+                <property name="value">
+                 <number>1820</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>coolwarm</string>
-            </property>
+           <item row="1" column="0" colspan="2">
+            <widget class="QGroupBox" name="groupBox_8">
+             <property name="title">
+              <string>Ground state</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_9">
+              <property name="leftMargin">
+               <number>2</number>
+              </property>
+              <property name="topMargin">
+               <number>2</number>
+              </property>
+              <property name="rightMargin">
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>Averaging method</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QComboBox" name="comboBox_groundstate_method">
+                <item>
+                 <property name="text">
+                  <string>per_bunch</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>avg_bunch</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Number of orbitals </string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QSpinBox" name="spinBox_orbitals_number">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>999999</number>
+                </property>
+                <property name="value">
+                 <number>5</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>seismic</string>
-            </property>
+           <item row="2" column="0" colspan="2">
+            <widget class="QGroupBox" name="groupBox_9">
+             <property name="title">
+              <string>Binning</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_11">
+              <property name="leftMargin">
+               <number>2</number>
+              </property>
+              <property name="topMargin">
+               <number>2</number>
+              </property>
+              <property name="rightMargin">
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Number of bunches</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="spinBox_compress_bunches">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>99999</number>
+                </property>
+                <property name="value">
+                 <number>5</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>viridis</string>
-            </property>
+           <item row="3" column="0" colspan="2">
+            <widget class="QGroupBox" name="groupBox_10">
+             <property name="title">
+              <string>File Selection</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_12">
+              <property name="leftMargin">
+               <number>2</number>
+              </property>
+              <property name="topMargin">
+               <number>2</number>
+              </property>
+              <property name="rightMargin">
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QRadioButton" name="radioButton_selection_by_mouse">
+                <property name="text">
+                 <string>Mouse</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QRadioButton" name="radioButton_selection_by_index">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>File index</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QSpinBox" name="spinBox_fileindex_min">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="maximum">
+                 <number>99999</number>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QSpinBox" name="spinBox_fileindex_max">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="maximum">
+                 <number>99999</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>plasma</string>
-            </property>
+           <item row="4" column="0">
+            <widget class="QPushButton" name="pushButton_select_savefname">
+             <property name="text">
+              <string>Save</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>inferno</string>
-            </property>
+           <item row="4" column="1">
+            <widget class="QPushButton" name="pushButton_replot">
+             <property name="text">
+              <string>Process</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>magma</string>
-            </property>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="groupBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>2</horstretch>
+            <verstretch>2</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Time-resolved XAS</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="0" column="8">
+            <widget class="QComboBox" name="comboBox_cmap">
+             <item>
+              <property name="text">
+               <string>jet</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>coolwarm</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>seismic</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>viridis</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>plasma</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>inferno</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>magma</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Greys</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Blues</string>
+              </property>
+             </item>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>Greys</string>
-            </property>
+           <item row="0" column="2">
+            <widget class="QComboBox" name="comboBox_target">
+             <item>
+              <property name="text">
+               <string>normalized</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>normalized-GS</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>raw</string>
+              </property>
+             </item>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>Blues</string>
-            </property>
+           <item row="0" column="7">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>colormap</string>
+             </property>
+            </widget>
            </item>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QComboBox" name="comboBox_target">
-           <item>
-            <property name="text">
-             <string>normalized</string>
-            </property>
+           <item row="0" column="11">
+            <widget class="QSpinBox" name="spinBox_roiy">
+             <property name="minimum">
+              <number>5</number>
+             </property>
+             <property name="maximum">
+              <number>999999</number>
+             </property>
+             <property name="singleStep">
+              <number>200</number>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>normalized-GS</string>
-            </property>
+           <item row="0" column="4">
+            <widget class="QComboBox" name="comboBox_channel_num">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <item>
+              <property name="text">
+               <string>1</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>0</string>
+              </property>
+             </item>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>raw</string>
-            </property>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Target</string>
+             </property>
+            </widget>
            </item>
-          </widget>
-         </item>
-         <item row="0" column="7">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>colormap</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="11">
-          <widget class="QSpinBox" name="spinBox_roiy">
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>999999</number>
-           </property>
-           <property name="singleStep">
-            <number>200</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="4">
-          <widget class="QComboBox" name="comboBox_channel_num">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <item>
-            <property name="text">
-             <string>1</string>
-            </property>
+           <item row="1" column="1" colspan="11">
+            <widget class="ImageView" name="pg_hdl_img2d" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+               <horstretch>2</horstretch>
+               <verstretch>2</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>2</string>
-            </property>
+           <item row="0" column="10">
+            <widget class="QSpinBox" name="spinBox_roix">
+             <property name="minimum">
+              <number>5</number>
+             </property>
+             <property name="maximum">
+              <number>999999</number>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>0</string>
-            </property>
+           <item row="0" column="9">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>ROI(x-y)</string>
+             </property>
+            </widget>
            </item>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>Target</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1" colspan="11">
-          <widget class="ImageView" name="pg_hdl_img2d" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>2</horstretch>
-             <verstretch>2</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="10">
-          <widget class="QSpinBox" name="spinBox_roix">
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>999999</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="9">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>ROI(x-y)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="label_9">
-           <property name="text">
-            <string>Channel</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>1</horstretch>
-          <verstretch>2</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Vertical linecut</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_8">
-         <item row="0" column="0">
-          <widget class="PlotWidget" name="pg_hdl_vline" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>1</horstretch>
-             <verstretch>2</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QGroupBox" name="groupBox_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>2</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Horizontal linecut</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_7">
-         <item row="0" column="0">
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Channel</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QGroupBox" name="groupBox_3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>2</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Vertical linecut</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_8">
+           <item row="0" column="0">
+            <widget class="PlotWidget" name="pg_hdl_vline" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>1</horstretch>
+               <verstretch>2</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>2</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>Horizontal linecut</string>
+          </property>
           <widget class="PlotWidget" name="pg_hdl_hline" native="true">
+           <property name="geometry">
+            <rect>
+             <x>15</x>
+             <y>33</y>
+             <width>716</width>
+             <height>111</height>
+            </rect>
+           </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>2</horstretch>
@@ -408,29 +546,29 @@
             </sizepolicy>
            </property>
           </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QGroupBox" name="groupBox_4">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-          <horstretch>1</horstretch>
-          <verstretch>1</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>zoomin</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_10">
-         <item row="0" column="0">
-          <widget class="PlotWidget" name="pg_hdl_zoomin" native="true"/>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>zoomin</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_10">
+           <item row="0" column="0">
+            <widget class="PlotWidget" name="pg_hdl_zoomin" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -440,7 +578,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2003</width>
+     <width>1370</width>
      <height>24</height>
     </rect>
    </property>
@@ -461,5 +599,70 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>radioButton_sync_bunch</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>doubleSpinBox_sync_time_us</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>302</x>
+     <y>452</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>189</x>
+     <y>445</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_sync_time</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_syncbunch_number</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>60</x>
+     <y>451</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>425</x>
+     <y>455</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_selection_by_index</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_fileindex_min</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>200</x>
+     <y>608</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>301</x>
+     <y>609</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_selection_by_index</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_fileindex_max</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>155</x>
+     <y>612</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>404</x>
+     <y>614</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
