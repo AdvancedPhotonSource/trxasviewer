@@ -185,8 +185,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "target": self.comboBox_target.currentText(),
         }
         if kwargs["target"] in ["normalized-GS"]:
+            sync_time = self.radioButton_sync_time.isChecked()
+            sync_bunch = self.radioButton_sync_bunch.isChecked()
+            assert sync_time != sync_bunch, "Please check sync conditions"
+            sync_type = "time" if sync_time else "bunch"
+            sync_value = (
+                self.spinBox_syncbunch_number.value()
+                if sync_bunch
+                else self.doubleSpinBox_sync_time_us.value()
+            )
             norm_kwargs = {
-                "trig_index": self.spinBox_syncbunch_number.value(),
+                "sync_type": sync_type,
+                "sync_value": sync_value,
                 "do_perbunch": self.comboBox_groundstate_method.currentText(),
                 "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
                 "aft_avg_bunches": self.spinBox_compress_bunches.value(),

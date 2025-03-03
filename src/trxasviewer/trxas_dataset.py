@@ -224,7 +224,7 @@ class TrXASDataset:
             xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
 
         self.shape = shape
-        self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9
+        self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
         self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
         self.xas_data_subgs = None
@@ -295,7 +295,8 @@ class TrXASDataset:
     def process_energy(
         self,
         fileout=None,
-        trig_index=1820,
+        sync_type="time",
+        sync_value=1820,
         pre_avg_orbitals=5,
         aft_avg_bunches=11,
         do_perbunch="per_bunch",
@@ -316,14 +317,19 @@ class TrXASDataset:
             end = pos + (size - pos) // unit_len * unit_len
             pos = pos - start
             return pos, slice(start, end)
+        
+        if sync_type == "time":
+            sync_index = int(sync_value * 1000 / self.delta_t_ns) 
+        else:
+            sync_index = sync_value
 
-        trig_index, slice_pre = get_multiples(
-            num_bunches * num_orbitals, trig_index, num_bunches
+        sync_index, slice_pre = get_multiples(
+            num_bunches * num_orbitals, sync_index, num_bunches
         )
         data = data[:, slice_pre]  # num_energys * -1
         data = data.reshape(self.num_energys, -1, num_bunches)
 
-        preavg_orbit_idx = trig_index // num_bunches
+        preavg_orbit_idx = sync_index // num_bunches
         preavg_slice = slice(
             max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx
         )
@@ -340,7 +346,7 @@ class TrXASDataset:
         # apply binning
         result = []
         num_elements = slice_pre.stop - slice_pre.start
-        bin_index, slice_aft = get_multiples(num_elements, trig_index, aft_avg_bunches)
+        bin_index, slice_aft = get_multiples(num_elements, sync_index, aft_avg_bunches)
         for x in [data, diff]:
             x = x.reshape(self.num_energys, -1)
             x = x[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
