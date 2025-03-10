@@ -16,11 +16,11 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDoubleSpinBox,
-    QFormLayout, QGridLayout, QGroupBox, QHBoxLayout,
-    QHeaderView, QLabel, QLineEdit, QMainWindow,
-    QMenuBar, QPushButton, QRadioButton, QSizePolicy,
-    QSpinBox, QStatusBar, QTabWidget, QTreeView,
-    QVBoxLayout, QWidget)
+    QGridLayout, QGroupBox, QHBoxLayout, QHeaderView,
+    QLabel, QLineEdit, QMainWindow, QMenuBar,
+    QProgressBar, QPushButton, QRadioButton, QSizePolicy,
+    QSpinBox, QSplitter, QStatusBar, QTabWidget,
+    QTreeView, QVBoxLayout, QWidget)
 
 from pyqtgraph import (ImageView, PlotWidget)
 
@@ -33,12 +33,15 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_2 = QGridLayout(self.centralwidget)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.tabWidget = QTabWidget(self.centralwidget)
+        self.splitter = QSplitter(self.centralwidget)
+        self.splitter.setObjectName(u"splitter")
+        self.splitter.setOrientation(Qt.Orientation.Horizontal)
+        self.tabWidget = QTabWidget(self.splitter)
         self.tabWidget.setObjectName(u"tabWidget")
         self.tab = QWidget()
         self.tab.setObjectName(u"tab")
-        self.formLayout = QFormLayout(self.tab)
-        self.formLayout.setObjectName(u"formLayout")
+        self.gridLayout_3 = QGridLayout(self.tab)
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.horizontalLayout = QHBoxLayout()
@@ -82,6 +85,65 @@ class Ui_MainWindow(object):
         self.gridLayout_4 = QGridLayout(self.groupBox_5)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.gridLayout_4.setContentsMargins(2, 2, 2, 2)
+        self.groupBox_8 = QGroupBox(self.groupBox_5)
+        self.groupBox_8.setObjectName(u"groupBox_8")
+        self.gridLayout_9 = QGridLayout(self.groupBox_8)
+        self.gridLayout_9.setObjectName(u"gridLayout_9")
+        self.gridLayout_9.setContentsMargins(2, 2, 2, 2)
+        self.label_5 = QLabel(self.groupBox_8)
+        self.label_5.setObjectName(u"label_5")
+
+        self.gridLayout_9.addWidget(self.label_5, 0, 0, 1, 1)
+
+        self.comboBox_groundstate_method = QComboBox(self.groupBox_8)
+        self.comboBox_groundstate_method.addItem("")
+        self.comboBox_groundstate_method.addItem("")
+        self.comboBox_groundstate_method.setObjectName(u"comboBox_groundstate_method")
+
+        self.gridLayout_9.addWidget(self.comboBox_groundstate_method, 0, 1, 1, 1)
+
+        self.label_6 = QLabel(self.groupBox_8)
+        self.label_6.setObjectName(u"label_6")
+
+        self.gridLayout_9.addWidget(self.label_6, 0, 2, 1, 1)
+
+        self.spinBox_orbitals_number = QSpinBox(self.groupBox_8)
+        self.spinBox_orbitals_number.setObjectName(u"spinBox_orbitals_number")
+        self.spinBox_orbitals_number.setMinimum(1)
+        self.spinBox_orbitals_number.setMaximum(999999)
+        self.spinBox_orbitals_number.setValue(5)
+
+        self.gridLayout_9.addWidget(self.spinBox_orbitals_number, 0, 3, 1, 1)
+
+
+        self.gridLayout_4.addWidget(self.groupBox_8, 1, 0, 1, 2)
+
+        self.pushButton_replot = QPushButton(self.groupBox_5)
+        self.pushButton_replot.setObjectName(u"pushButton_replot")
+
+        self.gridLayout_4.addWidget(self.pushButton_replot, 5, 1, 1, 1)
+
+        self.groupBox_9 = QGroupBox(self.groupBox_5)
+        self.groupBox_9.setObjectName(u"groupBox_9")
+        self.gridLayout_11 = QGridLayout(self.groupBox_9)
+        self.gridLayout_11.setObjectName(u"gridLayout_11")
+        self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
+        self.label_7 = QLabel(self.groupBox_9)
+        self.label_7.setObjectName(u"label_7")
+
+        self.gridLayout_11.addWidget(self.label_7, 0, 0, 1, 1)
+
+        self.spinBox_compress_bunches = QSpinBox(self.groupBox_9)
+        self.spinBox_compress_bunches.setObjectName(u"spinBox_compress_bunches")
+        self.spinBox_compress_bunches.setMinimum(1)
+        self.spinBox_compress_bunches.setMaximum(99999)
+        self.spinBox_compress_bunches.setValue(5)
+
+        self.gridLayout_11.addWidget(self.spinBox_compress_bunches, 0, 1, 1, 1)
+
+
+        self.gridLayout_4.addWidget(self.groupBox_9, 2, 0, 1, 2)
+
         self.groupBox_7 = QGroupBox(self.groupBox_5)
         self.groupBox_7.setObjectName(u"groupBox_7")
         self.gridLayout_5 = QGridLayout(self.groupBox_7)
@@ -116,59 +178,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.groupBox_7, 0, 0, 1, 2)
 
-        self.groupBox_8 = QGroupBox(self.groupBox_5)
-        self.groupBox_8.setObjectName(u"groupBox_8")
-        self.gridLayout_9 = QGridLayout(self.groupBox_8)
-        self.gridLayout_9.setObjectName(u"gridLayout_9")
-        self.gridLayout_9.setContentsMargins(2, 2, 2, 2)
-        self.label_5 = QLabel(self.groupBox_8)
-        self.label_5.setObjectName(u"label_5")
+        self.pushButton_select_savefname = QPushButton(self.groupBox_5)
+        self.pushButton_select_savefname.setObjectName(u"pushButton_select_savefname")
 
-        self.gridLayout_9.addWidget(self.label_5, 0, 0, 1, 1)
-
-        self.comboBox_groundstate_method = QComboBox(self.groupBox_8)
-        self.comboBox_groundstate_method.addItem("")
-        self.comboBox_groundstate_method.addItem("")
-        self.comboBox_groundstate_method.setObjectName(u"comboBox_groundstate_method")
-
-        self.gridLayout_9.addWidget(self.comboBox_groundstate_method, 0, 1, 1, 1)
-
-        self.label_6 = QLabel(self.groupBox_8)
-        self.label_6.setObjectName(u"label_6")
-
-        self.gridLayout_9.addWidget(self.label_6, 0, 2, 1, 1)
-
-        self.spinBox_orbitals_number = QSpinBox(self.groupBox_8)
-        self.spinBox_orbitals_number.setObjectName(u"spinBox_orbitals_number")
-        self.spinBox_orbitals_number.setMinimum(1)
-        self.spinBox_orbitals_number.setMaximum(999999)
-        self.spinBox_orbitals_number.setValue(5)
-
-        self.gridLayout_9.addWidget(self.spinBox_orbitals_number, 0, 3, 1, 1)
-
-
-        self.gridLayout_4.addWidget(self.groupBox_8, 1, 0, 1, 2)
-
-        self.groupBox_9 = QGroupBox(self.groupBox_5)
-        self.groupBox_9.setObjectName(u"groupBox_9")
-        self.gridLayout_11 = QGridLayout(self.groupBox_9)
-        self.gridLayout_11.setObjectName(u"gridLayout_11")
-        self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
-        self.label_7 = QLabel(self.groupBox_9)
-        self.label_7.setObjectName(u"label_7")
-
-        self.gridLayout_11.addWidget(self.label_7, 0, 0, 1, 1)
-
-        self.spinBox_compress_bunches = QSpinBox(self.groupBox_9)
-        self.spinBox_compress_bunches.setObjectName(u"spinBox_compress_bunches")
-        self.spinBox_compress_bunches.setMinimum(1)
-        self.spinBox_compress_bunches.setMaximum(99999)
-        self.spinBox_compress_bunches.setValue(5)
-
-        self.gridLayout_11.addWidget(self.spinBox_compress_bunches, 0, 1, 1, 1)
-
-
-        self.gridLayout_4.addWidget(self.groupBox_9, 2, 0, 1, 2)
+        self.gridLayout_4.addWidget(self.pushButton_select_savefname, 5, 0, 1, 1)
 
         self.groupBox_10 = QGroupBox(self.groupBox_5)
         self.groupBox_10.setObjectName(u"groupBox_10")
@@ -181,18 +194,18 @@ class Ui_MainWindow(object):
 
         self.gridLayout_12.addWidget(self.radioButton_selection_by_mouse, 0, 0, 1, 1)
 
-        self.radioButton_selection_by_index = QRadioButton(self.groupBox_10)
-        self.radioButton_selection_by_index.setObjectName(u"radioButton_selection_by_index")
-        self.radioButton_selection_by_index.setEnabled(True)
-
-        self.gridLayout_12.addWidget(self.radioButton_selection_by_index, 0, 1, 1, 1)
-
         self.spinBox_fileindex_min = QSpinBox(self.groupBox_10)
         self.spinBox_fileindex_min.setObjectName(u"spinBox_fileindex_min")
         self.spinBox_fileindex_min.setEnabled(False)
         self.spinBox_fileindex_min.setMaximum(99999)
 
         self.gridLayout_12.addWidget(self.spinBox_fileindex_min, 0, 2, 1, 1)
+
+        self.radioButton_selection_by_index = QRadioButton(self.groupBox_10)
+        self.radioButton_selection_by_index.setObjectName(u"radioButton_selection_by_index")
+        self.radioButton_selection_by_index.setEnabled(True)
+
+        self.gridLayout_12.addWidget(self.radioButton_selection_by_index, 0, 1, 1, 1)
 
         self.spinBox_fileindex_max = QSpinBox(self.groupBox_10)
         self.spinBox_fileindex_max.setObjectName(u"spinBox_fileindex_max")
@@ -201,24 +214,25 @@ class Ui_MainWindow(object):
 
         self.gridLayout_12.addWidget(self.spinBox_fileindex_max, 0, 3, 1, 1)
 
+        self.progressBar = QProgressBar(self.groupBox_10)
+        self.progressBar.setObjectName(u"progressBar")
+        self.progressBar.setValue(24)
+
+        self.gridLayout_12.addWidget(self.progressBar, 1, 1, 1, 3)
+
+        self.label_2 = QLabel(self.groupBox_10)
+        self.label_2.setObjectName(u"label_2")
+
+        self.gridLayout_12.addWidget(self.label_2, 1, 0, 1, 1)
+
 
         self.gridLayout_4.addWidget(self.groupBox_10, 3, 0, 1, 2)
-
-        self.pushButton_select_savefname = QPushButton(self.groupBox_5)
-        self.pushButton_select_savefname.setObjectName(u"pushButton_select_savefname")
-
-        self.gridLayout_4.addWidget(self.pushButton_select_savefname, 4, 0, 1, 1)
-
-        self.pushButton_replot = QPushButton(self.groupBox_5)
-        self.pushButton_replot.setObjectName(u"pushButton_replot")
-
-        self.gridLayout_4.addWidget(self.pushButton_replot, 4, 1, 1, 1)
 
 
         self.verticalLayout.addWidget(self.groupBox_5)
 
 
-        self.formLayout.setLayout(0, QFormLayout.LabelRole, self.verticalLayout)
+        self.gridLayout_3.addLayout(self.verticalLayout, 0, 0, 1, 1)
 
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QWidget()
@@ -272,12 +286,13 @@ class Ui_MainWindow(object):
         self.gridLayout_14.addWidget(self.groupBox_6, 1, 0, 1, 1)
 
         self.tabWidget.addTab(self.tab_2, "")
-
-        self.gridLayout_2.addWidget(self.tabWidget, 0, 0, 1, 1)
-
-        self.gridLayout = QGridLayout()
+        self.splitter.addWidget(self.tabWidget)
+        self.layoutWidget = QWidget(self.splitter)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.gridLayout = QGridLayout(self.layoutWidget)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.groupBox = QGroupBox(self.centralwidget)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.groupBox = QGroupBox(self.layoutWidget)
         self.groupBox.setObjectName(u"groupBox")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy3.setHorizontalStretch(2)
@@ -362,7 +377,7 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 1)
 
-        self.groupBox_3 = QGroupBox(self.centralwidget)
+        self.groupBox_3 = QGroupBox(self.layoutWidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
         sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy4.setHorizontalStretch(1)
@@ -384,7 +399,7 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.groupBox_3, 0, 1, 1, 1)
 
-        self.groupBox_2 = QGroupBox(self.centralwidget)
+        self.groupBox_2 = QGroupBox(self.layoutWidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
         sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy6.setHorizontalStretch(2)
@@ -406,7 +421,7 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.groupBox_2, 1, 0, 1, 1)
 
-        self.groupBox_4 = QGroupBox(self.centralwidget)
+        self.groupBox_4 = QGroupBox(self.layoutWidget)
         self.groupBox_4.setObjectName(u"groupBox_4")
         sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy8.setHorizontalStretch(1)
@@ -423,8 +438,9 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.groupBox_4, 1, 1, 1, 1)
 
+        self.splitter.addWidget(self.layoutWidget)
 
-        self.gridLayout_2.addLayout(self.gridLayout, 0, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
@@ -432,7 +448,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1403, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1403, 24))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -451,23 +467,24 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"TrXASViewer", None))
         self.pushButton_select_rawfolder.setText(QCoreApplication.translate("MainWindow", u"select", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"sync timing", None))
-        self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
-        self.doubleSpinBox_sync_time_us.setSuffix(QCoreApplication.translate("MainWindow", u" \u03bcs", None))
-        self.radioButton_sync_bunch.setText(QCoreApplication.translate("MainWindow", u"Bunch", None))
         self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Ground state", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Averaging method", None))
         self.comboBox_groundstate_method.setItemText(0, QCoreApplication.translate("MainWindow", u"per_bunch", None))
         self.comboBox_groundstate_method.setItemText(1, QCoreApplication.translate("MainWindow", u"avg_bunch", None))
 
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"Number of orbitals ", None))
+        self.pushButton_replot.setText(QCoreApplication.translate("MainWindow", u"Process", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Binning", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"sync timing", None))
+        self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
+        self.doubleSpinBox_sync_time_us.setSuffix(QCoreApplication.translate("MainWindow", u" \u03bcs", None))
+        self.radioButton_sync_bunch.setText(QCoreApplication.translate("MainWindow", u"Bunch", None))
+        self.pushButton_select_savefname.setText(QCoreApplication.translate("MainWindow", u"Save", None))
         self.groupBox_10.setTitle(QCoreApplication.translate("MainWindow", u"File Selection", None))
         self.radioButton_selection_by_mouse.setText(QCoreApplication.translate("MainWindow", u"Mouse", None))
         self.radioButton_selection_by_index.setText(QCoreApplication.translate("MainWindow", u"File index", None))
-        self.pushButton_select_savefname.setText(QCoreApplication.translate("MainWindow", u"Save", None))
-        self.pushButton_replot.setText(QCoreApplication.translate("MainWindow", u"Process", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Progress:", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"RawData", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Binning", None))
