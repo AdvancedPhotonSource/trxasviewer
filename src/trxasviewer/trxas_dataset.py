@@ -146,30 +146,32 @@ class TrXASDatasetManager:
         self.dsets_cache = {}
         self.ignore_incomplete = ignore_incomplete
         self.energy_axis = None
-        self.delta_t_ns = None
-        self.data_avg = None
+        self.t_axis = None
+        self.diff_data = None
         self.analysis_kwargs = None
 
     def update_flist(self, flist):
         self.flist = flist
 
-    def save_results(self, fname):
+    def save_results(self, fname, **kwargs):
         if self.analysis_kwargs is None:
             return
-
+        diff, energy, t_axis = self.get_energy_vs_time(progress=None, **kwargs)
         results = {
             "flist": self.flist,
-            "analysis_type": "average_energy_vs_time",
-            "diff_data": self.data_avg,
-            "analysis_kwargs": self.analysis_kwargs,
-            "energy_axis": self.energy_axis,
-            "delta_t_ns": self.delta_t_ns,
+            "analysis_type": "normalized-GS",
+            "diff_data": diff.astype(np.float32),
+            "analysis_kwargs": kwargs,
+            "energy_axis": energy,
+            "t_axis": t_axis,
         }
-        np.savez(fname, **results)
+        # np.savez(fname, **results, fmt="8e")
+        np.savez_compressed(fname, **results)
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
+        print(kwargs)
         self.analysis_kwargs = kwargs
         data = []
         shapes = []
@@ -178,7 +180,7 @@ class TrXASDatasetManager:
                 continue
             if fname not in self.dsets_cache:
                 self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
-            t_data, energy, dt_ns = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
+            t_data, _, _ = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
             data.append(t_data)
             shapes.append(t_data.shape)
             if progress is not None:
@@ -197,8 +199,10 @@ class TrXASDatasetManager:
 
         good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
         good_dset = self.dsets_cache[self.flist[good_idx]]
-        _, self.energy_axis, self.delta_t_ns = good_dset.get_energy_vs_time(**kwargs)
-        return data_avg, self.energy_axis, self.delta_t_ns
+
+        _, energy_axis, t_axis  = good_dset.get_energy_vs_time(**kwargs)
+
+        return data_avg, energy_axis, t_axis
 
 
 class TrXASDataset:
@@ -234,25 +238,23 @@ class TrXASDataset:
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
-            return self.xas_data[:, channel], self.energy, self.delta_t_ns
+            t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns 
+            return self.xas_data[:, channel], self.energy, t_axis 
         elif target == "normalized":
-            return self.xas_data_norm, self.energy, self.delta_t_ns
+            t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns 
+            return self.xas_data_norm, self.energy, t_axis 
         elif target == "normalized-GS":
             if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get(
                 "norm_kwargs"
             ):
-                avg, diff, dt_ns = self.process_energy(**norm_kwargs)
+                diff, energy, t_axis = self.process_energy(**norm_kwargs)
                 self.xas_data_subgs = {
                     "norm_kwargs": norm_kwargs,
-                    "avg_data": avg,
+                    "energy": energy,
                     "diff_data": diff,
-                    "dt_ns": dt_ns,
-                }
-            return (
-                self.xas_data_subgs["diff_data"],
-                self.energy,
-                self.xas_data_subgs["dt_ns"],
-            )
+                    "t_axis": t_axis}
+            values = [self.xas_data_subgs[label] for label in ["diff_data", "energy", "t_axis"]]
+            return values
         else:
             raise ValueError("Unknown target")
 
@@ -347,15 +349,18 @@ class TrXASDataset:
             raise ValueError("Unknown do_perbunch value %s method")
 
         # apply binning
-        result = []
         num_elements = slice_pre.stop - slice_pre.start
-        bin_index, slice_aft = get_multiples(num_elements, sync_index, aft_avg_bunches)
-        for x in [data, diff]:
-            x = x.reshape(self.num_energys, -1)
-            x = x[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
-            x = np.mean(x, axis=(2,))
-            result.append(x)
-        return result[0], result[1], self.delta_t_ns * aft_avg_bunches
+        diff = diff.reshape(self.num_energys, -1)
+        avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
+
+        if aft_avg_bunches > 1:
+            sync_index, slice_aft = get_multiples(num_elements, sync_index, aft_avg_bunches)
+            diff = diff[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
+            diff = np.mean(diff, axis=(2,))
+
+        t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
+        t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
+        return diff, self.energy, t_axis 
 
 
 if __name__ == "__main__":

@@ -85,6 +85,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.init_ui()
         self.image = None
+        self.energy_axis = None
+        self.t_axis = None
         self.last_position = None
         self.roi = None
         self.prefix, self.file_indexes = None, None
@@ -233,18 +235,19 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.avg_worker.dset_manager.energy_axis[0:horizontal_data.size]
-                y_positions = (
-                    np.arange(len(vertical_data)) * self.avg_worker.dset_manager.delta_t_ns / 1000
-                )  # us
+                x_positions = self.energy_axis[0:horizontal_data.size]
+                y_positions = self.t_axis[0:vertical_data.size] / 1000
+                y_positions = y_positions[::-1]
+
                 # Update horizontal cut
                 self.h_curve.setData(x_positions, horizontal_data)
-                self.v_curve.setData(vertical_data, y_positions[::-1])
+                self.v_curve.setData(vertical_data, y_positions)
                 self.update_roi(None, position=(x, y))
-                energy = self.avg_worker.dset_manager.energy_axis[x]
-                t_time = (len(vertical_data) - y) * self.avg_worker.dset_manager.delta_t_ns / 1000
+
+                pos_energy = self.energy_axis[x]
+                pos_time = y_positions[y] 
                 self.pg_hdl_zoomin.setTitle(
-                    f"Energy: {energy:.4f} keV, Time: {t_time:.3f} μs"
+                    f"Energy: {pos_energy:.4f} keV, Time: {pos_time:.3f} μs"
                 )
             self.update_zoomed_view()
 
@@ -270,22 +273,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "target": self.comboBox_target.currentText(),
         }
         if kwargs["target"] in ["normalized-GS"]:
-            sync_time = self.radioButton_sync_time.isChecked()
-            sync_bunch = self.radioButton_sync_bunch.isChecked()
-            assert sync_time != sync_bunch, "Please check sync conditions"
-            sync_type = "time" if sync_time else "bunch"
-            sync_value = (
-                self.spinBox_syncbunch_number.value()
-                if sync_bunch
-                else self.doubleSpinBox_sync_time_us.value()
-            )
-            norm_kwargs = {
-                "sync_type": sync_type,
-                "sync_value": sync_value,
-                "do_perbunch": self.comboBox_groundstate_method.currentText(),
-                "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
-                "aft_avg_bunches": self.spinBox_compress_bunches.value(),
-            }
+            norm_kwargs = self.get_normalization_subgs_kwargs()
             kwargs["norm_kwargs"] = norm_kwargs
         if kwargs["target"] in ["normalized-GS", "normalized"]:
             self.comboBox_channel_num.setEnabled(False)
@@ -298,9 +286,31 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.setText('Processing...')
         self.pushButton_replot.setDisabled(True)
         self.avg_worker.start_task.emit()
+    
+    def get_normalization_subgs_kwargs(self):
+        sync_time = self.radioButton_sync_time.isChecked()
+        sync_bunch = self.radioButton_sync_bunch.isChecked()
+        assert sync_time != sync_bunch, "Please check sync conditions"
+        sync_type = "time" if sync_time else "bunch"
+        sync_value = (
+            self.spinBox_syncbunch_number.value()
+            if sync_bunch
+            else self.doubleSpinBox_sync_time_us.value()
+        )
+        norm_kwargs = {
+            "sync_type": sync_type,
+            "sync_value": sync_value,
+            "do_perbunch": self.comboBox_groundstate_method.currentText(),
+            "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
+            "aft_avg_bunches": self.spinBox_compress_bunches.value(),
+        }
+        return norm_kwargs
 
     def plot_results(self):
-        data, energy, delta_t_ns = self.avg_worker.get_results()
+        data, energy_axis, t_axis = self.avg_worker.get_results()
+        self.energy_axis = energy_axis
+        self.t_axis = t_axis
+
         if data is not None:
             data = data.T
             if self.image is None or data.shape != self.image.shape:
@@ -360,10 +370,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             file_filter,  # Filter to only show .npz files
         )
 
+        norm_kwargs = self.get_normalization_subgs_kwargs()
+        norm_kwargs['aft_avg_bunches'] = 1
+        kwargs = {
+            "target": "normalized-GS",
+            "norm_kwargs": norm_kwargs
+        }
+
         if filename and not filename.endswith(".npz"):
             filename += ".npz"
         if filename:
-            self.avg_worker.dset_manager.save_results(filename)
+            self.avg_worker.dset_manager.save_results(filename, **kwargs)
         
     def closeEvent(self, event):
         if self.is_processing:
