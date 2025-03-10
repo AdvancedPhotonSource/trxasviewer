@@ -167,7 +167,7 @@ class TrXASDatasetManager:
         }
         np.savez(fname, **results)
 
-    def get_energy_vs_time(self, **kwargs):
+    def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
         self.analysis_kwargs = kwargs
@@ -181,6 +181,9 @@ class TrXASDatasetManager:
             t_data, energy, dt_ns = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
             data.append(t_data)
             shapes.append(t_data.shape)
+            if progress is not None:
+                progress.emit(int(100 * len(data) / len(self.flist)))
+
         if len(data) == 0:
             return None, None, None
 
