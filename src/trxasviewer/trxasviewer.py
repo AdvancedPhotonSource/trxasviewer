@@ -46,14 +46,47 @@ class DatasetFilterModel(QSortFilterProxyModel):
         return is_sample_data(file_path)
 
 
+class AverageWorker(QObject):
+    finished = Signal()
+    progress = Signal(int)
+    start_task = Signal()
+    stop_worker = Signal()
+
+    def __init__(self):
+        super().__init__()
+        self.dset_manager = TrXASDatasetManager()
+        self.flist = None
+        self.kwargs = None
+        self.results = None
+        self.start_task.connect(self.run)
+
+    def set_kwargs(self, flist, **kwargs):
+        self.flist = flist
+        self.kwargs = kwargs
+
+    @Slot()
+    def run(self):
+        self.dset_manager.update_flist(self.flist)
+        self.results = self.dset_manager.get_energy_vs_time(
+            progress=self.progress, **self.kwargs)
+        self.finished.emit()
+    
+    def get_results(self):
+        # data, energy, delta_t_ns
+        return self.results
+    
+    def quit(self):
+        self.stop_worker.emit()
+
+
 class TrXASViewer(QMainWindow, Ui_MainWindow):
     def __init__(self, rawfolder=None):
         super(TrXASViewer, self).__init__()
         self.setupUi(self)
         self.init_ui()
         self.image = None
+        self.last_position = None
         self.roi = None
-        self.dset_manager = TrXASDatasetManager()
         self.prefix, self.file_indexes = None, None
 
         self.setup_imageview()
@@ -82,8 +115,20 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
+
+        self.is_processing = False
+        self.thread = QThread()
+        self.avg_worker = AverageWorker()
+        self.avg_worker.progress.connect(self.update_progress_bar)
+        self.avg_worker.finished.connect(self.plot_results)
+        self.progressBar.setValue(0)
+        self.avg_worker.moveToThread(self.thread)
+        self.thread.started.connect(lambda: logger.info("Average Thread Started"))
+        self.thread.start()
         
     def process(self):
+        if self.is_processing:
+            return
         if self.radioButton_selection_by_mouse.isChecked():
             self.process_selection(None, None)
         elif self.radioButton_selection_by_index.isChecked():
@@ -102,7 +147,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             if source_index.isValid():
                 file_paths.append(self.model.filePath(source_index))
         if file_paths:
-            self.plot_dataset(file_paths)
+            self.process_flist(file_paths)
     
     def process_range(self):
         if not self.radioButton_selection_by_index.isChecked():
@@ -115,7 +160,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             if idx in self.file_indexes:
                 file_paths.append(f"{self.prefix}{idx:05d}")
         if file_paths:
-            self.plot_dataset(file_paths)
+            self.process_flist(file_paths)
 
     def init_ui(self):
         self.pushButton_select_rawfolder.clicked.connect(self.select_rawfolder)
@@ -162,11 +207,19 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 (position[0] - roi_size[0] / 2, position[1] - roi_size[1] / 2)
             )
 
-    def mouse_clicked(self, event):
-        if len(event) == 0 or self.image is None:
+    def mouse_clicked(self, event=None):
+        if self.image is None:
             return
 
-        pos = event[0].scenePos()
+        if event is None:
+            if self.last_position is None:
+                return
+            else:
+                pos = self.last_position
+        else:
+            pos = event[0].scenePos()
+            self.last_position = pos
+
         if self.view.sceneBoundingRect().contains(pos):
             mouse_point = self.view.mapSceneToView(pos)
             # Update crosshair position
@@ -180,16 +233,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.dset_manager.energy_axis[0:horizontal_data.size]
+                x_positions = self.avg_worker.dset_manager.energy_axis[0:horizontal_data.size]
                 y_positions = (
-                    np.arange(len(vertical_data)) * self.dset_manager.delta_t_ns / 1000
+                    np.arange(len(vertical_data)) * self.avg_worker.dset_manager.delta_t_ns / 1000
                 )  # us
                 # Update horizontal cut
                 self.h_curve.setData(x_positions, horizontal_data)
                 self.v_curve.setData(vertical_data, y_positions[::-1])
                 self.update_roi(None, position=(x, y))
-                energy = self.dset_manager.energy_axis[x]
-                t_time = (len(vertical_data) - y) * self.dset_manager.delta_t_ns / 1000
+                energy = self.avg_worker.dset_manager.energy_axis[x]
+                t_time = (len(vertical_data) - y) * self.avg_worker.dset_manager.delta_t_ns / 1000
                 self.pg_hdl_zoomin.setTitle(
                     f"Energy: {energy:.4f} keV, Time: {t_time:.3f} μs"
                 )
@@ -209,9 +262,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_img2d.setColorMap(cmap)
         self.zoomin_image.setColorMap(cmap)
 
-    def plot_dataset(self, flist=None):
-        if flist and len(flist) > 0:
-            self.dset_manager.update_flist(list(set(flist)))
+    def process_flist(self, flist=None):
+        if not flist: return
 
         kwargs = {
             "channel": int(self.comboBox_channel_num.currentText()),
@@ -239,8 +291,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.comboBox_channel_num.setEnabled(False)
         else:
             self.comboBox_channel_num.setEnabled(True)
+        
+        self.progressBar.setValue(0)
+        self.avg_worker.set_kwargs(flist, **kwargs)
+        self.is_processing = True
+        self.pushButton_replot.setText('Processing...')
+        self.pushButton_replot.setDisabled(True)
+        self.avg_worker.start_task.emit()
 
-        data, energy, delta_t_ns = self.dset_manager.get_energy_vs_time(**kwargs)
+    def plot_results(self):
+        data, energy, delta_t_ns = self.avg_worker.get_results()
         if data is not None:
             data = data.T
             if self.image is None or data.shape != self.image.shape:
@@ -252,12 +312,21 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.spinBox_roix.setValue(data.shape[1] // 10)
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
 
-            if kwargs["target"] in ["normalized-GS"]:
+            if self.comboBox_target.currentText() == 'normalized-GS':
                 vmin, vmax = np.percentile(data.ravel(), [0.1, 99.9])
             else:
                 vmin, vmax = np.percentile(data.ravel(), [0, 100])
             self.image = np.flipud(data)
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
+            self.mouse_clicked()
+        
+        self.is_processing = False
+        self.pushButton_replot.setText('Process')
+        self.pushButton_replot.setEnabled(True)
+    
+    def update_progress_bar(self, value):
+        """Updates the progress bar."""
+        self.progressBar.setValue(value)
 
     def select_rawfolder(self, placeholder=None, folder_path=None):
         if not folder_path or not os.path.isdir(folder_path):
@@ -278,6 +347,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         Opens a QFileDialog to allow the user to select a save location for an NPZ file.
         Returns the selected file path with a '.npz' extension.
         """
+        if self.is_processing:
+            return
+
         file_filter = "NumPy Compressed File (*.npz)"
 
         # Open the file dialog
@@ -291,7 +363,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if filename and not filename.endswith(".npz"):
             filename += ".npz"
         if filename:
-            self.dset_manager.save_results(filename)
+            self.avg_worker.dset_manager.save_results(filename)
+        
+    def closeEvent(self, event):
+        if self.is_processing:
+            return
+        self.avg_worker.quit()
+        self.avg_worker.stop_worker.emit()  # Tell the worker to stop
+        self.thread.quit()  # Quit the thread event loop
+        self.thread.wait()  # Wait for thread to finish
+        event.accept()  # Allow closing
 
 
 def main_gui(rawfolder=None):
