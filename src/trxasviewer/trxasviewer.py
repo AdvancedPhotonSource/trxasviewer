@@ -4,13 +4,21 @@ import sys
 import numpy as np
 import pyqtgraph as pg
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import QDir, QSortFilterProxyModel
+from PySide6.QtCore import (QDir, QSortFilterProxyModel,
+                            Signal, Slot, QObject, QThread)
 
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
 
 from .trxas_dataset import TrXASDatasetManager, is_sample_data
 from .utilities import get_valid_file_index
+import logging
+
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s.%(msecs)03d %(name)-12s %(levelname)s %(message)s',
+                    datefmt='%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 
 pg.setConfigOption("background", "w")
@@ -46,11 +54,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.image = None
         self.roi = None
         self.dset_manager = TrXASDatasetManager()
+        self.prefix, self.file_indexes = None, None
 
         self.setup_imageview()
         self.update_colormap()
-        self.plot_dataset()
-
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.homePath())
         # Create filter proxy model
@@ -63,20 +70,31 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.treeView_fs.hideColumn(2)  # hide type
         # self.treeView_fs.hideColumn(3)  # hide Date
         self.treeView_fs.selectionModel().selectionChanged.connect(
-            self.selection_changed
+            self.process_selection
         )
         self.comboBox_cmap.currentIndexChanged.connect(self.update_colormap)
         self.spinBox_roix.valueChanged.connect(self.update_roi)
         self.spinBox_roiy.valueChanged.connect(self.update_roi)
-        self.comboBox_channel_num.currentIndexChanged.connect(self.plot_dataset)
-        self.comboBox_target.currentIndexChanged.connect(self.plot_dataset)
-        self.pushButton_replot.clicked.connect(self.plot_dataset)
+        self.comboBox_channel_num.currentIndexChanged.connect(self.process)
+        self.comboBox_target.currentIndexChanged.connect(self.process)
+        self.pushButton_replot.clicked.connect(self.process)
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
+        
+    def process(self):
+        if self.radioButton_selection_by_mouse.isChecked():
+            self.process_selection(None, None)
+        elif self.radioButton_selection_by_index.isChecked():
+            self.process_range()
+        else:
+            logger.debug("No selection method selected")
 
-    def selection_changed(self, selected, deselected):
+    def process_selection(self, selected, deselected):
+        if not self.radioButton_selection_by_mouse.isChecked():
+            return
+        logger.debug("process_selection")
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
         file_paths = []
         for proxy_index in indexes:
@@ -84,8 +102,20 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             if source_index.isValid():
                 file_paths.append(self.model.filePath(source_index))
         if file_paths:
-            self.dset_manager.update_flist(list(set(file_paths)))
-            self.plot_dataset()
+            self.plot_dataset(file_paths)
+    
+    def process_range(self):
+        if not self.radioButton_selection_by_index.isChecked():
+            return
+        logger.debug("process_range")
+        idx_min = self.spinBox_fileindex_min.value()
+        idx_max = self.spinBox_fileindex_max.value()
+        file_paths = []
+        for idx in range(idx_min, idx_max + 1):
+            if idx in self.file_indexes:
+                file_paths.append(f"{self.prefix}{idx:05d}")
+        if file_paths:
+            self.plot_dataset(file_paths)
 
     def init_ui(self):
         self.pushButton_select_rawfolder.clicked.connect(self.select_rawfolder)
@@ -112,14 +142,15 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_zoomin.hideAxis("bottom")
         self.pg_hdl_zoomin.hideAxis("left")
         self.proxy = pg.SignalProxy(
-            self.view.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved
+            self.view.scene().sigMouseClicked, rateLimit=60, slot=self.mouse_clicked
         )
 
     def update_roi(self, value, position=None):
         # value is a positional placeholder for the signal. It is not used.
         roi_size = (self.spinBox_roix.value(), self.spinBox_roiy.value())
         if self.roi is None:
-            self.roi = pg.RectROI([0, 0], roi_size, pen="k", hoverPen="k")
+            self.roi = pg.RectROI([0, 0], roi_size, pen="k", hoverPen="k", sideScalers=False)
+            self.roi.mouseClickEvent = lambda ev: ev.ignore()
             self.pg_hdl_img2d.addItem(self.roi)
 
         # update size
@@ -131,19 +162,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 (position[0] - roi_size[0] / 2, position[1] - roi_size[1] / 2)
             )
 
-    def mouseMoved(self, evt):
-        pos = evt[0]
-        if self.image is None:
+    def mouse_clicked(self, event):
+        if len(event) == 0 or self.image is None:
             return
+
+        pos = event[0].scenePos()
         if self.view.sceneBoundingRect().contains(pos):
             mouse_point = self.view.mapSceneToView(pos)
+            # Update crosshair position
+            self.vLine.setPos(mouse_point.x())
+            self.hLine.setPos(mouse_point.y()) 
             x = int(mouse_point.x())
             y = int(mouse_point.y())
-
-            # Update crosshair position
-            self.vLine.setPos(x)
-            self.hLine.setPos(y)
-
             # Update line cuts if within image bounds
             if 0 <= x < self.image.shape[1] and 0 <= y < self.image.shape[0]:
                 # Get horizontal and vertical cuts
@@ -179,7 +209,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_img2d.setColorMap(cmap)
         self.zoomin_image.setColorMap(cmap)
 
-    def plot_dataset(self):
+    def plot_dataset(self, flist=None):
+        if flist and len(flist) > 0:
+            self.dset_manager.update_flist(list(set(flist)))
+
         kwargs = {
             "channel": int(self.comboBox_channel_num.currentText()),
             "target": self.comboBox_target.currentText(),
@@ -231,9 +264,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            indexes = get_valid_file_index(folder_path)
-            self.spinBox_fileindex_min.setValue(min(indexes))
-            self.spinBox_fileindex_max.setValue(max(indexes))
+            self.prefix, self.file_indexes = get_valid_file_index(folder_path)
+
+            self.spinBox_fileindex_min.setValue(min(self.file_indexes))
+            self.spinBox_fileindex_max.setValue(max(self.file_indexes))
 
             fs_root_index = self.model.index(folder_path)
             proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
