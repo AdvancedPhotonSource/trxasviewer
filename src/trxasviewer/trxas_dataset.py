@@ -2,12 +2,14 @@ import re
 import os
 import time
 from functools import lru_cache
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
 P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
+CACHE_PATH = '.cache'
 
 
 def is_sample_data(fname):
@@ -171,7 +173,6 @@ class TrXASDatasetManager:
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
-        print(kwargs)
         self.analysis_kwargs = kwargs
         data = []
         shapes = []
@@ -206,8 +207,35 @@ class TrXASDatasetManager:
 
 
 class TrXASDataset:
-    def __init__(self, fname, ignore_incomplete=True):
-        self.fname = fname
+    def __init__(self, fname, ignore_incomplete=True, load_cache=True):
+        self.fname = Path(fname)
+        self.cache_name = self.fname.parent / CACHE_PATH / f"{self.fname.stem}.npz"
+
+        if load_cache and self.cache_name.exists():
+            self.init_from_cache(self.cache_name)
+        else:
+            self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
+            if not self.cache_name.exists():
+                self.save_to_cache()
+
+        self.xas_data_subgs = None
+        self.xas_data = None
+
+    def init_from_cache(self, fname): 
+        data = np.load(fname, allow_pickle=True)
+        attributes = ["energy", "num_energys", "labels", "meta_data", 
+                      "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
+        for attr in attributes:
+            setattr(self, attr, data[attr])
+
+    def save_to_cache(self):
+        self.cache_name.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(self.cache_name, **{attr: getattr(self, attr) for attr in [
+            "energy", "num_energys", "labels", "meta_data", 
+            "dset_type", "shape", "delta_t_ns", "xas_data_norm"
+        ]})
+    
+    def init_from_file(self, fname, ignore_incomplete=True):
         with open(fname, "r") as f:
             for line in f:
                 if line.startswith("#L "):  # Header line
@@ -234,7 +262,6 @@ class TrXASDataset:
         self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
         self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
-        self.xas_data_subgs = None
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
