@@ -1,6 +1,6 @@
 import os
 import sys
-
+import time
 import numpy as np
 import pyqtgraph as pg
 from .generated_ui import Ui_MainWindow
@@ -16,7 +16,7 @@ import logging
 
 
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s.%(msecs)03d %(name)-12s %(levelname)s %(message)s',
+                    format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 
@@ -66,10 +66,14 @@ class AverageWorker(QObject):
 
     @Slot()
     def run(self):
+        t0 = time.perf_counter()
         self.dset_manager.update_flist(self.flist)
         self.results = self.dset_manager.get_energy_vs_time(
             progress=self.progress, **self.kwargs)
         self.finished.emit()
+        t1 = time.perf_counter()
+        logger.info('AverageWorker.run took %.3f seconds on %d files', t1 - t0,
+                    len(self.flist))
     
     def get_results(self):
         # data, energy, delta_t_ns
