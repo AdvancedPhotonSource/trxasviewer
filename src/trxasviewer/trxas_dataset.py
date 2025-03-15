@@ -310,7 +310,8 @@ class TrXASDataset:
             :, np.newaxis, np.newaxis, :
         ]  # normalize other channels
         norm_data = xas_data.reshape(self.num_energys, self.shape[0], -1)
-        return np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
+        norm_data = np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
+        return norm_data.astype(np.float32)
 
     def plot(self, channel=0, orbital=0, bunch=0):
         num_channels = self.shape[0]
