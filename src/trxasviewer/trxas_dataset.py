@@ -169,32 +169,39 @@ class TrXASDatasetManager:
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
-        data = []
+        data_list = []
         shapes = []
+        # Load datasets
         for fname in self.flist:
             dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
             if dset is None:
                 continue
             t_data, _, _ = dset.get_energy_vs_time(**kwargs)
-            data.append(t_data)
+            data_list.append(t_data)
             shapes.append(t_data.shape)
             if progress is not None:
-                progress.emit(int(100 * len(data) / len(self.flist)))
+                progress.emit(int(100 * len(data_list) / len(self.flist)))
 
-        if len(data) == 0:
+        if len(data_list) == 0:
             return None, None, None
-
         shapes = np.array(shapes)
-        shape_full = np.max(shapes, axis=0)
-        data_full = np.full((len(self.flist), *shape_full), np.nan)
+        # Determine maximum valid shape
+        max_shape = np.max(shapes, axis=0)  # Get the largest shape
+        max_time_steps = max(shapes[:, 0])  # Get the maximum shape along axis 0
 
-        for i, d in enumerate(data):
-            data_full[i, : d.shape[0], : d.shape[1]] = d
+        # Create a NaN-filled array with the max shape
+        data_full = np.full((len(data_list), max_time_steps, max_shape[1]), np.nan)
+
+        # Fill the array with valid data
+        for i, d in enumerate(data_list):
+            valid_rows, valid_cols = d.shape
+            data_full[i, :valid_rows, :valid_cols] = d  # Only fill valid regions
+
+        # Compute the average, ignoring NaNs
         data_avg = np.nanmean(data_full, axis=0)
-
-        good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
+        good_idx = np.argmax(shapes[:, 0])  # Select dataset with max time steps
         good_dset = create_trxas_dataset(self.flist[good_idx])
-        _, energy_axis, t_axis  = good_dset.get_energy_vs_time(**kwargs)
+        _, energy_axis, t_axis = good_dset.get_energy_vs_time(**kwargs)
         return data_avg, energy_axis, t_axis
 
 
