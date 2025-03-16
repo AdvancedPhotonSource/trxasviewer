@@ -154,8 +154,6 @@ class TrXASDatasetManager:
         self.flist = flist
 
     def save_results(self, fname, **kwargs):
-        if self.analysis_kwargs is None:
-            return
         diff, energy, t_axis = self.get_energy_vs_time(progress=None, **kwargs)
         results = {
             "flist": self.flist,
@@ -171,7 +169,6 @@ class TrXASDatasetManager:
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
-        self.analysis_kwargs = kwargs
         data = []
         shapes = []
         for fname in self.flist:
@@ -214,14 +211,30 @@ def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
         return None
 
 
+@lru_cache(maxsize=512)
+def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
+    if not fname.exists() or not is_sample_data(fname):
+        logger.error(f"check dataset file: {fname}")
+        return None
+    try:
+        cache_name, cache_exists = TrXASDataset.check_cache(fname)
+        if not cache_exists:
+            TrXASDataset(fname, ignore_incomplete=ignore_incomplete,
+                         load_cache=load_cache)
+            return cache_name
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        return None
+
+
 class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
-        self.cache_name = self.fname.parent / CACHE_PATH / f"{self.fname.stem}.npz"
+        self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = ["energy", "num_energys", "labels", "meta_data", 
                       "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
 
-        if load_cache and self.cache_name.exists():
+        if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
         else:
             self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
@@ -229,11 +242,12 @@ class TrXASDataset:
                 self.save_to_cache()
         self.xas_data = None
     
-    @classmethod 
-    def get_cache_fname(fname):
+    @staticmethod 
+    def check_cache(fname):
         fname = Path(fname)
-        cache_fname = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
-        return cache_fname
+        cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
+        flag_exist = cache_name.exists()
+        return cache_name, flag_exist
 
     def init_from_cache(self, fname): 
         data = np.load(fname, allow_pickle=True)
