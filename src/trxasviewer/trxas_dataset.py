@@ -6,6 +6,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
 P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
@@ -145,12 +148,7 @@ def fix_incomplete_dataset(payload_mask, shape, xas_data):
 class TrXASDatasetManager:
     def __init__(self, ignore_incomplete=True):
         self.flist = []
-        self.dsets_cache = {}
         self.ignore_incomplete = ignore_incomplete
-        self.energy_axis = None
-        self.t_axis = None
-        self.diff_data = None
-        self.analysis_kwargs = None
 
     def update_flist(self, flist):
         self.flist = flist
@@ -177,11 +175,10 @@ class TrXASDatasetManager:
         data = []
         shapes = []
         for fname in self.flist:
-            if not is_sample_data(fname):
+            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
+            if dset is None:
                 continue
-            if fname not in self.dsets_cache:
-                self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
-            t_data, _, _ = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
+            t_data, _, _ = dset.get_energy_vs_time(**kwargs)
             data.append(t_data)
             shapes.append(t_data.shape)
             if progress is not None:
@@ -199,17 +196,30 @@ class TrXASDatasetManager:
         data_avg = np.nanmean(data_full, axis=0)
 
         good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
-        good_dset = self.dsets_cache[self.flist[good_idx]]
-
+        good_dset = create_trxas_dataset(self.flist[good_idx])
         _, energy_axis, t_axis  = good_dset.get_energy_vs_time(**kwargs)
-
         return data_avg, energy_axis, t_axis
+
+
+@lru_cache(maxsize=512)
+def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
+    fname = Path(fname)
+    if not fname.exists() or not is_sample_data(fname):
+        logger.error(f"check dataset file: {fname}")
+        return None
+    try:
+        return TrXASDataset(fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache)
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        return None
 
 
 class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
         self.cache_name = self.fname.parent / CACHE_PATH / f"{self.fname.stem}.npz"
+        self.dset_attributes = ["energy", "num_energys", "labels", "meta_data", 
+                      "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
 
         if load_cache and self.cache_name.exists():
             self.init_from_cache(self.cache_name)
@@ -217,23 +227,25 @@ class TrXASDataset:
             self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
             if not self.cache_name.exists():
                 self.save_to_cache()
-
-        self.xas_data_subgs = None
         self.xas_data = None
+    
+    @classmethod 
+    def get_cache_fname(fname):
+        fname = Path(fname)
+        cache_fname = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
+        return cache_fname
 
     def init_from_cache(self, fname): 
         data = np.load(fname, allow_pickle=True)
-        attributes = ["energy", "num_energys", "labels", "meta_data", 
-                      "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
-        for attr in attributes:
+        for attr in self.dset_attributes:
             setattr(self, attr, data[attr])
 
     def save_to_cache(self):
         self.cache_name.parent.mkdir(parents=True, exist_ok=True)
-        np.savez(self.cache_name, **{attr: getattr(self, attr) for attr in [
-            "energy", "num_energys", "labels", "meta_data", 
-            "dset_type", "shape", "delta_t_ns", "xas_data_norm"
-        ]})
+        temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
+        np.savez(temp_cache_name, **{attr: getattr(self, attr) for attr in 
+                                     self.dset_attributes})
+        temp_cache_name.replace(self.cache_name) 
     
     def init_from_file(self, fname, ignore_incomplete=True):
         with open(fname, "r") as f:
@@ -271,17 +283,7 @@ class TrXASDataset:
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns 
             return self.xas_data_norm, self.energy, t_axis 
         elif target == "normalized-GS":
-            if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get(
-                "norm_kwargs"
-            ):
-                diff, energy, t_axis = self.process_energy(**norm_kwargs)
-                self.xas_data_subgs = {
-                    "norm_kwargs": norm_kwargs,
-                    "energy": energy,
-                    "diff_data": diff,
-                    "t_axis": t_axis}
-            values = [self.xas_data_subgs[label] for label in ["diff_data", "energy", "t_axis"]]
-            return values
+            return self.process_energy(**norm_kwargs)
         else:
             raise ValueError("Unknown target")
 
