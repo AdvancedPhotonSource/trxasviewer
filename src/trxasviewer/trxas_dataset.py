@@ -7,6 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
+import scienceplots
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,12 @@ class TrXASDatasetManager:
         self.flist = flist
 
     def save_results(self, fname, **kwargs):
+        fname = Path(fname).with_suffix("")
+        base_name = fname.name
+        fname_origin = fname.with_name(f"{base_name}_origin.txt")
+        fname_numpy = fname.with_name(f"{base_name}_numpy.npz")
+        fname_plot = fname.with_name(f"{base_name}_plot.pdf")
+
         diff, energy, t_axis = self.get_energy_vs_time(progress=None, **kwargs)
         results = {
             "flist": self.flist,
@@ -163,8 +170,10 @@ class TrXASDatasetManager:
             "energy_axis": energy,
             "t_axis": t_axis,
         }
-        # np.savez(fname, **results, fmt="8e")
-        np.savez_compressed(fname, **results)
+        np.savez_compressed(fname_numpy, **results)
+        TrXASDataset.plot_and_save(fname_plot, diff, energy, t_axis)
+        TrXASDataset.save_as_origin_format(fname_origin, diff, energy, t_axis)
+        logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -260,7 +269,7 @@ class TrXASDataset:
         cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
-
+    
     def init_from_cache(self, fname): 
         data = np.load(fname, allow_pickle=True)
         for attr in self.dset_attributes:
@@ -341,17 +350,37 @@ class TrXASDataset:
         norm_data = np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
         return norm_data.astype(np.float32)
 
-    def plot(self, channel=0, orbital=0, bunch=0):
-        num_channels = self.shape[0]
-        fig, ax = plt.subplots(1, num_channels, figsize=(4 * num_channels, 3))
-        extent = (self.energys[0], self.energys[-1], 0, np.prod(self.shape[1:]))
+    @staticmethod
+    def plot_and_save(save_name, diff, energy_axis, t_axis, title=None):
+        plt.style.use('science')
+        t_axis /= 1000  # convert to microseconds
+        extent = (energy_axis[0], energy_axis[-1], t_axis[0], t_axis[-1])
+        data = np.flipud(diff.T)
+        fig_width = 4.8
+        fig_height = fig_width / 1.618033988749
+        vmin, vmax = np.percentile(data, [0.5, 99.5])
+        vmin = min(vmin, -vmax)
+        vmax = -1 * vmin 
 
-        for i in range(num_channels):
-            ax[i].imshow(self.xas_data[:, i].T, aspect="auto", extent=extent)
-            ax[i].set_title(f"Channel {i}")
-            ax[i].set_xlabel("Energy (keV)")
-            ax[i].set_ylabel("XAS")
-        plt.show()
+        fig, ax = plt.subplots(1, 1, figsize=(fig_width, fig_height))
+        im = ax.imshow(data, aspect="auto", extent=extent, cmap='bwr',
+                       vmin=vmin, vmax=vmax)
+        # ax.set_aspect(1/aspect)
+        ax.set_xlabel("Energy (keV)")
+        ax.set_ylabel("Time ($\\mu$s)")
+        ax.set_title(title)
+        plt.tight_layout()
+        plt.colorbar(im, ax=ax)
+        plt.savefig(save_name, dpi=600)
+        plt.close(fig)
+    
+    @staticmethod
+    def save_as_origin_format(save_name, diff, energy_axis, t_axis, title=None):
+        shape = diff.shape
+        data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
+        data_full[0, 1:] = t_axis
+        data_full[1:, 0] = energy_axis
+        np.savetxt(save_name, data_full, fmt="%.8e")
 
     def process_energy(
         self,
