@@ -37,6 +37,7 @@ dependencies = [
     "pyqtgraph",
     "PySide6",
     "matplotlib",
+    "scienceplots"
 ]
 
 [project.scripts]
