@@ -18,7 +18,7 @@ CACHE_PATH = '.cache'
 
 def is_sample_data(fname):
     """Check if a file contains a line starting with '#L ' followed by 'Energy '."""
-    if not os.path.isfile(fname):
+    if not Path(fname).is_file():
         return False
 
     try:
