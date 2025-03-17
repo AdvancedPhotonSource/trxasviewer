@@ -2,12 +2,18 @@ import re
 import os
 import time
 from functools import lru_cache
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
+import scienceplots
+
+logger = logging.getLogger(__name__)
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
 P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
+CACHE_PATH = '.cache'
 
 
 def is_sample_data(fname):
@@ -143,19 +149,18 @@ def fix_incomplete_dataset(payload_mask, shape, xas_data):
 class TrXASDatasetManager:
     def __init__(self, ignore_incomplete=True):
         self.flist = []
-        self.dsets_cache = {}
         self.ignore_incomplete = ignore_incomplete
-        self.energy_axis = None
-        self.t_axis = None
-        self.diff_data = None
-        self.analysis_kwargs = None
 
     def update_flist(self, flist):
         self.flist = flist
 
     def save_results(self, fname, **kwargs):
-        if self.analysis_kwargs is None:
-            return
+        fname = Path(fname).with_suffix("")
+        base_name = fname.name
+        fname_origin = fname.with_name(f"{base_name}_origin.txt")
+        fname_numpy = fname.with_name(f"{base_name}_numpy.npz")
+        fname_plot = fname.with_name(f"{base_name}_plot.pdf")
+
         diff, energy, t_axis = self.get_energy_vs_time(progress=None, **kwargs)
         results = {
             "flist": self.flist,
@@ -165,49 +170,119 @@ class TrXASDatasetManager:
             "energy_axis": energy,
             "t_axis": t_axis,
         }
-        # np.savez(fname, **results, fmt="8e")
-        np.savez_compressed(fname, **results)
+        np.savez_compressed(fname_numpy, **results)
+        TrXASDataset.plot_and_save(fname_plot, diff, energy, t_axis)
+        TrXASDataset.save_as_origin_format(fname_origin, diff, energy, t_axis)
+        logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
-        print(kwargs)
-        self.analysis_kwargs = kwargs
-        data = []
+        data_list = []
         shapes = []
+        # Load datasets
         for fname in self.flist:
-            if not is_sample_data(fname):
+            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
+            if dset is None:
                 continue
-            if fname not in self.dsets_cache:
-                self.dsets_cache[fname] = TrXASDataset(fname, self.ignore_incomplete)
-            t_data, _, _ = self.dsets_cache[fname].get_energy_vs_time(**kwargs)
-            data.append(t_data)
+            t_data, _, _ = dset.get_energy_vs_time(**kwargs)
+            data_list.append(t_data)
             shapes.append(t_data.shape)
             if progress is not None:
-                progress.emit(int(100 * len(data) / len(self.flist)))
+                progress.emit(int(100 * len(data_list) / len(self.flist)))
 
-        if len(data) == 0:
+        if len(data_list) == 0:
             return None, None, None
-
         shapes = np.array(shapes)
-        shape_full = np.max(shapes, axis=0)
-        data_full = np.full((len(self.flist), *shape_full), np.nan)
+        # Determine maximum valid shape
+        max_shape = np.max(shapes, axis=0)  # Get the largest shape
+        max_time_steps = max(shapes[:, 0])  # Get the maximum shape along axis 0
 
-        for i, d in enumerate(data):
-            data_full[i, : d.shape[0], : d.shape[1]] = d
+        # Create a NaN-filled array with the max shape
+        data_full = np.full((len(data_list), max_time_steps, max_shape[1]), np.nan)
+
+        # Fill the array with valid data
+        for i, d in enumerate(data_list):
+            valid_rows, valid_cols = d.shape
+            data_full[i, :valid_rows, :valid_cols] = d  # Only fill valid regions
+
+        # Compute the average, ignoring NaNs
         data_avg = np.nanmean(data_full, axis=0)
-
-        good_idx = np.argmin(np.abs(np.prod(shapes, axis=1) - np.prod(shape_full)))
-        good_dset = self.dsets_cache[self.flist[good_idx]]
-
-        _, energy_axis, t_axis  = good_dset.get_energy_vs_time(**kwargs)
-
+        good_idx = np.argmax(shapes[:, 0])  # Select dataset with max time steps
+        good_dset = create_trxas_dataset(self.flist[good_idx])
+        _, energy_axis, t_axis = good_dset.get_energy_vs_time(**kwargs)
         return data_avg, energy_axis, t_axis
 
 
+@lru_cache(maxsize=512)
+def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
+    fname = Path(fname)
+    if not fname.exists() or not is_sample_data(fname):
+        logger.error(f"check dataset file: {fname}")
+        return None
+    try:
+        return TrXASDataset(fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache)
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        return None
+
+
+def create_trxas_cache_from_flist(flist, **kwargs):
+    for fname in flist:
+        create_trxas_cache(fname=fname, **kwargs)
+    return
+
+
+def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
+    if not fname.exists() or not is_sample_data(fname):
+        logger.error(f"check dataset file: {fname}")
+        return None
+    try:
+        cache_name, cache_exists = TrXASDataset.check_cache(fname)
+        if not cache_exists:
+            TrXASDataset(fname, ignore_incomplete=ignore_incomplete,
+                         load_cache=load_cache)
+            return cache_name
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        return None
+
+
 class TrXASDataset:
-    def __init__(self, fname, ignore_incomplete=True):
-        self.fname = fname
+    def __init__(self, fname, ignore_incomplete=True, load_cache=True):
+        self.fname = Path(fname)
+        self.cache_name, cache_exists = self.check_cache(fname)
+        self.dset_attributes = ["energy", "num_energys", "labels", "meta_data", 
+                      "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
+
+        if load_cache and cache_exists:
+            self.init_from_cache(self.cache_name)
+        else:
+            self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
+            if not self.cache_name.exists():
+                self.save_to_cache()
+        self.xas_data = None
+    
+    @staticmethod 
+    def check_cache(fname):
+        fname = Path(fname)
+        cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
+        flag_exist = cache_name.exists()
+        return cache_name, flag_exist
+    
+    def init_from_cache(self, fname): 
+        data = np.load(fname, allow_pickle=True)
+        for attr in self.dset_attributes:
+            setattr(self, attr, data[attr])
+
+    def save_to_cache(self):
+        self.cache_name.parent.mkdir(parents=True, exist_ok=True)
+        temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
+        np.savez(temp_cache_name, **{attr: getattr(self, attr) for attr in 
+                                     self.dset_attributes})
+        temp_cache_name.replace(self.cache_name) 
+    
+    def init_from_file(self, fname, ignore_incomplete=True):
         with open(fname, "r") as f:
             for line in f:
                 if line.startswith("#L "):  # Header line
@@ -234,7 +309,6 @@ class TrXASDataset:
         self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
         self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
-        self.xas_data_subgs = None
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
@@ -244,17 +318,7 @@ class TrXASDataset:
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns 
             return self.xas_data_norm, self.energy, t_axis 
         elif target == "normalized-GS":
-            if self.xas_data_subgs is None or norm_kwargs != self.xas_data_subgs.get(
-                "norm_kwargs"
-            ):
-                diff, energy, t_axis = self.process_energy(**norm_kwargs)
-                self.xas_data_subgs = {
-                    "norm_kwargs": norm_kwargs,
-                    "energy": energy,
-                    "diff_data": diff,
-                    "t_axis": t_axis}
-            values = [self.xas_data_subgs[label] for label in ["diff_data", "energy", "t_axis"]]
-            return values
+            return self.process_energy(**norm_kwargs)
         else:
             raise ValueError("Unknown target")
 
@@ -283,19 +347,40 @@ class TrXASDataset:
             :, np.newaxis, np.newaxis, :
         ]  # normalize other channels
         norm_data = xas_data.reshape(self.num_energys, self.shape[0], -1)
-        return np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
+        norm_data = np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
+        return norm_data.astype(np.float32)
 
-    def plot(self, channel=0, orbital=0, bunch=0):
-        num_channels = self.shape[0]
-        fig, ax = plt.subplots(1, num_channels, figsize=(4 * num_channels, 3))
-        extent = (self.energys[0], self.energys[-1], 0, np.prod(self.shape[1:]))
+    @staticmethod
+    def plot_and_save(save_name, diff, energy_axis, t_axis, title=None):
+        plt.style.use('science')
+        t_axis /= 1000  # convert to microseconds
+        extent = (energy_axis[0], energy_axis[-1], t_axis[0], t_axis[-1])
+        data = np.flipud(diff.T)
+        fig_width = 4.8
+        fig_height = fig_width / 1.618033988749
+        vmin, vmax = np.percentile(data, [0.5, 99.5])
+        vmin = min(vmin, -vmax)
+        vmax = -1 * vmin 
 
-        for i in range(num_channels):
-            ax[i].imshow(self.xas_data[:, i].T, aspect="auto", extent=extent)
-            ax[i].set_title(f"Channel {i}")
-            ax[i].set_xlabel("Energy (keV)")
-            ax[i].set_ylabel("XAS")
-        plt.show()
+        fig, ax = plt.subplots(1, 1, figsize=(fig_width, fig_height))
+        im = ax.imshow(data, aspect="auto", extent=extent, cmap='bwr',
+                       vmin=vmin, vmax=vmax)
+        # ax.set_aspect(1/aspect)
+        ax.set_xlabel("Energy (keV)")
+        ax.set_ylabel("Time ($\\mu$s)")
+        ax.set_title(title)
+        plt.tight_layout()
+        plt.colorbar(im, ax=ax)
+        plt.savefig(save_name, dpi=600)
+        plt.close(fig)
+    
+    @staticmethod
+    def save_as_origin_format(save_name, diff, energy_axis, t_axis, title=None):
+        shape = diff.shape
+        data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
+        data_full[0, 1:] = t_axis
+        data_full[1:, 0] = energy_axis
+        np.savetxt(save_name, data_full, fmt="%.8e")
 
     def process_energy(
         self,

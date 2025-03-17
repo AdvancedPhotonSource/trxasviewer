@@ -16,6 +16,8 @@ def get_valid_file_index(folder):
                     prefix.append(entry.name[:-5])
         file_index.sort()
         prefix = list(set(prefix))
+        if len(prefix) == 0:
+            return 'none', [0, 1]
         if len(prefix) > 1:
             raise ValueError("Multiple prefixes found in folder")
         return os.path.join(folder, prefix[0]), file_index
