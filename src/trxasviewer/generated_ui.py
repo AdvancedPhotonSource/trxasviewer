@@ -72,6 +72,8 @@ class Ui_MainWindow(object):
         sizePolicy1.setHeightForWidth(self.treeView_fs.sizePolicy().hasHeightForWidth())
         self.treeView_fs.setSizePolicy(sizePolicy1)
         self.treeView_fs.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.treeView_fs.header().setCascadingSectionResizes(False)
+        self.treeView_fs.header().setMinimumSectionSize(30)
 
         self.verticalLayout.addWidget(self.treeView_fs)
 
@@ -317,6 +319,12 @@ class Ui_MainWindow(object):
         self.comboBox_cmap.addItem("")
         self.comboBox_cmap.addItem("")
         self.comboBox_cmap.setObjectName(u"comboBox_cmap")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.comboBox_cmap.sizePolicy().hasHeightForWidth())
+        self.comboBox_cmap.setSizePolicy(sizePolicy4)
+        self.comboBox_cmap.setMaximumSize(QSize(80, 16777215))
 
         self.gridLayout_6.addWidget(self.comboBox_cmap, 0, 8, 1, 1)
 
@@ -325,16 +333,17 @@ class Ui_MainWindow(object):
         self.comboBox_target.addItem("")
         self.comboBox_target.addItem("")
         self.comboBox_target.setObjectName(u"comboBox_target")
+        self.comboBox_target.setMinimumSize(QSize(120, 0))
 
         self.gridLayout_6.addWidget(self.comboBox_target, 0, 2, 1, 1)
 
         self.label_3 = QLabel(self.groupBox)
         self.label_3.setObjectName(u"label_3")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
-        self.label_3.setSizePolicy(sizePolicy4)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        self.label_3.setSizePolicy(sizePolicy5)
 
         self.gridLayout_6.addWidget(self.label_3, 0, 7, 1, 1)
 
@@ -348,8 +357,8 @@ class Ui_MainWindow(object):
 
         self.label_10 = QLabel(self.groupBox)
         self.label_10.setObjectName(u"label_10")
-        sizePolicy4.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
-        self.label_10.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
+        self.label_10.setSizePolicy(sizePolicy5)
 
         self.gridLayout_6.addWidget(self.label_10, 0, 1, 1, 1)
 
@@ -369,15 +378,15 @@ class Ui_MainWindow(object):
 
         self.label = QLabel(self.groupBox)
         self.label.setObjectName(u"label")
-        sizePolicy4.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy5)
 
         self.gridLayout_6.addWidget(self.label, 0, 9, 1, 1)
 
         self.label_9 = QLabel(self.groupBox)
         self.label_9.setObjectName(u"label_9")
-        sizePolicy4.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
-        self.label_9.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        self.label_9.setSizePolicy(sizePolicy5)
 
         self.gridLayout_6.addWidget(self.label_9, 0, 3, 1, 1)
 
@@ -387,6 +396,8 @@ class Ui_MainWindow(object):
         self.comboBox_channel_num.addItem("")
         self.comboBox_channel_num.setObjectName(u"comboBox_channel_num")
         self.comboBox_channel_num.setEnabled(False)
+        sizePolicy4.setHeightForWidth(self.comboBox_channel_num.sizePolicy().hasHeightForWidth())
+        self.comboBox_channel_num.setSizePolicy(sizePolicy4)
 
         self.gridLayout_6.addWidget(self.comboBox_channel_num, 0, 4, 1, 3)
 
@@ -395,20 +406,20 @@ class Ui_MainWindow(object):
 
         self.groupBox_3 = QGroupBox(self.layoutWidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy5.setHorizontalStretch(1)
-        sizePolicy5.setVerticalStretch(2)
-        sizePolicy5.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
-        self.groupBox_3.setSizePolicy(sizePolicy5)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy6.setHorizontalStretch(1)
+        sizePolicy6.setVerticalStretch(2)
+        sizePolicy6.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
+        self.groupBox_3.setSizePolicy(sizePolicy6)
         self.gridLayout_8 = QGridLayout(self.groupBox_3)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.pg_hdl_vline = PlotWidget(self.groupBox_3)
         self.pg_hdl_vline.setObjectName(u"pg_hdl_vline")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy6.setHorizontalStretch(1)
-        sizePolicy6.setVerticalStretch(2)
-        sizePolicy6.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_vline.setSizePolicy(sizePolicy6)
+        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy7.setHorizontalStretch(1)
+        sizePolicy7.setVerticalStretch(2)
+        sizePolicy7.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_vline.setSizePolicy(sizePolicy7)
 
         self.gridLayout_8.addWidget(self.pg_hdl_vline, 0, 0, 1, 1)
 
@@ -417,20 +428,20 @@ class Ui_MainWindow(object):
 
         self.groupBox_2 = QGroupBox(self.layoutWidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy7.setHorizontalStretch(2)
-        sizePolicy7.setVerticalStretch(1)
-        sizePolicy7.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
-        self.groupBox_2.setSizePolicy(sizePolicy7)
+        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy8.setHorizontalStretch(2)
+        sizePolicy8.setVerticalStretch(1)
+        sizePolicy8.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
+        self.groupBox_2.setSizePolicy(sizePolicy8)
         self.gridLayout_7 = QGridLayout(self.groupBox_2)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.pg_hdl_hline = PlotWidget(self.groupBox_2)
         self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
-        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy8.setHorizontalStretch(2)
-        sizePolicy8.setVerticalStretch(1)
-        sizePolicy8.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_hline.setSizePolicy(sizePolicy8)
+        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy9.setHorizontalStretch(2)
+        sizePolicy9.setVerticalStretch(1)
+        sizePolicy9.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_hline.setSizePolicy(sizePolicy9)
 
         self.gridLayout_7.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
 
@@ -439,11 +450,11 @@ class Ui_MainWindow(object):
 
         self.groupBox_4 = QGroupBox(self.layoutWidget)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy9.setHorizontalStretch(1)
-        sizePolicy9.setVerticalStretch(1)
-        sizePolicy9.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy9)
+        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy10.setHorizontalStretch(1)
+        sizePolicy10.setVerticalStretch(1)
+        sizePolicy10.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy10)
         self.gridLayout_10 = QGridLayout(self.groupBox_4)
         self.gridLayout_10.setObjectName(u"gridLayout_10")
         self.pg_hdl_zoomin = PlotWidget(self.groupBox_4)

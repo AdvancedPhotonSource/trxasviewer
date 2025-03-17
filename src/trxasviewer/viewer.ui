@@ -63,6 +63,12 @@
              <property name="selectionMode">
               <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
              </property>
+             <attribute name="headerCascadingSectionResizes">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="headerMinimumSectionSize">
+              <number>30</number>
+             </attribute>
             </widget>
            </item>
            <item>
@@ -464,6 +470,18 @@
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="0" column="8">
             <widget class="QComboBox" name="comboBox_cmap">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <item>
               <property name="text">
                <string>jet</string>
@@ -513,6 +531,12 @@
            </item>
            <item row="0" column="2">
             <widget class="QComboBox" name="comboBox_target">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>0</height>
+              </size>
+             </property>
              <item>
               <property name="text">
                <string>normalized</string>
@@ -619,6 +643,12 @@
             <widget class="QComboBox" name="comboBox_channel_num">
              <property name="enabled">
               <bool>false</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
              <item>
               <property name="text">
