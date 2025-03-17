@@ -40,7 +40,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
         file_path = model.filePath(index)
 
         # Allow directories
-        if os.path.isdir(file_path):
+        if Path(file_path).is_dir():
             return True 
 
         # Filter files using is_sample_data function
@@ -124,7 +124,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.t_axis = None
         self.last_position = None
         self.roi = None
-        self.prefix, self.file_indexes = None, None
+        self.prefix_db = {}
 
         self.setup_imageview()
         self.update_colormap()
@@ -135,6 +135,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.proxy_model.setSourceModel(self.model)
         # self.model.setNameFilterDisables(False) #enable the filters.
         self.treeView_fs.setModel(self.proxy_model)
+        self.treeView_fs.setColumnWidth(0, 200)
 
         # self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
         self.treeView_fs.hideColumn(2)  # hide type
@@ -149,6 +150,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.comboBox_target.currentIndexChanged.connect(self.process)
         self.pushButton_replot.clicked.connect(self.process)
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
+        self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
@@ -190,12 +192,19 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if not self.radioButton_selection_by_index.isChecked():
             return
         logger.debug("process_range")
+
         idx_min = self.spinBox_fileindex_min.value()
         idx_max = self.spinBox_fileindex_max.value()
+        raw_folder = self.lineEdit_rawfolder.text()
+
+        prefix = self.comboBox_fileindex_prefix.currentText()
+        file_indexes = self.prefix_db[prefix]
+
         file_paths = []
         for idx in range(idx_min, idx_max + 1):
-            if idx in self.file_indexes:
-                file_paths.append(f"{self.prefix}{idx:05d}")
+            if idx in file_indexes:
+                full_path = Path(raw_folder) / f"{prefix}{idx:05d}"
+                file_paths.append(full_path)
         if file_paths:
             self.process_flist(file_paths)
 
@@ -377,19 +386,28 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.progressBar.setValue(value)
 
     def select_rawfolder(self, placeholder=None, folder_path=None):
-        if not folder_path or not os.path.isdir(folder_path):
+        if not folder_path or not Path(folder_path).is_dir():
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            self.prefix, self.file_indexes = get_valid_file_index(folder_path)
+            self.prefix_db = get_valid_file_index(folder_path)
+            if len(self.prefix_db) == 0:
+                return
 
-            self.spinBox_fileindex_min.setValue(min(self.file_indexes))
-            self.spinBox_fileindex_max.setValue(max(self.file_indexes))
+            self.comboBox_fileindex_prefix.clear()
+            self.comboBox_fileindex_prefix.addItems(list(self.prefix_db.keys()))
+            self.comboBox_fileindex_prefix.setCurrentIndex(0)
 
             fs_root_index = self.model.index(folder_path)
             proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
             self.treeView_fs.setRootIndex(proxy_root_index)
             self.build_cache()
+
+    def update_fileindex(self):
+        current_prefix = self.comboBox_fileindex_prefix.currentText()
+        file_indexes = self.prefix_db[current_prefix]
+        self.spinBox_fileindex_min.setValue(min(file_indexes))
+        self.spinBox_fileindex_max.setValue(max(file_indexes))
     
     def build_cache(self, num_workers=None):
         if num_workers is None:
