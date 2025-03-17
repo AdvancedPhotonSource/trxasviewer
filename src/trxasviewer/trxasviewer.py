@@ -3,6 +3,8 @@ import sys
 import time
 import numpy as np
 import pyqtgraph as pg
+from pathlib import Path
+from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
 from PySide6.QtCore import (QDir, QSortFilterProxyModel,
                             Signal, Slot, QObject, QThread)
@@ -10,10 +12,9 @@ from PySide6.QtCore import (QDir, QSortFilterProxyModel,
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
 
-from .trxas_dataset import TrXASDatasetManager, is_sample_data
+from .trxas_dataset import TrXASDatasetManager, is_sample_data, create_trxas_cache_from_flist
 from .utilities import get_valid_file_index
 import logging
-
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s',
@@ -72,8 +73,7 @@ class AverageWorker(QObject):
             progress=self.progress, **self.kwargs)
         self.finished.emit()
         t1 = time.perf_counter()
-        logger.info('AverageWorker.run took %.3f seconds on %d files', t1 - t0,
-                    len(self.flist))
+        logger.info(f'AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files')
     
     def get_results(self):
         # data, energy, delta_t_ns
@@ -81,6 +81,37 @@ class AverageWorker(QObject):
     
     def quit(self):
         self.stop_worker.emit()
+
+
+class CacheWorker(QThread):
+    """Manages multiple processes for cache generation"""
+    # progress = Signal(int)
+    finished = Signal()
+
+    def __init__(self, file_list, number_of_processes=4):
+        super().__init__()
+        self.file_list = file_list
+        self.processes = []
+        self.number_of_processes = number_of_processes
+
+    def run(self):
+        t0 = time.perf_counter()
+        k, m = divmod(len(self.file_list), self.number_of_processes)
+        flist_parts = [self.file_list[i * k + min(i, m): (i + 1) * k + min(i + 1, m)]
+                       for i in range(self.number_of_processes)]
+        logger.info(f"Starting CacheWorker with {self.number_of_processes} processes to prepare {len(self.file_list)} datasets.")
+
+        for part in flist_parts:
+            process = Process(target=create_trxas_cache_from_flist, args=(part,))
+            process.start()
+            self.processes.append(process)
+
+        for process in self.processes:
+            process.join()  # Wait for each process to finish (in background thread)
+
+        self.finished.emit()
+        t1 = time.perf_counter()
+        logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
@@ -129,7 +160,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker.finished.connect(self.plot_results)
         self.progressBar.setValue(0)
         self.avg_worker.moveToThread(self.thread)
-        self.thread.started.connect(lambda: logger.info("Average Thread Started"))
+        self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
         self.thread.start()
         
     def process(self):
@@ -355,6 +386,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             fs_root_index = self.model.index(folder_path)
             proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
             self.treeView_fs.setRootIndex(proxy_root_index)
+            self.build_cache()
+    
+    def build_cache(self, num_workers=None):
+        if num_workers is None:
+            num_workers = max(2, os.cpu_count() // 2)
+        folder_path = self.lineEdit_rawfolder.text()
+        flist = [f for f in Path(folder_path).iterdir() if f.is_file()]
+
+        if len(flist) > 0:
+            num_workers = min(num_workers, len(flist))
+            self.cache_worker = CacheWorker(flist, num_workers)
+            self.cache_worker.start()
 
     def select_savefname(self):
         """

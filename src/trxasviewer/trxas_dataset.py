@@ -218,7 +218,12 @@ def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
         return None
 
 
-@lru_cache(maxsize=512)
+def create_trxas_cache_from_flist(flist, **kwargs):
+    for fname in flist:
+        create_trxas_cache(fname=fname, **kwargs)
+    return
+
+
 def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
     if not fname.exists() or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
