@@ -307,6 +307,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "channel": int(self.comboBox_channel_num.currentText()),
             "target": self.comboBox_target.currentText(),
         }
+        if kwargs["target"] == "raw":    # fix me; disable raw plotting
+            return
+
         if kwargs["target"] in ["normalized-GS"]:
             norm_kwargs = self.get_normalization_subgs_kwargs()
             kwargs["norm_kwargs"] = norm_kwargs
