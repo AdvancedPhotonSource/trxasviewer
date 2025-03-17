@@ -418,7 +418,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         )
 
         norm_kwargs = self.get_normalization_subgs_kwargs()
-        norm_kwargs['aft_avg_bunches'] = 1
+        # norm_kwargs['aft_avg_bunches'] = 1
         kwargs = {
             "target": "normalized-GS",
             "norm_kwargs": norm_kwargs
