@@ -12,8 +12,8 @@ from PySide6.QtCore import (QDir, QSortFilterProxyModel,
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
 
-from .trxas_dataset import TrXASDatasetManager, is_sample_data, create_trxas_cache_from_flist
-from .utilities import get_valid_file_index
+from .trxas_dataset import TrXASDatasetManager, create_trxas_cache_from_flist, build_cache_database
+from .utilities import get_scan_type
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -29,6 +29,13 @@ pg.setConfigOptions(imageAxisOrder="row-major")
 
 
 class DatasetFilterModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.cache_db = {"scan_type": {}}
+    
+    def update_cache_db(self, cache_db):
+        self.cache_db = cache_db
+
     def filterAcceptsRow(self, source_row, source_parent):
         """Override this method to filter out non-dataset files."""
         model = self.sourceModel()
@@ -36,15 +43,14 @@ class DatasetFilterModel(QSortFilterProxyModel):
         
         if not index.isValid():
             return False
-        
-        file_path = model.filePath(index)
-
-        # Allow directories
-        if Path(file_path).is_dir():
-            return True 
-
-        # Filter files using is_sample_data function
-        return is_sample_data(file_path)
+        full_path = model.filePath(index)
+        scan_type = self.cache_db["scan_type"].get(full_path, None)
+        if scan_type is None:
+            scan_type = get_scan_type(full_path)
+            if scan_type in ['exafs', 'laserd']:
+                self.cache_db["scan_type"][full_path] = scan_type
+        # show the directory and parent directory
+        return scan_type != "invalid"
 
 
 class AverageWorker(QObject):
@@ -124,7 +130,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.t_axis = None
         self.last_position = None
         self.roi = None
-        self.prefix_db = {}
+        self.cache_db = {}
 
         self.setup_imageview()
         self.update_colormap()
@@ -182,6 +188,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
         file_paths = []
         for proxy_index in indexes:
+            if proxy_index.column() != 0:  # Ensure we only process the first column
+                continue
             source_index = self.proxy_model.mapToSource(proxy_index)
             if source_index.isValid():
                 file_paths.append(self.model.filePath(source_index))
@@ -198,7 +206,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         raw_folder = self.lineEdit_rawfolder.text()
 
         prefix = self.comboBox_fileindex_prefix.currentText()
-        file_indexes = self.prefix_db[prefix]
+        file_indexes = self.cache_db["prefix_db"]
 
         file_paths = []
         for idx in range(idx_min, idx_max + 1):
@@ -390,12 +398,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            self.prefix_db = get_valid_file_index(folder_path)
-            if len(self.prefix_db) == 0:
-                return
+            self.cache_db = build_cache_database(folder_path)
+            self.proxy_model.update_cache_db(self.cache_db)
+            prefix_db = self.cache_db["prefix_db"]
 
             self.comboBox_fileindex_prefix.clear()
-            self.comboBox_fileindex_prefix.addItems(list(self.prefix_db.keys()))
+            self.comboBox_fileindex_prefix.addItems(list(prefix_db.keys()))
             self.comboBox_fileindex_prefix.setCurrentIndex(0)
 
             fs_root_index = self.model.index(folder_path)
@@ -405,19 +413,20 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def update_fileindex(self):
         current_prefix = self.comboBox_fileindex_prefix.currentText()
-        file_indexes = self.prefix_db[current_prefix]
+        file_indexes = self.cache_db["prefix_db"][current_prefix]["exafs"]
         self.spinBox_fileindex_min.setValue(min(file_indexes))
         self.spinBox_fileindex_max.setValue(max(file_indexes))
     
     def build_cache(self, num_workers=None):
         if num_workers is None:
             num_workers = max(2, os.cpu_count() // 2)
-        folder_path = self.lineEdit_rawfolder.text()
-        flist = [f for f in Path(folder_path).iterdir() if f.is_file()]
 
-        if len(flist) > 0:
-            num_workers = min(num_workers, len(flist))
-            self.cache_worker = CacheWorker(flist, num_workers)
+        file_paths = [k for k, v in self.cache_db["scan_type"].items() 
+                      if v in ("exafs", "laserd")]
+
+        if len(file_paths) > 0:
+            num_workers = min(num_workers, len(file_paths))
+            self.cache_worker = CacheWorker(file_paths, num_workers)
             self.cache_worker.start()
 
     def select_savefname(self):
