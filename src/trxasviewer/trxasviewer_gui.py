@@ -6,7 +6,7 @@ import pyqtgraph as pg
 from pathlib import Path
 from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt,
+from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt, QModelIndex,
                             Signal, Slot, QObject, QThread)
 
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
@@ -51,6 +51,17 @@ class DatasetFilterModel(QSortFilterProxyModel):
                 self.cache_db["scan_type"][full_path] = scan_type
         # show the directory and parent directory
         return scan_type != "invalid"
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        # Check if the requested column is the "Type" column (column 2 in QFileSystemModel)
+        if index.column() == 2 and role == Qt.DisplayRole:
+            source_index = self.mapToSource(index)
+            full_path = self.sourceModel().filePath(source_index)  # Get full path
+            scan_type = self.cache_db["scan_type"].get(full_path, None)
+            return scan_type
+        return super().data(index, role)  # Default behavior
 
 
 class AverageWorker(QObject):
@@ -142,9 +153,6 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         # self.model.setNameFilterDisables(False) #enable the filters.
         self.treeView_fs.setModel(self.proxy_model)
         self.treeView_fs.setColumnWidth(0, 200)
-
-        # self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
-        self.treeView_fs.hideColumn(2)  # hide type
         self.treeView_fs.setSortingEnabled(True)
 
         # self.treeView_fs.hideColumn(3)  # hide Date
@@ -278,7 +286,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.last_position = pos
 
         if self.view.sceneBoundingRect().contains(pos):
-            mouse_point = self.viewomapSceneToView(pos)
+            mouse_point = self.view.mapSceneToView(pos)
             # Update crosshair position
             self.vLine.setPos(mouse_point.x())
             self.hLine.setPos(mouse_point.y()) 
