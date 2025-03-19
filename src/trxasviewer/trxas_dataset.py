@@ -314,8 +314,9 @@ class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
-        self.dset_attributes = ["energy", "num_energys", "labels", "meta_data",
-                                "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
+        self.dset_attributes = ["energy", "num_rows", "labels", "meta_data",
+                                "dset_type", "shape", "delta_t_ns",
+                                "xas_data_norm"]
 
         if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
@@ -354,7 +355,7 @@ class TrXASDataset:
                     break
         data = np.loadtxt(fname, comments="#",
                           dtype=np.float32, delimiter="\t")
-        self.num_energys = data.shape[0]
+        self.num_rows = data.shape[0]
         self.labels = labels
         self.meta_data = data[:, labels_mask]
         self.dset_type = dset_type
@@ -366,7 +367,7 @@ class TrXASDataset:
 
         xas_part = data[:, ~labels_mask]
         # fill the missing data with NaN, create a whole dataset
-        xas_full = np.full((self.num_energys, np.prod(shape)), np.nan)
+        xas_full = np.full((self.num_rows, np.prod(shape)), np.nan)
         xas_full[:, payload_mask] = xas_part
         if ignore_incomplete and np.prod(shape) != np.sum(payload_mask):
             # fix the incomplete dataset and remove all nan items
@@ -375,16 +376,22 @@ class TrXASDataset:
 
         self.shape = shape
         self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
-        self.xas_data = xas_full.reshape(self.num_energys, self.shape[0], -1)
+        self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
+    
+    def get_x_axis(self):
+        if self.dset_type == 'EXAFS':
+            return self.energy
+        elif self.dset_type == 'LASERD':
+            return self.laserd
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns
-            return self.xas_data[:, channel], self.energy, t_axis
+            return self.xas_data[:, channel], self.get_x_axis(), t_axis
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns
-            return self.xas_data_norm, self.energy, t_axis
+            return self.xas_data_norm, self.get_x_axis(), t_axis
         elif target == "normalized-GS":
             return self.process_energy(**norm_kwargs)
         else:
@@ -409,13 +416,13 @@ class TrXASDataset:
         # print('shape', xas_data.shape)       
 
         xas_data = xas_data.reshape(
-            self.num_energys, *self.shape
+            self.num_rows, *self.shape
         )  # (rows, channel, orbital, bunch)
         ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)  # rows x bunch
         xas_data[:, 1:] /= ortial_mean_ch0[
             :, np.newaxis, np.newaxis, :
         ]  # normalize other channels
-        norm_data = xas_data.reshape(self.num_energys, self.shape[0], -1)
+        norm_data = xas_data.reshape(self.num_rows, self.shape[0], -1)
         # average over channels 1 and 2
         norm_data = np.mean(norm_data[:, 1:3], axis=(1,))
         return norm_data.astype(np.float32)
@@ -486,7 +493,7 @@ class TrXASDataset:
             num_bunches * num_orbitals, sync_index, num_bunches
         )
         data = data[:, slice_pre]  # num_energys * -1
-        data = data.reshape(self.num_energys, -1, num_bunches)
+        data = data.reshape(self.num_rows, -1, num_bunches)
 
         preavg_orbit_idx = sync_index // num_bunches
         preavg_slice = slice(
@@ -504,14 +511,14 @@ class TrXASDataset:
 
         # apply binning
         num_elements = slice_pre.stop - slice_pre.start
-        diff = diff.reshape(self.num_energys, -1)
+        diff = diff.reshape(self.num_rows, -1)
         avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
 
         if aft_avg_bunches > 1:
             sync_index, slice_aft = get_multiples(
                 num_elements, sync_index, aft_avg_bunches)
             diff = diff[:, slice_aft].reshape(
-                self.num_energys, -1, aft_avg_bunches)
+                self.num_rows, -1, aft_avg_bunches)
             diff = np.mean(diff, axis=(2,))
 
         t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
@@ -570,25 +577,25 @@ class TrXASDataset:
             raise ValueError("Unknown do_perbunch value %s method")
 
         # print(diff.shape, sync_index)
-        diff = diff.reshape(self.num_energys, -1)
+        diff = diff.reshape(self.num_rows, -1)
         print('delta_t_ns', self.delta_t_ns)
         print(np.min(self.laserd), np.max(self.laserd))
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns  
         t_mat = np.tile(t_mat, (diff.shape[0], 1))
-        for n in range(self.num_energys):
+        for n in range(self.num_rows):
             t_mat[n] -= self.laserd[n]
         roi = t_mat > 0
         t_val = t_mat[roi]
         diff_val = diff[roi]
         pack = np.stack((t_val, diff_val), axis=1)
         pack = pack[pack[:, 0].argsort()]
-        plt.plot(pack[:, 0], pack[:, 1], 'o--')
+        # plt.plot(pack[:, 0], pack[:, 1], 'o--')
         # plt.imshow(diff)
         # plt.colorbar()
-        plt.show()
+        # plt.show()
         # apply binning
         # num_elements = slice_pre.stop - slice_pre.start
-        # diff = diff.reshape(self.num_energys, -1)
+        # diff = diff.reshape(self.num_rows, -1)
         # avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
         # print(self.laserd)
         # plt.plot(self.laserd, 'o--')
@@ -598,12 +605,12 @@ class TrXASDataset:
         #     sync_index, slice_aft = get_multiples(
         #         num_elements, sync_index, aft_avg_bunches)
         #     diff = diff[:, slice_aft].reshape(
-        #         self.num_energys, -1, aft_avg_bunches)
+        #         self.num_rows, -1, aft_avg_bunches)
         #     diff = np.mean(diff, axis=(2,))
 
         # t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
-        # t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
-        # return diff, self.energy, t_axis
+        t_axis = np.arange(0, diff.shape[1]) * self.delta_t_ns # * avg_delta_t_ns - t_offset
+        return diff, self.laserd, t_axis
 
 
 if __name__ == "__main__":
