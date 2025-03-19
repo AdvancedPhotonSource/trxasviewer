@@ -145,6 +145,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         # self.treeView_fs.setRootIndex(self.model.index(QDir.homePath()))
         self.treeView_fs.hideColumn(2)  # hide type
+        self.treeView_fs.setSortingEnabled(True)
+
         # self.treeView_fs.hideColumn(3)  # hide Date
         self.treeView_fs.selectionModel().selectionChanged.connect(
             self.process_selection
