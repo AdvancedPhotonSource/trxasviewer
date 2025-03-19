@@ -5,7 +5,7 @@
 
 import unittest
 
-from trxasviewer import trxasviewer
+from trxasviewer import trxasviewer_gui
 
 
 class TestTrxasviewer(unittest.TestCase):
