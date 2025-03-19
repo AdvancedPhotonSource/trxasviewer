@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QDoub
     QLabel, QLineEdit, QMainWindow, QMenuBar,
     QProgressBar, QPushButton, QRadioButton, QSizePolicy,
     QSpinBox, QSplitter, QStatusBar, QTabWidget,
-    QTreeView, QVBoxLayout, QWidget)
+    QToolButton, QTreeView, QVBoxLayout, QWidget)
 
 from pyqtgraph import (ImageView, PlotWidget)
 
@@ -61,6 +61,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.lineEdit_rawfolder)
 
+        self.toolButton_refresh = QToolButton(self.tab)
+        self.toolButton_refresh.setObjectName(u"toolButton_refresh")
+
+        self.horizontalLayout.addWidget(self.toolButton_refresh)
+
 
         self.verticalLayout.addLayout(self.horizontalLayout)
 
@@ -94,6 +99,11 @@ class Ui_MainWindow(object):
         self.gridLayout_9.setContentsMargins(2, 2, 2, 2)
         self.label_5 = QLabel(self.groupBox_8)
         self.label_5.setObjectName(u"label_5")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
+        self.label_5.setSizePolicy(sizePolicy3)
 
         self.gridLayout_9.addWidget(self.label_5, 0, 0, 1, 1)
 
@@ -111,6 +121,11 @@ class Ui_MainWindow(object):
 
         self.spinBox_orbitals_number = QSpinBox(self.groupBox_8)
         self.spinBox_orbitals_number.setObjectName(u"spinBox_orbitals_number")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.spinBox_orbitals_number.sizePolicy().hasHeightForWidth())
+        self.spinBox_orbitals_number.setSizePolicy(sizePolicy4)
         self.spinBox_orbitals_number.setMinimum(1)
         self.spinBox_orbitals_number.setMaximum(999999)
         self.spinBox_orbitals_number.setValue(5)
@@ -130,18 +145,143 @@ class Ui_MainWindow(object):
         self.gridLayout_11 = QGridLayout(self.groupBox_9)
         self.gridLayout_11.setObjectName(u"gridLayout_11")
         self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
-        self.label_7 = QLabel(self.groupBox_9)
+        self.tabWidget_binning = QTabWidget(self.groupBox_9)
+        self.tabWidget_binning.setObjectName(u"tabWidget_binning")
+        self.tab_3 = QWidget()
+        self.tab_3.setObjectName(u"tab_3")
+        self.gridLayout_15 = QGridLayout(self.tab_3)
+        self.gridLayout_15.setObjectName(u"gridLayout_15")
+        self.label_7 = QLabel(self.tab_3)
         self.label_7.setObjectName(u"label_7")
 
-        self.gridLayout_11.addWidget(self.label_7, 0, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.label_7, 1, 0, 1, 1)
 
-        self.spinBox_compress_bunches = QSpinBox(self.groupBox_9)
-        self.spinBox_compress_bunches.setObjectName(u"spinBox_compress_bunches")
-        self.spinBox_compress_bunches.setMinimum(1)
-        self.spinBox_compress_bunches.setMaximum(99999)
-        self.spinBox_compress_bunches.setValue(5)
+        self.spinBox_binning_linnum = QSpinBox(self.tab_3)
+        self.spinBox_binning_linnum.setObjectName(u"spinBox_binning_linnum")
+        self.spinBox_binning_linnum.setMinimum(1)
+        self.spinBox_binning_linnum.setMaximum(99999)
+        self.spinBox_binning_linnum.setValue(5)
 
-        self.gridLayout_11.addWidget(self.spinBox_compress_bunches, 0, 1, 1, 1)
+        self.gridLayout_15.addWidget(self.spinBox_binning_linnum, 1, 1, 1, 1)
+
+        self.label_binning_linmsg = QLabel(self.tab_3)
+        self.label_binning_linmsg.setObjectName(u"label_binning_linmsg")
+
+        self.gridLayout_15.addWidget(self.label_binning_linmsg, 0, 0, 1, 1)
+
+        self.tabWidget_binning.addTab(self.tab_3, "")
+        self.tab_4 = QWidget()
+        self.tab_4.setObjectName(u"tab_4")
+        self.gridLayout_18 = QGridLayout(self.tab_4)
+        self.gridLayout_18.setObjectName(u"gridLayout_18")
+        self.label_11 = QLabel(self.tab_4)
+        self.label_11.setObjectName(u"label_11")
+
+        self.gridLayout_18.addWidget(self.label_11, 1, 0, 1, 1)
+
+        self.spinBox_binning_lognum = QSpinBox(self.tab_4)
+        self.spinBox_binning_lognum.setObjectName(u"spinBox_binning_lognum")
+        self.spinBox_binning_lognum.setMinimum(1)
+
+        self.gridLayout_18.addWidget(self.spinBox_binning_lognum, 1, 1, 1, 1)
+
+        self.label_binning_logmsg = QLabel(self.tab_4)
+        self.label_binning_logmsg.setObjectName(u"label_binning_logmsg")
+
+        self.gridLayout_18.addWidget(self.label_binning_logmsg, 0, 0, 1, 2)
+
+        self.tabWidget_binning.addTab(self.tab_4, "")
+        self.tab_5 = QWidget()
+        self.tab_5.setObjectName(u"tab_5")
+        self.gridLayout_16 = QGridLayout(self.tab_5)
+        self.gridLayout_16.setObjectName(u"gridLayout_16")
+        self.spinBox_anchor1 = QSpinBox(self.tab_5)
+        self.spinBox_anchor1.setObjectName(u"spinBox_anchor1")
+        self.spinBox_anchor1.setMinimum(1)
+        self.spinBox_anchor1.setMaximum(9999)
+        self.spinBox_anchor1.setValue(40)
+
+        self.gridLayout_16.addWidget(self.spinBox_anchor1, 3, 2, 1, 1)
+
+        self.label_8 = QLabel(self.tab_5)
+        self.label_8.setObjectName(u"label_8")
+
+        self.gridLayout_16.addWidget(self.label_8, 4, 0, 1, 1)
+
+        self.label_4 = QLabel(self.tab_5)
+        self.label_4.setObjectName(u"label_4")
+
+        self.gridLayout_16.addWidget(self.label_4, 3, 0, 1, 1)
+
+        self.spinBox_anchor3 = QSpinBox(self.tab_5)
+        self.spinBox_anchor3.setObjectName(u"spinBox_anchor3")
+        self.spinBox_anchor3.setMinimum(1)
+        self.spinBox_anchor3.setMaximum(9999)
+        self.spinBox_anchor3.setValue(640)
+
+        self.gridLayout_16.addWidget(self.spinBox_anchor3, 3, 4, 1, 1)
+
+        self.spinBox_anchor2 = QSpinBox(self.tab_5)
+        self.spinBox_anchor2.setObjectName(u"spinBox_anchor2")
+        self.spinBox_anchor2.setMinimum(1)
+        self.spinBox_anchor2.setMaximum(9999)
+        self.spinBox_anchor2.setValue(160)
+
+        self.gridLayout_16.addWidget(self.spinBox_anchor2, 3, 3, 1, 1)
+
+        self.spinBox_anchor0 = QSpinBox(self.tab_5)
+        self.spinBox_anchor0.setObjectName(u"spinBox_anchor0")
+        self.spinBox_anchor0.setMinimum(1)
+        self.spinBox_anchor0.setMaximum(9999)
+        self.spinBox_anchor0.setValue(10)
+
+        self.gridLayout_16.addWidget(self.spinBox_anchor0, 3, 1, 1, 1)
+
+        self.spinBox_numb0 = QSpinBox(self.tab_5)
+        self.spinBox_numb0.setObjectName(u"spinBox_numb0")
+        self.spinBox_numb0.setMinimum(0)
+        self.spinBox_numb0.setMaximum(9999)
+
+        self.gridLayout_16.addWidget(self.spinBox_numb0, 4, 1, 1, 1)
+
+        self.spinBox_numb1 = QSpinBox(self.tab_5)
+        self.spinBox_numb1.setObjectName(u"spinBox_numb1")
+        self.spinBox_numb1.setMinimum(0)
+        self.spinBox_numb1.setMaximum(9999)
+        self.spinBox_numb1.setValue(2)
+
+        self.gridLayout_16.addWidget(self.spinBox_numb1, 4, 2, 1, 1)
+
+        self.spinBox_numb2 = QSpinBox(self.tab_5)
+        self.spinBox_numb2.setObjectName(u"spinBox_numb2")
+        self.spinBox_numb2.setMinimum(0)
+        self.spinBox_numb2.setMaximum(9999)
+        self.spinBox_numb2.setValue(4)
+
+        self.gridLayout_16.addWidget(self.spinBox_numb2, 4, 3, 1, 1)
+
+        self.spinBox_numb3 = QSpinBox(self.tab_5)
+        self.spinBox_numb3.setObjectName(u"spinBox_numb3")
+        self.spinBox_numb3.setMinimum(0)
+        self.spinBox_numb3.setMaximum(9999)
+        self.spinBox_numb3.setValue(8)
+
+        self.gridLayout_16.addWidget(self.spinBox_numb3, 4, 4, 1, 1)
+
+        self.spinBox_anchor4 = QSpinBox(self.tab_5)
+        self.spinBox_anchor4.setObjectName(u"spinBox_anchor4")
+
+        self.gridLayout_16.addWidget(self.spinBox_anchor4, 3, 5, 1, 1)
+
+        self.spinBox_numb4 = QSpinBox(self.tab_5)
+        self.spinBox_numb4.setObjectName(u"spinBox_numb4")
+        self.spinBox_numb4.setMaximum(9999)
+
+        self.gridLayout_16.addWidget(self.spinBox_numb4, 4, 5, 1, 1)
+
+        self.tabWidget_binning.addTab(self.tab_5, "")
+
+        self.gridLayout_11.addWidget(self.tabWidget_binning, 0, 0, 1, 1)
 
 
         self.gridLayout_4.addWidget(self.groupBox_9, 2, 0, 1, 2)
@@ -193,18 +333,15 @@ class Ui_MainWindow(object):
         self.radioButton_selection_by_index = QRadioButton(self.groupBox_10)
         self.radioButton_selection_by_index.setObjectName(u"radioButton_selection_by_index")
         self.radioButton_selection_by_index.setEnabled(True)
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.radioButton_selection_by_index.sizePolicy().hasHeightForWidth())
-        self.radioButton_selection_by_index.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.radioButton_selection_by_index.sizePolicy().hasHeightForWidth())
+        self.radioButton_selection_by_index.setSizePolicy(sizePolicy4)
 
         self.gridLayout_12.addWidget(self.radioButton_selection_by_index, 0, 1, 1, 1)
 
         self.radioButton_selection_by_mouse = QRadioButton(self.groupBox_10)
         self.radioButton_selection_by_mouse.setObjectName(u"radioButton_selection_by_mouse")
-        sizePolicy3.setHeightForWidth(self.radioButton_selection_by_mouse.sizePolicy().hasHeightForWidth())
-        self.radioButton_selection_by_mouse.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.radioButton_selection_by_mouse.sizePolicy().hasHeightForWidth())
+        self.radioButton_selection_by_mouse.setSizePolicy(sizePolicy4)
         self.radioButton_selection_by_mouse.setChecked(True)
 
         self.gridLayout_12.addWidget(self.radioButton_selection_by_mouse, 0, 0, 1, 1)
@@ -223,8 +360,8 @@ class Ui_MainWindow(object):
         self.spinBox_fileindex_max = QSpinBox(self.groupBox_10)
         self.spinBox_fileindex_max.setObjectName(u"spinBox_fileindex_max")
         self.spinBox_fileindex_max.setEnabled(False)
-        sizePolicy3.setHeightForWidth(self.spinBox_fileindex_max.sizePolicy().hasHeightForWidth())
-        self.spinBox_fileindex_max.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.spinBox_fileindex_max.sizePolicy().hasHeightForWidth())
+        self.spinBox_fileindex_max.setSizePolicy(sizePolicy4)
         self.spinBox_fileindex_max.setMaximum(9999)
 
         self.gridLayout_12.addWidget(self.spinBox_fileindex_max, 0, 4, 1, 1)
@@ -232,19 +369,19 @@ class Ui_MainWindow(object):
         self.spinBox_fileindex_min = QSpinBox(self.groupBox_10)
         self.spinBox_fileindex_min.setObjectName(u"spinBox_fileindex_min")
         self.spinBox_fileindex_min.setEnabled(False)
-        sizePolicy3.setHeightForWidth(self.spinBox_fileindex_min.sizePolicy().hasHeightForWidth())
-        self.spinBox_fileindex_min.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.spinBox_fileindex_min.sizePolicy().hasHeightForWidth())
+        self.spinBox_fileindex_min.setSizePolicy(sizePolicy4)
         self.spinBox_fileindex_min.setMaximum(9999)
 
         self.gridLayout_12.addWidget(self.spinBox_fileindex_min, 0, 3, 1, 1)
 
         self.comboBox_fileindex_prefix = QComboBox(self.groupBox_10)
         self.comboBox_fileindex_prefix.setObjectName(u"comboBox_fileindex_prefix")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.comboBox_fileindex_prefix.sizePolicy().hasHeightForWidth())
-        self.comboBox_fileindex_prefix.setSizePolicy(sizePolicy4)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.comboBox_fileindex_prefix.sizePolicy().hasHeightForWidth())
+        self.comboBox_fileindex_prefix.setSizePolicy(sizePolicy5)
         self.comboBox_fileindex_prefix.setMinimumSize(QSize(0, 0))
 
         self.gridLayout_12.addWidget(self.comboBox_fileindex_prefix, 0, 2, 1, 1)
@@ -318,11 +455,11 @@ class Ui_MainWindow(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.groupBox = QGroupBox(self.layoutWidget)
         self.groupBox.setObjectName(u"groupBox")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy5.setHorizontalStretch(2)
-        sizePolicy5.setVerticalStretch(2)
-        sizePolicy5.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
-        self.groupBox.setSizePolicy(sizePolicy5)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy6.setHorizontalStretch(2)
+        sizePolicy6.setVerticalStretch(2)
+        sizePolicy6.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+        self.groupBox.setSizePolicy(sizePolicy6)
         self.gridLayout_6 = QGridLayout(self.groupBox)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.comboBox_cmap = QComboBox(self.groupBox)
@@ -336,8 +473,8 @@ class Ui_MainWindow(object):
         self.comboBox_cmap.addItem("")
         self.comboBox_cmap.addItem("")
         self.comboBox_cmap.setObjectName(u"comboBox_cmap")
-        sizePolicy3.setHeightForWidth(self.comboBox_cmap.sizePolicy().hasHeightForWidth())
-        self.comboBox_cmap.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.comboBox_cmap.sizePolicy().hasHeightForWidth())
+        self.comboBox_cmap.setSizePolicy(sizePolicy4)
         self.comboBox_cmap.setMaximumSize(QSize(80, 16777215))
 
         self.gridLayout_6.addWidget(self.comboBox_cmap, 0, 8, 1, 1)
@@ -353,11 +490,11 @@ class Ui_MainWindow(object):
 
         self.label_3 = QLabel(self.groupBox)
         self.label_3.setObjectName(u"label_3")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-        sizePolicy6.setHorizontalStretch(0)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
-        self.label_3.setSizePolicy(sizePolicy6)
+        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy7.setHorizontalStretch(0)
+        sizePolicy7.setVerticalStretch(0)
+        sizePolicy7.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        self.label_3.setSizePolicy(sizePolicy7)
 
         self.gridLayout_6.addWidget(self.label_3, 0, 7, 1, 1)
 
@@ -371,15 +508,15 @@ class Ui_MainWindow(object):
 
         self.label_10 = QLabel(self.groupBox)
         self.label_10.setObjectName(u"label_10")
-        sizePolicy6.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
-        self.label_10.setSizePolicy(sizePolicy6)
+        sizePolicy7.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
+        self.label_10.setSizePolicy(sizePolicy7)
 
         self.gridLayout_6.addWidget(self.label_10, 0, 1, 1, 1)
 
         self.pg_hdl_img2d = ImageView(self.groupBox)
         self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
-        sizePolicy5.setHeightForWidth(self.pg_hdl_img2d.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_img2d.setSizePolicy(sizePolicy5)
+        sizePolicy6.setHeightForWidth(self.pg_hdl_img2d.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_img2d.setSizePolicy(sizePolicy6)
 
         self.gridLayout_6.addWidget(self.pg_hdl_img2d, 1, 1, 1, 11)
 
@@ -392,15 +529,15 @@ class Ui_MainWindow(object):
 
         self.label = QLabel(self.groupBox)
         self.label.setObjectName(u"label")
-        sizePolicy6.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy6)
+        sizePolicy7.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy7)
 
         self.gridLayout_6.addWidget(self.label, 0, 9, 1, 1)
 
         self.label_9 = QLabel(self.groupBox)
         self.label_9.setObjectName(u"label_9")
-        sizePolicy6.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
-        self.label_9.setSizePolicy(sizePolicy6)
+        sizePolicy7.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        self.label_9.setSizePolicy(sizePolicy7)
 
         self.gridLayout_6.addWidget(self.label_9, 0, 3, 1, 1)
 
@@ -410,8 +547,8 @@ class Ui_MainWindow(object):
         self.comboBox_channel_num.addItem("")
         self.comboBox_channel_num.setObjectName(u"comboBox_channel_num")
         self.comboBox_channel_num.setEnabled(False)
-        sizePolicy3.setHeightForWidth(self.comboBox_channel_num.sizePolicy().hasHeightForWidth())
-        self.comboBox_channel_num.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.comboBox_channel_num.sizePolicy().hasHeightForWidth())
+        self.comboBox_channel_num.setSizePolicy(sizePolicy4)
 
         self.gridLayout_6.addWidget(self.comboBox_channel_num, 0, 4, 1, 3)
 
@@ -420,20 +557,20 @@ class Ui_MainWindow(object):
 
         self.groupBox_3 = QGroupBox(self.layoutWidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy7.setHorizontalStretch(1)
-        sizePolicy7.setVerticalStretch(2)
-        sizePolicy7.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
-        self.groupBox_3.setSizePolicy(sizePolicy7)
+        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy8.setHorizontalStretch(1)
+        sizePolicy8.setVerticalStretch(2)
+        sizePolicy8.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
+        self.groupBox_3.setSizePolicy(sizePolicy8)
         self.gridLayout_8 = QGridLayout(self.groupBox_3)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.pg_hdl_vline = PlotWidget(self.groupBox_3)
         self.pg_hdl_vline.setObjectName(u"pg_hdl_vline")
-        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy8.setHorizontalStretch(1)
-        sizePolicy8.setVerticalStretch(2)
-        sizePolicy8.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_vline.setSizePolicy(sizePolicy8)
+        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy9.setHorizontalStretch(1)
+        sizePolicy9.setVerticalStretch(2)
+        sizePolicy9.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_vline.setSizePolicy(sizePolicy9)
 
         self.gridLayout_8.addWidget(self.pg_hdl_vline, 0, 0, 1, 1)
 
@@ -442,20 +579,20 @@ class Ui_MainWindow(object):
 
         self.groupBox_2 = QGroupBox(self.layoutWidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
-        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy9.setHorizontalStretch(2)
-        sizePolicy9.setVerticalStretch(1)
-        sizePolicy9.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
-        self.groupBox_2.setSizePolicy(sizePolicy9)
+        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy10.setHorizontalStretch(2)
+        sizePolicy10.setVerticalStretch(1)
+        sizePolicy10.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
+        self.groupBox_2.setSizePolicy(sizePolicy10)
         self.gridLayout_7 = QGridLayout(self.groupBox_2)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.pg_hdl_hline = PlotWidget(self.groupBox_2)
         self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
-        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy10.setHorizontalStretch(2)
-        sizePolicy10.setVerticalStretch(1)
-        sizePolicy10.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_hline.setSizePolicy(sizePolicy10)
+        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy11.setHorizontalStretch(2)
+        sizePolicy11.setVerticalStretch(1)
+        sizePolicy11.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_hline.setSizePolicy(sizePolicy11)
 
         self.gridLayout_7.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
 
@@ -464,11 +601,11 @@ class Ui_MainWindow(object):
 
         self.groupBox_4 = QGroupBox(self.layoutWidget)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy11.setHorizontalStretch(1)
-        sizePolicy11.setVerticalStretch(1)
-        sizePolicy11.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy11)
+        sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy12.setHorizontalStretch(1)
+        sizePolicy12.setVerticalStretch(1)
+        sizePolicy12.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy12)
         self.gridLayout_10 = QGridLayout(self.groupBox_4)
         self.gridLayout_10.setObjectName(u"gridLayout_10")
         self.pg_hdl_zoomin = PlotWidget(self.groupBox_4)
@@ -489,7 +626,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1403, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1403, 23))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -499,6 +636,7 @@ class Ui_MainWindow(object):
         self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_max.setEnabled)
 
         self.tabWidget.setCurrentIndex(0)
+        self.tabWidget_binning.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -507,9 +645,10 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"TrXASViewer", None))
         self.pushButton_select_rawfolder.setText(QCoreApplication.translate("MainWindow", u"select", None))
+        self.toolButton_refresh.setText(QCoreApplication.translate("MainWindow", u"Refresh", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
-        self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Ground state", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Averaging method", None))
+        self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Ground State Normalization", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Method", None))
         self.comboBox_groundstate_method.setItemText(0, QCoreApplication.translate("MainWindow", u"per_bunch", None))
         self.comboBox_groundstate_method.setItemText(1, QCoreApplication.translate("MainWindow", u"avg_bunch", None))
 
@@ -517,7 +656,15 @@ class Ui_MainWindow(object):
         self.pushButton_replot.setText(QCoreApplication.translate("MainWindow", u"Process", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Binning", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"sync timing", None))
+        self.label_binning_linmsg.setText(QCoreApplication.translate("MainWindow", u"Linear Binning:", None))
+        self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Linear", None))
+        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Number of bunches Base", None))
+        self.label_binning_logmsg.setText(QCoreApplication.translate("MainWindow", u"Logarithmic binning:", None))
+        self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Log", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
+        self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Sync Timing", None))
         self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.doubleSpinBox_sync_time_us.setSuffix(QCoreApplication.translate("MainWindow", u" \u03bcs", None))
         self.radioButton_sync_bunch.setText(QCoreApplication.translate("MainWindow", u"Bunch", None))
@@ -558,6 +705,6 @@ class Ui_MainWindow(object):
 
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Vertical linecut", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal linecut", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"zoomin", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))
     # retranslateUi
 

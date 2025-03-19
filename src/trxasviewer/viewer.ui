@@ -50,6 +50,13 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QToolButton" name="toolButton_refresh">
+               <property name="text">
+                <string>Refresh</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -98,7 +105,7 @@
               <item row="1" column="0" colspan="2">
                <widget class="QGroupBox" name="groupBox_8">
                 <property name="title">
-                 <string>Ground state</string>
+                 <string>Ground State Normalization</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_9">
                  <property name="leftMargin">
@@ -115,8 +122,14 @@
                  </property>
                  <item row="0" column="0">
                   <widget class="QLabel" name="label_5">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
                    <property name="text">
-                    <string>Averaging method</string>
+                    <string>Method</string>
                    </property>
                   </widget>
                  </item>
@@ -143,6 +156,12 @@
                  </item>
                  <item row="0" column="3">
                   <widget class="QSpinBox" name="spinBox_orbitals_number">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
                    <property name="minimum">
                     <number>1</number>
                    </property>
@@ -183,23 +202,204 @@
                   <number>2</number>
                  </property>
                  <item row="0" column="0">
-                  <widget class="QLabel" name="label_7">
-                   <property name="text">
-                    <string>Number of bunches</string>
+                  <widget class="QTabWidget" name="tabWidget_binning">
+                   <property name="currentIndex">
+                    <number>2</number>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="1">
-                  <widget class="QSpinBox" name="spinBox_compress_bunches">
-                   <property name="minimum">
-                    <number>1</number>
-                   </property>
-                   <property name="maximum">
-                    <number>99999</number>
-                   </property>
-                   <property name="value">
-                    <number>5</number>
-                   </property>
+                   <widget class="QWidget" name="tab_3">
+                    <attribute name="title">
+                     <string>Linear</string>
+                    </attribute>
+                    <layout class="QGridLayout" name="gridLayout_15">
+                     <item row="1" column="0">
+                      <widget class="QLabel" name="label_7">
+                       <property name="text">
+                        <string>Number of bunches</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QSpinBox" name="spinBox_binning_linnum">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>99999</number>
+                       </property>
+                       <property name="value">
+                        <number>5</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="0" column="0">
+                      <widget class="QLabel" name="label_binning_linmsg">
+                       <property name="text">
+                        <string>Linear Binning:</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                   <widget class="QWidget" name="tab_4">
+                    <attribute name="title">
+                     <string>Log</string>
+                    </attribute>
+                    <layout class="QGridLayout" name="gridLayout_18">
+                     <item row="1" column="0">
+                      <widget class="QLabel" name="label_11">
+                       <property name="text">
+                        <string>Number of bunches Base</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QSpinBox" name="spinBox_binning_lognum">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="0" column="0" colspan="2">
+                      <widget class="QLabel" name="label_binning_logmsg">
+                       <property name="text">
+                        <string>Logarithmic binning:</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                   <widget class="QWidget" name="tab_5">
+                    <attribute name="title">
+                     <string>Manual</string>
+                    </attribute>
+                    <layout class="QGridLayout" name="gridLayout_16">
+                     <item row="3" column="2">
+                      <widget class="QSpinBox" name="spinBox_anchor1">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>40</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="0">
+                      <widget class="QLabel" name="label_8">
+                       <property name="text">
+                        <string>Bin Bunchs</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="0">
+                      <widget class="QLabel" name="label_4">
+                       <property name="text">
+                        <string>Anchor Bunch</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="4">
+                      <widget class="QSpinBox" name="spinBox_anchor3">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>640</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="3">
+                      <widget class="QSpinBox" name="spinBox_anchor2">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>160</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="1">
+                      <widget class="QSpinBox" name="spinBox_anchor0">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>10</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="1">
+                      <widget class="QSpinBox" name="spinBox_numb0">
+                       <property name="minimum">
+                        <number>0</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="2">
+                      <widget class="QSpinBox" name="spinBox_numb1">
+                       <property name="minimum">
+                        <number>0</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>2</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="3">
+                      <widget class="QSpinBox" name="spinBox_numb2">
+                       <property name="minimum">
+                        <number>0</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>4</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="4">
+                      <widget class="QSpinBox" name="spinBox_numb3">
+                       <property name="minimum">
+                        <number>0</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>8</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="5">
+                      <widget class="QSpinBox" name="spinBox_anchor4"/>
+                     </item>
+                     <item row="4" column="5">
+                      <widget class="QSpinBox" name="spinBox_numb4">
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
                   </widget>
                  </item>
                 </layout>
@@ -208,7 +408,7 @@
               <item row="0" column="0" colspan="2">
                <widget class="QGroupBox" name="groupBox_7">
                 <property name="title">
-                 <string>sync timing</string>
+                 <string>Sync Timing</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_5">
                  <property name="leftMargin">
@@ -766,7 +966,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>zoomin</string>
+           <string>Zoomin</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_10">
            <item row="0" column="0">
@@ -788,7 +988,7 @@
      <x>0</x>
      <y>0</y>
      <width>1403</width>
-     <height>33</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
