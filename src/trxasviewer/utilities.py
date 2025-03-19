@@ -12,26 +12,36 @@ def get_scan_type(fname):
     
     - If a line starts with "#S XXX exafs_scan", returns "exafs".
     - If a line starts with "#S XXX rscan laserd", returns "laserd".
+    - If the file has less than 12 lines, returns "invalid".
     - Otherwise, or on exception, returns "invalid".
     """
     if Path(fname).is_dir():
-        # directory is need in treeview to display it as a folder/parents
         return "directory"
+
     try:
-        # if the file is being written, return "writing"
         if not is_writing_done(fname):
             return "writing"
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
+        line_count = 0
+        scan_type = "invalid"  # Move this outside the loop
+        matched = False
         with open(fname, "r", encoding="utf-8", errors="replace") as f:
-            for _, line in zip(range(10), f):  # Read first 10 lines only
-                if pattern_exafs.match(line):
-                    return "exafs"
-                if pattern_laserd.match(line):
-                    return "laserd"
-    except (OSError, IOError):
-        return "invalid" 
-    return "invalid"
+            for line in f:
+                line_count += 1
+                if not matched:
+                    if pattern_exafs.match(line):
+                        scan_type = "exafs"
+                        matched = True
+                    elif pattern_laserd.match(line):
+                        scan_type = "laserd"
+                        matched = True
+                if line_count >= 12:  # Stop reading after 12 lines
+                    break
+        return scan_type if line_count >= 12 else "invalid"
+
+    except Exception:  # Catch all exceptions
+        return "invalid"
 
 
 def is_writing_done(fname, threshold=60):
