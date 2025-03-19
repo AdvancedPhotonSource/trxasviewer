@@ -1,13 +1,15 @@
 import re
-import os
 import time
 from functools import lru_cache
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
+import json
 import scienceplots
+from .utilities import get_scan_type, compare_versions
+from . import __version__
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,20 +18,73 @@ P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
 CACHE_PATH = '.cache'
 
 
-def is_sample_data(fname):
-    """Check if a file contains a line starting with '#L ' followed by 'Energy '."""
-    if not Path(fname).is_file():
-        return False
+def build_cache_database(folder, min_version="0.2.0"):
+    """
+    Builds or updates a cache database in JSON format for a given folder.
 
-    try:
-        with open(fname, "r", encoding="utf-8", errors="replace") as f:  # Safe reading
-            for line in f:
-                if re.match(r"#L .* Energy ", line):
-                    return True
-    except (OSError, IOError):
-        return False
+    - Reads from an existing cache file if valid and meets `min_version`.
+    - Iterates through files, categorizing them based on `get_scan_type()`.
+    - Stores results in `cache.json` inside the `cache` subdirectory.
+    """
+    cache_path = Path(folder) / CACHE_PATH
+    cache_name = cache_path / 'cache.json'
 
-    return False
+    # Ensure the cache directory exists before doing anything else
+    cache_path.mkdir(parents=True, exist_ok=True)
+
+    time_now = time.strftime("%Y-%m-%d %H:%M:%S")
+    # Initialize an empty cache
+    cache_db = {
+        "version": __version__,
+        "datetime": time_now,
+        "prefix_db": {},
+        "scan_type": {},
+    }
+
+    # Load existing cache if possible
+    if cache_name.is_file():
+        try:
+            temp_db = json.loads(cache_name.read_text())
+            curr_version = temp_db.get('version', "0.2.0")
+            if compare_versions(curr_version, min_version):
+                cache_db = temp_db  # Use the existing cache
+                cache_db["version"] = __version__   # update version
+                cache_db["datetime"] = time_now
+        except json.JSONDecodeError:
+            logger.warning(f"{cache_name} is corrupted. Rebuilding cache...")
+
+    def append_entry(cache_db, scan_type, entry):
+        """Adds a scan entry to the cache, ensuring structure integrity."""
+        try:
+            index = int(entry.name[-5:])  # Extract numeric index
+            prefix = entry.name[:-5]
+        except ValueError:
+            logging.error(f"Skipping {entry.name}: Invalid filename format")
+            return
+        if prefix not in cache_db["prefix_db"]:
+            cache_db["prefix_db"][prefix] = {"exafs": [], "laserd": []}
+        cache_db["prefix_db"][prefix][scan_type].append(index)
+
+    flag_save = False
+    for entry in Path(folder).iterdir():
+        if not entry.is_file():
+            continue
+        # Check scan type in cache or compute it
+        full_path = str(entry.resolve())  # Ensure absolute path
+        scan_type = cache_db["scan_type"].get(full_path)
+        if scan_type is None:
+            scan_type = get_scan_type(entry)
+            cache_db["scan_type"][full_path] = scan_type
+
+        if scan_type in {"exafs", "laserd"}:
+            append_entry(cache_db, scan_type, entry)
+            flag_save = True
+
+    # Save cache if updates were made
+    if flag_save:
+        cache_name.write_text(json.dumps(cache_db, indent=4))
+
+    return cache_db
 
 
 @lru_cache(maxsize=128)
@@ -107,7 +162,8 @@ def process_header(header_line):
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
     shape = (c_max + 1, o_max + 1, b_max + 1)
-    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
+    index = record[:, 0] * shape[1] * shape[2] + \
+        record[:, 1] * shape[2] + record[:, 2]
     payload_mask = np.zeros(np.prod(shape), dtype=bool)
     payload_mask[index] = True
     return dset_type, shape, labels, labels_mask, payload_mask
@@ -173,7 +229,8 @@ class TrXASDatasetManager:
         np.savez_compressed(fname_numpy, **results)
         TrXASDataset.plot_and_save(fname_plot, diff, energy, t_axis)
         TrXASDataset.save_as_origin_format(fname_origin, diff, energy, t_axis)
-        logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+        logger.info(
+            f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -181,34 +238,37 @@ class TrXASDatasetManager:
         data_list = []
         shapes = []
         # Load datasets
-        for fname in self.flist:
-            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
-            if dset is None:
-                continue
-            t_data, _, _ = dset.get_energy_vs_time(**kwargs)
-            data_list.append(t_data)
-            shapes.append(t_data.shape)
+        for n, fname in enumerate(self.flist):
             if progress is not None:
-                progress.emit(int(100 * len(data_list) / len(self.flist)))
-
+                progress.emit(int(100 * (n + 1) / len(self.flist)))
+            dset = create_trxas_dataset(
+                fname, ignore_incomplete=self.ignore_incomplete)
+            if dset is not None:
+                t_data, _, _ = dset.get_energy_vs_time(**kwargs)
+                data_list.append(t_data)
+                shapes.append(t_data.shape)
         if len(data_list) == 0:
             return None, None, None
         shapes = np.array(shapes)
         # Determine maximum valid shape
         max_shape = np.max(shapes, axis=0)  # Get the largest shape
-        max_time_steps = max(shapes[:, 0])  # Get the maximum shape along axis 0
+        # Get the maximum shape along axis 0
+        max_time_steps = max(shapes[:, 0])
 
         # Create a NaN-filled array with the max shape
-        data_full = np.full((len(data_list), max_time_steps, max_shape[1]), np.nan)
+        data_full = np.full(
+            (len(data_list), max_time_steps, max_shape[1]), np.nan)
 
         # Fill the array with valid data
         for i, d in enumerate(data_list):
             valid_rows, valid_cols = d.shape
-            data_full[i, :valid_rows, :valid_cols] = d  # Only fill valid regions
+            # Only fill valid regions
+            data_full[i, :valid_rows, :valid_cols] = d
 
         # Compute the average, ignoring NaNs
         data_avg = np.nanmean(data_full, axis=0)
-        good_idx = np.argmax(shapes[:, 0])  # Select dataset with max time steps
+        # Select dataset with max time steps
+        good_idx = np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
         _, energy_axis, t_axis = good_dset.get_energy_vs_time(**kwargs)
         return data_avg, energy_axis, t_axis
@@ -217,13 +277,13 @@ class TrXASDatasetManager:
 @lru_cache(maxsize=512)
 def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
     fname = Path(fname)
-    if not fname.exists() or not is_sample_data(fname):
+    if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
         return TrXASDataset(fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache)
     except Exception as e:
-        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         return None
 
 
@@ -234,7 +294,8 @@ def create_trxas_cache_from_flist(flist, **kwargs):
 
 
 def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
-    if not fname.exists() or not is_sample_data(fname):
+    fname = Path(fname)
+    if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
@@ -244,7 +305,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
                          load_cache=load_cache)
             return cache_name
     except Exception as e:
-        logger.error(f"[ERROR] Failed to load TrXASDataset from {fname}: {e}")
+        logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         return None
 
 
@@ -252,8 +313,8 @@ class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
-        self.dset_attributes = ["energy", "num_energys", "labels", "meta_data", 
-                      "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
+        self.dset_attributes = ["energy", "num_energys", "labels", "meta_data",
+                                "dset_type", "shape", "delta_t_ns", "xas_data_norm"]
 
         if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
@@ -262,15 +323,15 @@ class TrXASDataset:
             if not self.cache_name.exists():
                 self.save_to_cache()
         self.xas_data = None
-    
-    @staticmethod 
+
+    @staticmethod
     def check_cache(fname):
         fname = Path(fname)
         cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
-    
-    def init_from_cache(self, fname): 
+
+    def init_from_cache(self, fname):
         data = np.load(fname, allow_pickle=True)
         for attr in self.dset_attributes:
             setattr(self, attr, data[attr])
@@ -278,10 +339,10 @@ class TrXASDataset:
     def save_to_cache(self):
         self.cache_name.parent.mkdir(parents=True, exist_ok=True)
         temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
-        np.savez(temp_cache_name, **{attr: getattr(self, attr) for attr in 
+        np.savez(temp_cache_name, **{attr: getattr(self, attr) for attr in
                                      self.dset_attributes})
-        temp_cache_name.replace(self.cache_name) 
-    
+        temp_cache_name.replace(self.cache_name)
+
     def init_from_file(self, fname, ignore_incomplete=True):
         with open(fname, "r") as f:
             for line in f:
@@ -290,7 +351,8 @@ class TrXASDataset:
                         process_header(line)
                     )
                     break
-        data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
+        data = np.loadtxt(fname, comments="#",
+                          dtype=np.float32, delimiter="\t")
         self.num_energys = data.shape[0]
         self.labels = labels
         self.meta_data = data[:, labels_mask]
@@ -303,7 +365,8 @@ class TrXASDataset:
         xas_full[:, payload_mask] = xas_part
         if ignore_incomplete and np.prod(shape) != np.sum(payload_mask):
             # fix the incomplete dataset and remove all nan items
-            xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
+            xas_full, shape = fix_incomplete_dataset(
+                payload_mask, shape, xas_full)
 
         self.shape = shape
         self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
@@ -312,11 +375,11 @@ class TrXASDataset:
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
-            t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns 
-            return self.xas_data[:, channel], self.energy, t_axis 
+            t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns
+            return self.xas_data[:, channel], self.energy, t_axis
         elif target == "normalized":
-            t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns 
-            return self.xas_data_norm, self.energy, t_axis 
+            t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns
+            return self.xas_data_norm, self.energy, t_axis
         elif target == "normalized-GS":
             return self.process_energy(**norm_kwargs)
         else:
@@ -342,12 +405,13 @@ class TrXASDataset:
         xas_data = xas_data.reshape(
             self.num_energys, *self.shape
         )  # (rows, channel, orbital, bunch)
-        ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)  #  rows x bunch
+        ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)  # rows x bunch
         xas_data[:, 1:] /= ortial_mean_ch0[
             :, np.newaxis, np.newaxis, :
         ]  # normalize other channels
         norm_data = xas_data.reshape(self.num_energys, self.shape[0], -1)
-        norm_data = np.mean(norm_data[:, 1:3], axis=(1,))  # average over channels 1 and 2
+        # average over channels 1 and 2
+        norm_data = np.mean(norm_data[:, 1:3], axis=(1,))
         return norm_data.astype(np.float32)
 
     @staticmethod
@@ -360,7 +424,7 @@ class TrXASDataset:
         fig_height = fig_width / 1.618033988749
         vmin, vmax = np.percentile(data, [0.5, 99.5])
         vmin = min(vmin, -vmax)
-        vmax = -1 * vmin 
+        vmax = -1 * vmin
 
         fig, ax = plt.subplots(1, 1, figsize=(fig_width, fig_height))
         im = ax.imshow(data, aspect="auto", extent=extent, cmap='bwr',
@@ -373,7 +437,7 @@ class TrXASDataset:
         plt.colorbar(im, ax=ax)
         plt.savefig(save_name, dpi=600)
         plt.close(fig)
-    
+
     @staticmethod
     def save_as_origin_format(save_name, diff, energy_axis, t_axis, title=None):
         shape = diff.shape
@@ -407,9 +471,9 @@ class TrXASDataset:
             end = pos + (size - pos) // unit_len * unit_len
             pos = pos - start
             return pos, slice(start, end)
-        
+
         if sync_type == "time":
-            sync_index = int(sync_value * 1000 / self.delta_t_ns) 
+            sync_index = int(sync_value * 1000 / self.delta_t_ns)
         else:
             sync_index = sync_value
 
@@ -423,8 +487,8 @@ class TrXASDataset:
         preavg_slice = slice(
             max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx
         )
-        # average along orbitals
-        preavg = np.mean(data[:, preavg_slice], axis=(1,))  # num_energys * bunches
+        # average along orbitals, num_energys * bunches
+        preavg = np.mean(data[:, preavg_slice], axis=(1,))
 
         if do_perbunch == "per_bunch":
             diff = data - preavg[:, np.newaxis, :]
@@ -439,13 +503,15 @@ class TrXASDataset:
         avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
 
         if aft_avg_bunches > 1:
-            sync_index, slice_aft = get_multiples(num_elements, sync_index, aft_avg_bunches)
-            diff = diff[:, slice_aft].reshape(self.num_energys, -1, aft_avg_bunches)
+            sync_index, slice_aft = get_multiples(
+                num_elements, sync_index, aft_avg_bunches)
+            diff = diff[:, slice_aft].reshape(
+                self.num_energys, -1, aft_avg_bunches)
             diff = np.mean(diff, axis=(2,))
 
         t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
         t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
-        return diff, self.energy, t_axis 
+        return diff, self.energy, t_axis
 
 
 if __name__ == "__main__":
@@ -454,7 +520,6 @@ if __name__ == "__main__":
         t0 = time.perf_counter()
         fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
         dset = TrXASDataset(fname)
-        print(is_sample_data(fname))
         dset.normalize()
         # dset.plot()
         dset.process_energy()
