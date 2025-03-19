@@ -205,13 +205,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         idx_max = self.spinBox_fileindex_max.value()
         raw_folder = self.lineEdit_rawfolder.text()
 
-        prefix = self.comboBox_fileindex_prefix.currentText()
-        file_indexes = self.cache_db["prefix_db"]
+        selection = self.comboBox_fileindex_prefix.currentText()
+        current_prefix, scan_type = selection.split("@")
+        file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
 
         file_paths = []
         for idx in range(idx_min, idx_max + 1):
             if idx in file_indexes:
-                full_path = Path(raw_folder) / f"{prefix}{idx:05d}"
+                full_path = Path(raw_folder) / f"{current_prefix}{idx:05d}"
                 file_paths.append(full_path)
         if file_paths:
             self.process_flist(file_paths)
@@ -403,7 +404,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             prefix_db = self.cache_db["prefix_db"]
 
             self.comboBox_fileindex_prefix.clear()
-            self.comboBox_fileindex_prefix.addItems(list(prefix_db.keys()))
+            combos = [f"{key}@exafs" for key in list(prefix_db.keys())]
+            combos += [f"{key}@laserd" for key in list(prefix_db.keys())]
+            self.comboBox_fileindex_prefix.addItems(combos)
             self.comboBox_fileindex_prefix.setCurrentIndex(0)
 
             fs_root_index = self.model.index(folder_path)
@@ -412,10 +415,15 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.build_cache()
 
     def update_fileindex(self):
-        current_prefix = self.comboBox_fileindex_prefix.currentText()
-        file_indexes = self.cache_db["prefix_db"][current_prefix]["exafs"]
-        self.spinBox_fileindex_min.setValue(min(file_indexes))
-        self.spinBox_fileindex_max.setValue(max(file_indexes))
+        selection = self.comboBox_fileindex_prefix.currentText()
+        current_prefix, scan_type = selection.split("@")
+        file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
+        if len(file_indexes) > 0:
+            vbeg, vend = min(file_indexes), max(file_indexes)
+        else:
+            vbeg, vend = 0, 0
+        self.spinBox_fileindex_min.setValue(vbeg)
+        self.spinBox_fileindex_max.setValue(vend)
     
     def build_cache(self, num_workers=None):
         if num_workers is None:
