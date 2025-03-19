@@ -167,6 +167,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.clicked.connect(self.process)
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
+        self.toolButton_refresh.clicked.connect(self.refresh_filesystem)
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
@@ -180,6 +181,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker.moveToThread(self.thread)
         self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
         self.thread.start()
+    
+    def refresh_filesystem(self):
+        self.proxy_model.layoutChanged.emit()
         
     def process(self):
         if self.is_processing:
@@ -244,8 +248,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         # Initialize plots
         self.h_curve = self.pg_hdl_hline.plot(pen="b")
         self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
+        self.pg_hdl_hline.setLabel("left", "Intensity", units="a.u.")
         self.v_curve = self.pg_hdl_vline.plot(pen="r")
         self.pg_hdl_vline.setLabel("left", "Time", units="μs")
+        self.pg_hdl_vline.setLabel("bottom", "Intensity", units="a.u.")
         self.zoomin_image = pg.ImageItem()
         self.pg_hdl_zoomin.addItem(self.zoomin_image)
         self.pg_hdl_zoomin.setAspectLocked(False)
@@ -368,9 +374,26 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "sync_value": sync_value,
             "do_perbunch": self.comboBox_groundstate_method.currentText(),
             "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
-            "aft_avg_bunches": self.spinBox_compress_bunches.value(),
+            "aft_avg_bunches": self.spinBox_binning_linnum.value(),
         }
         return norm_kwargs
+    
+    def get_binning_kwargs(self):
+        current_tab_index = self.tabWidget_binning.currentIndex()
+        method = self.tabWidget_binning.tabText(current_tab_index)
+        if method == "Manual":
+            anchors = [self.__dict__[f'spinBox_anchor{n}'].value() for n in range(5)]
+            numbs = [self.__dict__[f'spinBox_numb{n}'].value() for n in range(5)]
+            binning_kwargs = {
+                "anchors": anchors,
+                "numbs": numbs,
+            }
+        else:
+            binning_kwargs = {
+                "lin_num": self.spinBox_binning_linnum.value(),
+                "log_num": self.spinBox_binning_lognum.value()}
+        binning_kwargs['binning_method'] = method
+        return binning_kwargs
 
     def plot_results(self):
         data, energy_axis, t_axis = self.avg_worker.get_results()
