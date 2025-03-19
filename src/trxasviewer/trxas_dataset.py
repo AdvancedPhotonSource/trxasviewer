@@ -66,7 +66,8 @@ def build_cache_database(folder, min_version="0.2.0"):
         cache_db["prefix_db"][prefix][scan_type].append(index)
 
     flag_save = False
-    for entry in Path(folder).iterdir():
+    # for entry in Path(folder).iterdir():
+    for entry in sorted(Path(folder).iterdir(), key=lambda x: x.name):
         if not entry.is_file():
             continue
         # Check scan type in cache or compute it
@@ -103,7 +104,7 @@ def process_header(header_line):
     Returns
     -------
     dset_type : str
-        The dataset type, either "Energy" or "laserd".
+        The dataset type, either "EXAFS" or "LASERD".
     shape : tuple of int
         The shape of the dataset inferred from parsed indices, given as (channels, orbitals, bunches).
     labels : list of str
@@ -139,9 +140,9 @@ def process_header(header_line):
     """
     header = header_line[3:].strip()
     if re.match(r".* Energy ", header):
-        dset_type = "Energy"
+        dset_type = "EXAFS"
     elif re.match(r".* laserd ", header):
-        dset_type = "laserd"
+        dset_type = "LASERD"
     else:
         raise ValueError("Unknown dataset type")
 
@@ -320,8 +321,8 @@ class TrXASDataset:
             self.init_from_cache(self.cache_name)
         else:
             self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
-            if not self.cache_name.exists():
-                self.save_to_cache()
+            # if not self.cache_name.exists():
+            #     self.save_to_cache()
         self.xas_data = None
 
     @staticmethod
@@ -357,7 +358,11 @@ class TrXASDataset:
         self.labels = labels
         self.meta_data = data[:, labels_mask]
         self.dset_type = dset_type
-        self.energy = self.get("Energy")
+
+        if self.dset_type == 'EXAFS':
+            self.energy = self.get("Energy")
+        elif self.dset_type == 'LASERD':
+            self.laserd = self.get("laserd")
 
         xas_part = data[:, ~labels_mask]
         # fill the missing data with NaN, create a whole dataset
@@ -401,6 +406,7 @@ class TrXASDataset:
         if repeat_rate > 0:
             offset = xas_data / (repeat_rate * acquire_time)
             xas_data = -np.log(1.0 - offset)
+        # print('shape', xas_data.shape)       
 
         xas_data = xas_data.reshape(
             self.num_energys, *self.shape
@@ -448,16 +454,15 @@ class TrXASDataset:
 
     def process_energy(
         self,
-        fileout=None,
         sync_type="time",
         sync_value=1820,
         pre_avg_orbitals=5,
         aft_avg_bunches=11,
         do_perbunch="per_bunch",
     ):
-        if self.dset_type != "Energy":
+        if self.dset_type != "EXAFS":
             raise TypeError(
-                f"Expect Energy scan, but the file is {self.dset_type} scan."
+                f"Expect EXAFS scan, but the file is {self.dset_type} scan."
             )
 
         # average over the channels 1 and channel 2
@@ -512,13 +517,101 @@ class TrXASDataset:
         t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
         t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
         return diff, self.energy, t_axis
+    
+    def process_laserd(
+        self,
+        sync_type="time",
+        sync_value=1820,
+        pre_avg_orbitals=5,
+        aft_avg_bunches=11,
+        do_perbunch="per_bunch",
+    ):
+        if self.dset_type != "LASERD":
+            raise TypeError(
+                f"Expect LASERD scan, but the file is {self.dset_type} scan."
+            )
+
+        # average over the channels 1 and channel 2
+        data = self.xas_data_norm  # num_energys * (orbitals * bunches)
+        num_orbitals = self.shape[1]
+        num_bunches = self.shape[2]
+
+        def get_multiples(size, pos, unit_len):
+            assert 0 < pos < size
+            start = pos - pos // unit_len * unit_len
+            end = pos + (size - pos) // unit_len * unit_len
+            pos = pos - start
+            return pos, slice(start, end)
+
+        if sync_type == "time":
+            sync_index = int(sync_value * 1000 / self.delta_t_ns)
+        else:
+            sync_index = sync_value
+
+        sync_index, slice_pre = get_multiples(
+            num_bunches * num_orbitals, sync_index, num_bunches
+        )
+        data = data[:, slice_pre]  # num_exposure * -1
+        num_rows = data.shape[0]
+        data = data.reshape(num_rows, -1, num_bunches)
+
+        preavg_orbit_idx = sync_index // num_bunches
+        preavg_slice = slice(
+            max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx
+        )
+        # average along orbitals, num_energys * bunches
+        preavg = np.mean(data[:, preavg_slice], axis=(1,))
+
+        if do_perbunch == "per_bunch":
+            diff = data - preavg[:, np.newaxis, :]
+        elif do_perbunch == "avg_bunch":
+            diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
+        else:
+            raise ValueError("Unknown do_perbunch value %s method")
+
+        # print(diff.shape, sync_index)
+        diff = diff.reshape(self.num_energys, -1)
+        print('delta_t_ns', self.delta_t_ns)
+        print(np.min(self.laserd), np.max(self.laserd))
+        t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns  
+        t_mat = np.tile(t_mat, (diff.shape[0], 1))
+        for n in range(self.num_energys):
+            t_mat[n] -= self.laserd[n]
+        roi = t_mat > 0
+        t_val = t_mat[roi]
+        diff_val = diff[roi]
+        pack = np.stack((t_val, diff_val), axis=1)
+        pack = pack[pack[:, 0].argsort()]
+        plt.plot(pack[:, 0], pack[:, 1], 'o--')
+        # plt.imshow(diff)
+        # plt.colorbar()
+        plt.show()
+        # apply binning
+        # num_elements = slice_pre.stop - slice_pre.start
+        # diff = diff.reshape(self.num_energys, -1)
+        # avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
+        # print(self.laserd)
+        # plt.plot(self.laserd, 'o--')
+        # plt.show()
+
+        # if aft_avg_bunches > 1:
+        #     sync_index, slice_aft = get_multiples(
+        #         num_elements, sync_index, aft_avg_bunches)
+        #     diff = diff[:, slice_aft].reshape(
+        #         self.num_energys, -1, aft_avg_bunches)
+        #     diff = np.mean(diff, axis=(2,))
+
+        # t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
+        # t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
+        # return diff, self.energy, t_axis
 
 
 if __name__ == "__main__":
     # read_trsaxs_dataset('/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099')
     for n in range(1):
         t0 = time.perf_counter()
-        fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
+        # fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
+        fname = "/local/MQICHU/playground/Dugan_2024_3_saveddata/setup-full-00737"
         dset = TrXASDataset(fname)
         dset.normalize()
         # dset.plot()
