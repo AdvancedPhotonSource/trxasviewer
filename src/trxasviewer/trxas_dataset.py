@@ -203,6 +203,18 @@ def fix_incomplete_dataset(payload_mask, shape, xas_data):
     return xas_data, new_shape
 
 
+def get_multiples(size, pos, unit_len):
+    """
+    Get the start and end positions of the multiples of unit_len that contain
+    the position pos. 
+    """
+    assert 0 < pos < size
+    start = pos - pos // unit_len * unit_len
+    end = pos + (size - pos) // unit_len * unit_len
+    pos = pos - start
+    return pos, slice(start, end)
+
+
 class TrXASDatasetManager:
     def __init__(self, ignore_incomplete=True):
         self.flist = []
@@ -458,31 +470,17 @@ class TrXASDataset:
         data_full[0, 1:] = t_axis
         data_full[1:, 0] = energy_axis
         np.savetxt(save_name, data_full, fmt="%.8e")
-
-    def process_energy(
+    
+    def subtract_groundstate(
         self,
         sync_type="time",
         sync_value=1820,
         pre_avg_orbitals=5,
-        aft_avg_bunches=11,
         do_perbunch="per_bunch",
     ):
-        if self.dset_type != "EXAFS":
-            raise TypeError(
-                f"Expect EXAFS scan, but the file is {self.dset_type} scan."
-            )
-
         # average over the channels 1 and channel 2
         data = self.xas_data_norm  # num_energys * (orbitals * bunches)
-        num_orbitals = self.shape[1]
-        num_bunches = self.shape[2]
-
-        def get_multiples(size, pos, unit_len):
-            assert 0 < pos < size
-            start = pos - pos // unit_len * unit_len
-            end = pos + (size - pos) // unit_len * unit_len
-            pos = pos - start
-            return pos, slice(start, end)
+        num_orbitals, num_bunches = self.shape[1:3]
 
         if sync_type == "time":
             sync_index = int(sync_value * 1000 / self.delta_t_ns)
@@ -508,10 +506,26 @@ class TrXASDataset:
             diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
         else:
             raise ValueError("Unknown do_perbunch value %s method")
-
-        # apply binning
-        num_elements = slice_pre.stop - slice_pre.start
         diff = diff.reshape(self.num_rows, -1)
+        return diff, sync_index
+
+    def process_energy(
+        self,
+        sync_type="time",
+        sync_value=1820,
+        pre_avg_orbitals=5,
+        aft_avg_bunches=11,
+        do_perbunch="per_bunch",
+    ):
+        if self.dset_type != "EXAFS":
+            raise TypeError(
+                f"Expect EXAFS scan, but the file is {self.dset_type} scan."
+            )
+        diff, sync_index = self.subtract_groundstate(
+            sync_type, sync_value, pre_avg_orbitals, do_perbunch
+        )
+        # apply binning
+        num_elements = diff.shape[1]
         avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
 
         if aft_avg_bunches > 1:
@@ -537,49 +551,11 @@ class TrXASDataset:
             raise TypeError(
                 f"Expect LASERD scan, but the file is {self.dset_type} scan."
             )
-
-        # average over the channels 1 and channel 2
-        data = self.xas_data_norm  # num_energys * (orbitals * bunches)
-        num_orbitals = self.shape[1]
-        num_bunches = self.shape[2]
-
-        def get_multiples(size, pos, unit_len):
-            assert 0 < pos < size
-            start = pos - pos // unit_len * unit_len
-            end = pos + (size - pos) // unit_len * unit_len
-            pos = pos - start
-            return pos, slice(start, end)
-
-        if sync_type == "time":
-            sync_index = int(sync_value * 1000 / self.delta_t_ns)
-        else:
-            sync_index = sync_value
-
-        sync_index, slice_pre = get_multiples(
-            num_bunches * num_orbitals, sync_index, num_bunches
-        )
-        data = data[:, slice_pre]  # num_exposure * -1
-        num_rows = data.shape[0]
-        data = data.reshape(num_rows, -1, num_bunches)
-
-        preavg_orbit_idx = sync_index // num_bunches
-        preavg_slice = slice(
-            max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx
-        )
-        # average along orbitals, num_energys * bunches
-        preavg = np.mean(data[:, preavg_slice], axis=(1,))
-
-        if do_perbunch == "per_bunch":
-            diff = data - preavg[:, np.newaxis, :]
-        elif do_perbunch == "avg_bunch":
-            diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
-        else:
-            raise ValueError("Unknown do_perbunch value %s method")
-
-        # print(diff.shape, sync_index)
-        diff = diff.reshape(self.num_rows, -1)
-        print('delta_t_ns', self.delta_t_ns)
-        print(np.min(self.laserd), np.max(self.laserd))
+        diff, sync_index = self.subtract_groundstate(
+            sync_type, sync_value, pre_avg_orbitals, do_perbunch
+        )    
+        # print('delta_t_ns', self.delta_t_ns)
+        # print(np.min(self.laserd), np.max(self.laserd))
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns  
         t_mat = np.tile(t_mat, (diff.shape[0], 1))
         for n in range(self.num_rows):
