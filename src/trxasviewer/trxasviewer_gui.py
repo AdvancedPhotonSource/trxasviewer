@@ -6,7 +6,7 @@ import pyqtgraph as pg
 from pathlib import Path
 from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import (QDir, QSortFilterProxyModel,
+from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt,
                             Signal, Slot, QObject, QThread)
 
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
@@ -278,7 +278,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.last_position = pos
 
         if self.view.sceneBoundingRect().contains(pos):
-            mouse_point = self.view.mapSceneToView(pos)
+            mouse_point = self.viewomapSceneToView(pos)
             # Update crosshair position
             self.vLine.setPos(mouse_point.x())
             self.hLine.setPos(mouse_point.y()) 
@@ -414,6 +414,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             fs_root_index = self.model.index(folder_path)
             proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
             self.treeView_fs.setRootIndex(proxy_root_index)
+            self.treeView_fs.sortByColumn(0, Qt.AscendingOrder)
             self.build_cache()
 
     def update_fileindex(self):
