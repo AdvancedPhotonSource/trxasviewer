@@ -292,17 +292,17 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.groupBox_9, 2, 0, 1, 2)
 
-        self.groupBox_7 = QGroupBox(self.groupBox_5)
-        self.groupBox_7.setObjectName(u"groupBox_7")
-        self.gridLayout_5 = QGridLayout(self.groupBox_7)
+        self.groupBox_timing = QGroupBox(self.groupBox_5)
+        self.groupBox_timing.setObjectName(u"groupBox_timing")
+        self.gridLayout_5 = QGridLayout(self.groupBox_timing)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.gridLayout_5.setContentsMargins(2, 2, 2, 2)
-        self.radioButton_sync_time = QRadioButton(self.groupBox_7)
+        self.radioButton_sync_time = QRadioButton(self.groupBox_timing)
         self.radioButton_sync_time.setObjectName(u"radioButton_sync_time")
 
         self.gridLayout_5.addWidget(self.radioButton_sync_time, 0, 0, 1, 1)
 
-        self.doubleSpinBox_sync_time_us = QDoubleSpinBox(self.groupBox_7)
+        self.doubleSpinBox_sync_time_us = QDoubleSpinBox(self.groupBox_timing)
         self.doubleSpinBox_sync_time_us.setObjectName(u"doubleSpinBox_sync_time_us")
         self.doubleSpinBox_sync_time_us.setEnabled(False)
         self.doubleSpinBox_sync_time_us.setDecimals(6)
@@ -310,13 +310,13 @@ class Ui_MainWindow(object):
 
         self.gridLayout_5.addWidget(self.doubleSpinBox_sync_time_us, 0, 1, 1, 1)
 
-        self.radioButton_sync_bunch = QRadioButton(self.groupBox_7)
+        self.radioButton_sync_bunch = QRadioButton(self.groupBox_timing)
         self.radioButton_sync_bunch.setObjectName(u"radioButton_sync_bunch")
         self.radioButton_sync_bunch.setChecked(True)
 
         self.gridLayout_5.addWidget(self.radioButton_sync_bunch, 0, 2, 1, 1)
 
-        self.spinBox_syncbunch_number = QSpinBox(self.groupBox_7)
+        self.spinBox_syncbunch_number = QSpinBox(self.groupBox_timing)
         self.spinBox_syncbunch_number.setObjectName(u"spinBox_syncbunch_number")
         self.spinBox_syncbunch_number.setMaximum(999999)
         self.spinBox_syncbunch_number.setValue(1820)
@@ -324,7 +324,7 @@ class Ui_MainWindow(object):
         self.gridLayout_5.addWidget(self.spinBox_syncbunch_number, 0, 3, 1, 1)
 
 
-        self.gridLayout_4.addWidget(self.groupBox_7, 0, 0, 1, 2)
+        self.gridLayout_4.addWidget(self.groupBox_timing, 0, 0, 1, 2)
 
         self.pushButton_select_savefname = QPushButton(self.groupBox_5)
         self.pushButton_select_savefname.setObjectName(u"pushButton_select_savefname")
@@ -679,7 +679,7 @@ class Ui_MainWindow(object):
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Sync Timing", None))
+        self.groupBox_timing.setTitle(QCoreApplication.translate("MainWindow", u"Sync Timing", None))
         self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.doubleSpinBox_sync_time_us.setSuffix(QCoreApplication.translate("MainWindow", u" \u03bcs", None))
         self.radioButton_sync_bunch.setText(QCoreApplication.translate("MainWindow", u"Bunch", None))
