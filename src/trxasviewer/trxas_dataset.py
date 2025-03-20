@@ -326,8 +326,8 @@ class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
-        self.dset_attributes = ["energy", "num_rows", "labels", "meta_data",
-                                "dset_type", "shape", "delta_t_ns",
+        self.dset_attributes = ["energy", "laserd", "num_rows", "labels",
+                                "meta_data", "dset_type", "shape", "delta_t_ns",
                                 "xas_data_norm"]
 
         if load_cache and cache_exists:
@@ -374,8 +374,10 @@ class TrXASDataset:
 
         if self.dset_type == 'EXAFS':
             self.energy = self.get("Energy")
+            self.laserd = 0.0
         elif self.dset_type == 'LASERD':
             self.laserd = self.get("laserd")
+            self.energy = 0.0
 
         xas_part = data[:, ~labels_mask]
         # fill the missing data with NaN, create a whole dataset
@@ -393,9 +395,17 @@ class TrXASDataset:
     
     def get_x_axis(self):
         if self.dset_type == 'EXAFS':
-            return self.energy
+            payload = {
+                "value": self.energy,
+                "label": "Energy",
+                "unit": "keV"
+                }
         elif self.dset_type == 'LASERD':
-            return self.laserd
+            payload = {
+                "value": self.laserd,
+                "label": "Delay",
+                "unit": "ns"}
+        return payload
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
         if target == "raw":
@@ -508,6 +518,9 @@ class TrXASDataset:
             raise ValueError("Unknown do_perbunch value %s method")
         diff = diff.reshape(self.num_rows, -1)
         return diff, sync_index
+    
+    def apply_binning(self, method):
+        pass
 
     def process_energy(
         self,
@@ -537,7 +550,7 @@ class TrXASDataset:
 
         t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
         t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
-        return diff, self.energy, t_axis
+        return diff, self.get_x_axis(), t_axis
     
     def process_laserd(
         self,
@@ -586,7 +599,7 @@ class TrXASDataset:
 
         # t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
         t_axis = np.arange(0, diff.shape[1]) * self.delta_t_ns # * avg_delta_t_ns - t_offset
-        return diff, self.laserd, t_axis
+        return diff, self.get_x_axis(), t_axis
 
 
 if __name__ == "__main__":

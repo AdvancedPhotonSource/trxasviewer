@@ -137,7 +137,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.init_ui()
         self.image = None
-        self.energy_axis = None
+        self.x_axis = None
         self.t_axis = None
         self.last_position = None
         self.roi = None
@@ -304,7 +304,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.energy_axis[0:horizontal_data.size]
+                x_positions = self.x_axis["value"][0:horizontal_data.size]
                 y_positions = self.t_axis[0:vertical_data.size] / 1000
                 y_positions = y_positions[::-1]
 
@@ -313,11 +313,19 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.v_curve.setData(vertical_data, y_positions)
                 self.update_roi(None, position=(x, y))
 
-                pos_energy = self.energy_axis[x]
+                pos_value = self.x_axis["value"][x]
                 pos_time = y_positions[y] 
-                self.pg_hdl_zoomin.setTitle(
-                    f"Energy: {pos_energy:.4f} keV, Time: {pos_time:.3f} μs"
-                )
+                unit = self.x_axis["unit"]
+                if self.x_axis["label"] == "Energy":
+                    self.pg_hdl_zoomin.setTitle(
+                        f"Energy: {pos_value:.4f} {unit}, Time: {pos_time:.3f} μs"
+                    )
+                    self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
+                elif self.x_axis["label"] == "Delay":
+                    self.pg_hdl_zoomin.setTitle(
+                        f"Delay: {pos_value:.4f} {unit}, Time: {pos_time:.3f} μs"
+                    )
+                    self.pg_hdl_hline.setLabel("bottom", "Delay", units=unit)
             self.update_zoomed_view()
 
     def update_zoomed_view(self):
@@ -396,8 +404,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         return binning_kwargs
 
     def plot_results(self):
-        data, energy_axis, t_axis = self.avg_worker.get_results()
-        self.energy_axis = energy_axis
+        data, x_axis, t_axis = self.avg_worker.get_results()
+        self.x_axis = x_axis
         self.t_axis = t_axis
 
         if data is not None:
