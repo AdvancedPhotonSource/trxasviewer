@@ -263,10 +263,13 @@ class TrXASDatasetManager:
             x_axis = results.get("x_axis")["value"]
             t_axis = results.get("t_axis")
             TrXASDataset.plot_and_save(fname_plot, diff, x_axis, t_axis)
-            TrXASDataset.save_as_origin_format(fname_origin, diff, x_axis, t_axis)
-            logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+            TrXASDataset.save_as_origin_format(
+                fname_origin, diff, x_axis, t_axis)
+            logger.info(
+                f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
         else:
-            logger.info(f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}")
+            logger.info(
+                f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}")
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -293,12 +296,12 @@ class TrXASDatasetManager:
         avg_data = safe_mean(data_list)
         avg_kinetics = safe_mean(kinetics_list)
 
-        good_idx = 0 #np.argmax(shapes[:, 0])
+        good_idx = 0  # np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
         good_results = good_dset.get_energy_vs_time(**kwargs)
-        good_results["avg"] = avg_data 
+        good_results["avg"] = avg_data
         good_results["kinetics"] = avg_kinetics
-        return good_results 
+        return good_results
 
 
 @lru_cache(maxsize=512)
@@ -406,7 +409,6 @@ class TrXASDataset:
         self.delta_t_s = 1 / P0 / self.shape[2]
         self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
-    
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None,
                            binning_kwargs=None):
@@ -487,7 +489,7 @@ class TrXASDataset:
         data_full[0, 1:] = t_axis
         data_full[1:, 0] = energy_axis
         np.savetxt(save_name, data_full, fmt="%.8e")
-    
+
     def subtract_groundstate(
         self,
         sync_type="time",
@@ -525,14 +527,14 @@ class TrXASDataset:
             raise ValueError("Unknown do_perbunch value %s method")
         diff = diff.reshape(self.num_rows, -1)
         return diff, sync_index
-    
+
     def compile_results(self, avg, t_axis, kinetics=None):
         if self.dset_type == 'EXAFS':
             x_axis = {
                 "value": self.energy,
                 "label": "Energy",
                 "unit": "keV"
-                }
+            }
         elif self.dset_type == 'LASERD':
             x_axis = {
                 "value": self.laserd * (-1),
@@ -551,7 +553,7 @@ class TrXASDataset:
             "dset_type": self.dset_type
         }
         return results
-    
+
     def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
         size = diff.shape[1]
         self.idx_mask, self.binning_mat = prepare_binning_matrix(
@@ -567,19 +569,19 @@ class TrXASDataset:
     ):
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
-        t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s 
+        t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         avg, t_axis = self.apply_binning(diff, t_axis_raw, sync_index,
                                          **binning_kwargs)
         return self.compile_results(avg, t_axis)
-    
+
     def process_laserd(
         self,
         norm_kwargs,
         binning_kwargs,
     ):
         assert self.dset_type == "LASERD", "Not a LASERD scan"
-        diff, sync_index = self.subtract_groundstate(**norm_kwargs)    
-        t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s  
+        diff, sync_index = self.subtract_groundstate(**norm_kwargs)
+        t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         t_mat = t_mat - self.laserd[:, np.newaxis]
         avg, t_mat2 = self.apply_binning(diff, t_mat, sync_index,
                                          **binning_kwargs)
