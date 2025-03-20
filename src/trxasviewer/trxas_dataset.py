@@ -257,10 +257,16 @@ class TrXASDatasetManager:
             "analysis_kwargs": kwargs,
         })
         np.savez_compressed(fname_numpy, **results)
-        TrXASDataset.plot_and_save(fname_plot, diff, energy, t_axis)
-        TrXASDataset.save_as_origin_format(fname_origin, diff, energy, t_axis)
-        logger.info(
-            f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+
+        if results["dset_type"] == "EXAFS":
+            diff = results.get("avg")
+            x_axis = results.get("x_axis")["value"]
+            t_axis = results.get("t_axis")
+            TrXASDataset.plot_and_save(fname_plot, diff, x_axis, t_axis)
+            TrXASDataset.save_as_origin_format(fname_origin, diff, x_axis, t_axis)
+            logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+        else:
+            logger.info(f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}")
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -401,19 +407,6 @@ class TrXASDataset:
         self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
     
-    def get_x_axis(self):
-        if self.dset_type == 'EXAFS':
-            payload = {
-                "value": self.energy,
-                "label": "Energy",
-                "unit": "keV"
-                }
-        elif self.dset_type == 'LASERD':
-            payload = {
-                "value": self.laserd * (-1),
-                "label": "Delay",
-                "unit": "s"}
-        return payload
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None,
                            binning_kwargs=None):
@@ -464,8 +457,9 @@ class TrXASDataset:
 
     @staticmethod
     def plot_and_save(save_name, diff, energy_axis, t_axis, title=None):
-        plt.style.use('science')
-        t_axis /= 1000  # convert to microseconds
+        # plt.style.use('science')
+        plt.rcParams["text.usetex"] = False
+        t_axis = t_axis * 1e6   # convert to microseconds
         extent = (energy_axis[0], energy_axis[-1], t_axis[0], t_axis[-1])
         data = np.flipud(diff.T)
         fig_width = 4.8
@@ -479,7 +473,7 @@ class TrXASDataset:
                        vmin=vmin, vmax=vmax)
         # ax.set_aspect(1/aspect)
         ax.set_xlabel("Energy (keV)")
-        ax.set_ylabel("Time ($\\mu$s)")
+        ax.set_ylabel("Time (μs)")
         ax.set_title(title)
         plt.tight_layout()
         plt.colorbar(im, ax=ax)
@@ -533,14 +527,28 @@ class TrXASDataset:
         return diff, sync_index
     
     def compile_results(self, avg, t_axis, kinetics=None):
+        if self.dset_type == 'EXAFS':
+            x_axis = {
+                "value": self.energy,
+                "label": "Energy",
+                "unit": "keV"
+                }
+        elif self.dset_type == 'LASERD':
+            x_axis = {
+                "value": self.laserd * (-1),
+                "label": "Delay",
+                "unit": "s"}
+        # y_axis = {"value": t_axis, "label": "Time", "unit": "s"}
+
         results = {
             "avg": avg,
             "t_axis": t_axis,
-            "x_axis": self.get_x_axis(),
+            "x_axis": x_axis,
             "kinetics": kinetics,
             "bunch_mode": self.shape[2],
             "delta_t_s": self.delta_t_s,
-            "shape": self.shape
+            "shape": self.shape,
+            "dset_type": self.dset_type
         }
         return results
     
