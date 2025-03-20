@@ -182,6 +182,8 @@ class Ui_MainWindow(object):
         self.spinBox_binning_lognum = QSpinBox(self.tab_4)
         self.spinBox_binning_lognum.setObjectName(u"spinBox_binning_lognum")
         self.spinBox_binning_lognum.setMinimum(1)
+        self.spinBox_binning_lognum.setSingleStep(1)
+        self.spinBox_binning_lognum.setValue(2)
 
         self.gridLayout_18.addWidget(self.spinBox_binning_lognum, 1, 1, 1, 1)
 
@@ -239,7 +241,7 @@ class Ui_MainWindow(object):
 
         self.spinBox_numb0 = QSpinBox(self.tab_5)
         self.spinBox_numb0.setObjectName(u"spinBox_numb0")
-        self.spinBox_numb0.setMinimum(0)
+        self.spinBox_numb0.setMinimum(1)
         self.spinBox_numb0.setMaximum(9999)
 
         self.gridLayout_16.addWidget(self.spinBox_numb0, 4, 1, 1, 1)
@@ -270,12 +272,15 @@ class Ui_MainWindow(object):
 
         self.spinBox_anchor4 = QSpinBox(self.tab_5)
         self.spinBox_anchor4.setObjectName(u"spinBox_anchor4")
+        self.spinBox_anchor4.setMaximum(9999)
+        self.spinBox_anchor4.setValue(960)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor4, 3, 5, 1, 1)
 
         self.spinBox_numb4 = QSpinBox(self.tab_5)
         self.spinBox_numb4.setObjectName(u"spinBox_numb4")
         self.spinBox_numb4.setMaximum(9999)
+        self.spinBox_numb4.setValue(8)
 
         self.gridLayout_16.addWidget(self.spinBox_numb4, 4, 5, 1, 1)
 
@@ -636,7 +641,7 @@ class Ui_MainWindow(object):
         self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_max.setEnabled)
 
         self.tabWidget.setCurrentIndex(0)
-        self.tabWidget_binning.setCurrentIndex(2)
+        self.tabWidget_binning.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
