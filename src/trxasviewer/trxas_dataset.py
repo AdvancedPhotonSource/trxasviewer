@@ -411,7 +411,7 @@ class TrXASDataset:
                 }
         elif self.dset_type == 'LASERD':
             payload = {
-                "value": self.laserd,
+                "value": self.laserd * (-1),
                 "label": "Delay",
                 "unit": "s"}
         return payload
@@ -507,7 +507,7 @@ class TrXASDataset:
         num_orbitals, num_bunches = self.shape[1:3]
 
         if sync_type == "time":
-            sync_index = int(sync_value * 1000 / self.delta_t_s)
+            sync_index = int(sync_value / self.delta_t_s)
         else:
             sync_index = sync_value
 
@@ -541,6 +541,7 @@ class TrXASDataset:
             "kinetics": kinetics,
             "bunch_mode": self.shape[2],
             "delta_t_s": self.delta_t_s,
+            "shape": self.shape
         }
         return results
     
