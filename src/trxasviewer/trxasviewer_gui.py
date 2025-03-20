@@ -173,6 +173,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
         self.toolButton_refresh.clicked.connect(self.refresh_filesystem)
+        self.spinBox_syncbunch_number.valueChanged.connect(self.update_sync_timing_parameters)
+        self.doubleSpinBox_sync_time_us.valueChanged.connect(self.update_sync_timing_parameters)
+        self.radioButton_sync_time.toggled.connect(self.update_sync_timing_parameters)
 
         for n in range(5):
             def callback(index=n):
@@ -403,6 +406,20 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.setDisabled(True)
         self.avg_worker.start_task.emit()
     
+    def update_sync_timing_parameters(self):
+        if self.results is None: return
+        bunch_mode = self.results["bunch_mode"]
+        dt_ns = self.results["delta_t_s"] * 1e9
+        self.groupBox_timing.setTitle(f"Sync Timing: [{bunch_mode}-bunch]:[{dt_ns:.3f} ns]")
+        kwargs = self.get_normalization_subgs_kwargs()
+        stype, sval = kwargs["sync_type"], kwargs["sync_value"]
+        if stype == "time":
+            sync_bunch = int(sval / self.results["delta_t_s"])
+            self.spinBox_syncbunch_number.setValue(sync_bunch)
+        elif stype == "bunch":
+            sync_time = sval * self.results["delta_t_s"] * 1e6  # s to us
+            self.doubleSpinBox_sync_time_us.setValue(sync_time)
+    
     def get_normalization_subgs_kwargs(self):
         sync_time = self.radioButton_sync_time.isChecked()
         sync_bunch = self.radioButton_sync_bunch.isChecked()
@@ -411,7 +428,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         sync_value = (
             self.spinBox_syncbunch_number.value()
             if sync_bunch
-            else self.doubleSpinBox_sync_time_us.value()
+            else self.doubleSpinBox_sync_time_us.value() * 1e-6     # us to s
         )
         norm_kwargs = {
             "sync_type": sync_type,
@@ -443,6 +460,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         results = self.avg_worker.get_results()
         if results is not None:
             self.results = results
+            self.update_sync_timing_parameters()
             data = self.results["avg"].T
             if self.image is None or data.shape != self.image.shape:
                 # remove roi
