@@ -169,6 +169,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
         self.toolButton_refresh.clicked.connect(self.refresh_filesystem)
 
+        for n in range(5):
+            def callback(index=n):
+                self.update_binning_params(index=index)
+            self.__dict__[f'spinBox_anchor{n}'].editingFinished.connect(callback)
+            self.__dict__[f'spinBox_numb{n}'].editingFinished.connect(callback)
+
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
 
@@ -184,6 +190,30 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     
     def refresh_filesystem(self):
         self.proxy_model.layoutChanged.emit()
+        
+    def update_binning_params(self, index=0, prev_enable=True):
+        if index >= 5: return
+
+        length = self.__dict__[f'spinBox_numb{index}'].value()
+        anchor = self.__dict__[f'spinBox_anchor{index}'].value()
+
+        if index == 0:
+            prev_anchor = 0
+        else:
+            prev_anchor = self.__dict__[f'spinBox_anchor{index-1}'].value()
+            prev_length = self.__dict__[f'spinBox_numb{index-1}'].value()
+        if length == 0 or not prev_enable:
+            self.__dict__[f'spinBox_anchor{index}'].setEnabled(False)
+            self.update_binning_params(index=index+1, prev_enable=False)
+            return
+        else:
+            self.__dict__[f'spinBox_anchor{index}'].setEnabled(True)
+            total_size = max(1, anchor - prev_anchor)
+            fit_size = (total_size + length - 1) // length * length
+            fit_anchor = prev_anchor + fit_size
+            if fit_anchor != anchor:
+                self.__dict__[f'spinBox_anchor{index}'].setValue(fit_anchor)
+            self.update_binning_params(index=index+1, prev_enable=True)
         
     def process(self):
         if self.is_processing:
