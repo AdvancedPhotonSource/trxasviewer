@@ -4,6 +4,7 @@ import time
 import numpy as np
 import pyqtgraph as pg
 from pathlib import Path
+import traceback
 from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
 from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt, QModelIndex,
@@ -86,8 +87,13 @@ class AverageWorker(QObject):
     def run(self):
         t0 = time.perf_counter()
         self.dset_manager.update_flist(self.flist)
-        self.results = self.dset_manager.get_energy_vs_time(
-            progress=self.progress, **self.kwargs)
+        try:
+            self.results = self.dset_manager.get_energy_vs_time(
+                                    progress=self.progress, **self.kwargs)
+        except Exception as e:
+            traceback.print_exc()
+            logger.error(f"Error in AverageWorker.run: {e}")
+            self.results = None
         self.finished.emit()
         t1 = time.perf_counter()
         logger.info(f'AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files')
@@ -137,8 +143,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.init_ui()
         self.image = None
-        self.x_axis = None
-        self.t_axis = None
+        self.results = None
         self.last_position = None
         self.roi = None
         self.cache_db = {}
@@ -278,10 +283,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         # Initialize plots
         self.h_curve = self.pg_hdl_hline.plot(pen="b")
         self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
-        self.pg_hdl_hline.setLabel("left", "Intensity", units="a.u.")
+        self.pg_hdl_hline.setLabel("left", "Intensity (a.u.)",)
         self.v_curve = self.pg_hdl_vline.plot(pen="r")
-        self.pg_hdl_vline.setLabel("left", "Time", units="μs")
-        self.pg_hdl_vline.setLabel("bottom", "Intensity", units="a.u.")
+        self.pg_hdl_vline.setLabel("left", "Time", units="s")
+        self.pg_hdl_vline.setLabel("bottom", "Intensity (a.u.)")
         self.zoomin_image = pg.ImageItem()
         self.pg_hdl_zoomin.addItem(self.zoomin_image)
         self.pg_hdl_zoomin.setAspectLocked(False)
@@ -334,8 +339,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.x_axis["value"][0:horizontal_data.size]
-                y_positions = self.t_axis[0:vertical_data.size] / 1000
+                x_positions = self.results["x_axis"]["value"][0:horizontal_data.size]
+                y_positions = self.results["t_axis"][0:vertical_data.size]
                 y_positions = y_positions[::-1]
 
                 # Update horizontal cut
@@ -343,17 +348,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.v_curve.setData(vertical_data, y_positions)
                 self.update_roi(None, position=(x, y))
 
-                pos_value = self.x_axis["value"][x]
+                pos_value = self.results["x_axis"]["value"][x]
                 pos_time = y_positions[y] 
-                unit = self.x_axis["unit"]
-                if self.x_axis["label"] == "Energy":
+                unit = self.results["x_axis"]["unit"]
+                label = self.results["x_axis"]["label"]
+                if  label == "Energy":
                     self.pg_hdl_zoomin.setTitle(
-                        f"Energy: {pos_value:.4f} {unit}, Time: {pos_time:.3f} μs"
+                        f"Energy: {pos_value:.4f} {unit}, Time: {pos_time:.3e} s"
                     )
                     self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
-                elif self.x_axis["label"] == "Delay":
+                elif label == "Delay":
                     self.pg_hdl_zoomin.setTitle(
-                        f"Delay: {pos_value:.4f} {unit}, Time: {pos_time:.3f} μs"
+                        f"Delay: {pos_value:.3e} {unit}, Time: {pos_time:.3e} s"
                     )
                     self.pg_hdl_hline.setLabel("bottom", "Delay", units=unit)
             self.update_zoomed_view()
@@ -434,12 +440,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         return binning_kwargs
 
     def plot_results(self):
-        data, x_axis, t_axis = self.avg_worker.get_results()
-        self.x_axis = x_axis
-        self.t_axis = t_axis
-
-        if data is not None:
-            data = data.T
+        results = self.avg_worker.get_results()
+        if results is not None:
+            self.results = results
+            data = self.results["avg"].T
             if self.image is None or data.shape != self.image.shape:
                 # remove roi
                 if self.roi is not None:
@@ -456,10 +460,24 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.image = np.flipud(data)
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
             self.mouse_clicked()
+            self.plot_kinetics()
         
         self.is_processing = False
         self.pushButton_replot.setText('Process')
         self.pushButton_replot.setEnabled(True)
+    
+    def plot_kinetics(self):
+        """Plots the kinetics data."""
+        if self.results['kinetics'] is None:
+            self.tabWidget_kinetics.setCurrentIndex(0)
+            return
+
+        self.tabWidget_kinetics.setCurrentIndex(1)
+        self.pg_hdl_kinetics.clear()
+        data = self.results["kinetics"]
+        self.pg_hdl_kinetics.plot(data[:, 0], data[:, 1], pen="b")
+        self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
+        self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
     
     def update_progress_bar(self, value):
         """Updates the progress bar."""
