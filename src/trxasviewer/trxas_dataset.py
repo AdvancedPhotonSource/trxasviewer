@@ -456,7 +456,6 @@ class TrXASDataset:
         if repeat_rate > 0:
             offset = xas_data / (repeat_rate * acquire_time)
             xas_data = -np.log(1.0 - offset)
-        # print('shape', xas_data.shape)       
 
         xas_data = xas_data.reshape(
             self.num_rows, *self.shape

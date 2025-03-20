@@ -650,7 +650,7 @@ class Ui_MainWindow(object):
         self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_max.setEnabled)
 
         self.tabWidget.setCurrentIndex(0)
-        self.tabWidget_binning.setCurrentIndex(1)
+        self.tabWidget_binning.setCurrentIndex(0)
         self.tabWidget_kinetics.setCurrentIndex(1)
 
 

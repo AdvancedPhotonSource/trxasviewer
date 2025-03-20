@@ -132,7 +132,6 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
             idx_offset += temp[-1] + 1
             if start == size:
                 break
-        print(np.sum(idx_mask), idx_offset)
 
     counts = np.bincount(idx_mask)
     weights = np.reciprocal(counts[idx_mask], dtype=float)
