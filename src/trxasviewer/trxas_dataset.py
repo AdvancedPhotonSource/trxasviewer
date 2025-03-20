@@ -215,7 +215,7 @@ def get_multiples(size, pos, unit_len):
     return pos, slice(start, end)
 
 
-def save_mean(data_list):
+def safe_mean(data_list):
     if len(data_list) == 0:
         return None
 
@@ -282,11 +282,11 @@ class TrXASDatasetManager:
             if dset is not None:
                 results = dset.get_energy_vs_time(**kwargs)
                 data_list.append(results["avg"])
-                if "kinetics" in results:
+                if results["kinetics"] is not None:
                     kinetics_list.append(results["kinetics"])
 
-        avg_data = save_mean(data_list)
-        avg_kinetics = save_mean(kinetics_list)
+        avg_data = safe_mean(data_list)
+        avg_kinetics = safe_mean(kinetics_list)
 
         good_idx = 0 #np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
@@ -420,18 +420,12 @@ class TrXASDataset:
                            binning_kwargs=None):
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
-            return {
-                "avg": self.xas_data[:, channel],
-                "x_axis": self.get_x_axis(),
-                "t_axis": t_axis
-            }
+            return self.compile_results(self.xas_data[:, channel, :], t_axis)
+
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
-            return {
-                "avg": self.xas_data_norm,
-                "x_axis": self.get_x_axis(),
-                "t_axis": t_axis
-            }
+            return self.compile_results(self.xas_data_norm, t_axis)
+
         elif target == "normalized-GS":
             if self.dset_type == 'LASERD':
                 return self.process_laserd(norm_kwargs, binning_kwargs)
@@ -539,6 +533,17 @@ class TrXASDataset:
         diff = diff.reshape(self.num_rows, -1)
         return diff, sync_index
     
+    def compile_results(self, avg, t_axis, kinetics=None):
+        results = {
+            "avg": avg,
+            "t_axis": t_axis,
+            "x_axis": self.get_x_axis(),
+            "kinetics": kinetics,
+            "bunch_mode": self.shape[2],
+            "delta_t_s": self.delta_t_s,
+        }
+        return results
+    
     def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
         size = diff.shape[1]
         self.idx_mask, self.binning_mat = prepare_binning_matrix(
@@ -557,10 +562,7 @@ class TrXASDataset:
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s 
         avg, t_axis = self.apply_binning(diff, t_axis_raw, sync_index,
                                          **binning_kwargs)
-        result = {
-            "avg": avg, "x_axis": self.get_x_axis(), "t_axis": t_axis,
-        }
-        return result
+        return self.compile_results(avg, t_axis)
     
     def process_laserd(
         self,
@@ -579,11 +581,7 @@ class TrXASDataset:
         diff_val = avg[roi]
         kinetics = np.stack((t_val, diff_val), axis=1)
         kinetics = kinetics[kinetics[:, 0].argsort()]
-        result = {
-            "avg": avg, "x_axis": self.get_x_axis(), "t_axis": t_axis,
-            "kinetics": kinetics,
-        }
-        return result
+        return self.compile_results(avg, t_axis, kinetics=kinetics)
 
 
 if __name__ == "__main__":
