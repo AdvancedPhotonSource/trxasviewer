@@ -66,18 +66,17 @@ def build_cache_database(folder, min_version="0.2.0"):
         cache_db["prefix_db"][prefix][scan_type].append(index)
 
     flag_save = False
-    # for entry in Path(folder).iterdir():
     for entry in sorted(Path(folder).iterdir(), key=lambda x: x.name):
         if not entry.is_file():
             continue
         # Check scan type in cache or compute it
         full_path = str(entry.resolve())  # Ensure absolute path
         scan_type = cache_db["scan_type"].get(full_path)
-        if scan_type is None:
+        if scan_type in (None, "writting"):
+            # retry to get type if it was writting, or if it was not in cache
             scan_type = get_scan_type(entry)
             cache_db["scan_type"][full_path] = scan_type
-
-        if scan_type in {"exafs", "laserd"}:
+        if scan_type in ("exafs", "laserd"):
             append_entry(cache_db, scan_type, entry)
             flag_save = True
 
