@@ -208,11 +208,32 @@ def get_multiples(size, pos, unit_len):
     Get the start and end positions of the multiples of unit_len that contain
     the position pos. 
     """
-    assert 0 < pos < size
+    assert 0 < pos < size, f"Sync Bunch [{pos}] is not valid."
     start = pos - pos // unit_len * unit_len
     end = pos + (size - pos) // unit_len * unit_len
     pos = pos - start
     return pos, slice(start, end)
+
+
+def save_mean(data_list):
+    if len(data_list) == 0:
+        return None
+
+    shapes = np.array([d.shape for d in data_list])
+    max_shape = np.max(shapes, axis=0)
+    max_time_steps = max(shapes[:, 0])
+
+    data_full = np.full(
+        (len(data_list), max_time_steps, max_shape[1]), np.nan)
+
+    # Fill the array with valid data
+    for i, d in enumerate(data_list):
+        valid_rows, valid_cols = d.shape
+        # Only fill valid regions
+        data_full[i, :valid_rows, :valid_cols] = d
+
+    data_avg = np.nanmean(data_full, axis=0)
+    return data_avg
 
 
 class TrXASDatasetManager:
@@ -230,15 +251,12 @@ class TrXASDatasetManager:
         fname_numpy = fname.with_name(f"{base_name}_numpy.npz")
         fname_plot = fname.with_name(f"{base_name}_plot.pdf")
 
-        diff, energy, t_axis = self.get_energy_vs_time(progress=None, **kwargs)
-        results = {
+        results = self.get_energy_vs_time(progress=None, **kwargs)
+        results.update({
             "flist": self.flist,
             "analysis_type": "normalized-GS",
-            "diff_data": diff.astype(np.float32),
             "analysis_kwargs": kwargs,
-            "energy_axis": energy,
-            "t_axis": t_axis,
-        }
+        })
         np.savez_compressed(fname_numpy, **results)
         TrXASDataset.plot_and_save(fname_plot, diff, energy, t_axis)
         TrXASDataset.save_as_origin_format(fname_origin, diff, energy, t_axis)
@@ -249,42 +267,33 @@ class TrXASDatasetManager:
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
-        shapes = []
+        kinetics_list = []
+        dset_type = None
         # Load datasets
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
             dset = create_trxas_dataset(
                 fname, ignore_incomplete=self.ignore_incomplete)
+            if dset_type is None:
+                dset_type = dset.dset_type
+            elif dset_type != dset.dset_type:
+                continue
             if dset is not None:
-                t_data, _, _ = dset.get_energy_vs_time(**kwargs)
-                data_list.append(t_data)
-                shapes.append(t_data.shape)
-        if len(data_list) == 0:
-            return None, None, None
-        shapes = np.array(shapes)
-        # Determine maximum valid shape
-        max_shape = np.max(shapes, axis=0)  # Get the largest shape
-        # Get the maximum shape along axis 0
-        max_time_steps = max(shapes[:, 0])
+                results = dset.get_energy_vs_time(**kwargs)
+                data_list.append(results["avg"])
+                if "kinetics" in results:
+                    kinetics_list.append(results["kinetics"])
 
-        # Create a NaN-filled array with the max shape
-        data_full = np.full(
-            (len(data_list), max_time_steps, max_shape[1]), np.nan)
+        avg_data = save_mean(data_list)
+        avg_kinetics = save_mean(kinetics_list)
 
-        # Fill the array with valid data
-        for i, d in enumerate(data_list):
-            valid_rows, valid_cols = d.shape
-            # Only fill valid regions
-            data_full[i, :valid_rows, :valid_cols] = d
-
-        # Compute the average, ignoring NaNs
-        data_avg = np.nanmean(data_full, axis=0)
-        # Select dataset with max time steps
-        good_idx = np.argmax(shapes[:, 0])
+        good_idx = 0 #np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
-        _, energy_axis, t_axis = good_dset.get_energy_vs_time(**kwargs)
-        return data_avg, energy_axis, t_axis
+        good_results = good_dset.get_energy_vs_time(**kwargs)
+        good_results["avg"] = avg_data 
+        good_results["kinetics"] = avg_kinetics
+        return good_results 
 
 
 @lru_cache(maxsize=512)
@@ -327,7 +336,7 @@ class TrXASDataset:
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = ["energy", "laserd", "num_rows", "labels",
-                                "meta_data", "dset_type", "shape", "delta_t_ns",
+                                "meta_data", "dset_type", "shape", "delta_t_s",
                                 "xas_data_norm"]
 
         if load_cache and cache_exists:
@@ -376,7 +385,7 @@ class TrXASDataset:
             self.energy = self.get("Energy")
             self.laserd = 0.0
         elif self.dset_type == 'LASERD':
-            self.laserd = self.get("laserd")
+            self.laserd = self.get("laserd") * 1e-9  # convert to seconds
             self.energy = 0.0
 
         xas_part = data[:, ~labels_mask]
@@ -389,7 +398,7 @@ class TrXASDataset:
                 payload_mask, shape, xas_full)
 
         self.shape = shape
-        self.delta_t_ns = 1 / P0 / self.shape[2] * 1e9  # bunch time in ns
+        self.delta_t_s = 1 / P0 / self.shape[2]
         self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
     
@@ -404,19 +413,30 @@ class TrXASDataset:
             payload = {
                 "value": self.laserd,
                 "label": "Delay",
-                "unit": "ns"}
+                "unit": "s"}
         return payload
 
     def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None,
                            binning_kwargs=None):
         if target == "raw":
-            t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns
-            return self.xas_data[:, channel], self.get_x_axis(), t_axis
+            t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
+            return {
+                "avg": self.xas_data[:, channel],
+                "x_axis": self.get_x_axis(),
+                "t_axis": t_axis
+            }
         elif target == "normalized":
-            t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns
-            return self.xas_data_norm, self.get_x_axis(), t_axis
+            t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
+            return {
+                "avg": self.xas_data_norm,
+                "x_axis": self.get_x_axis(),
+                "t_axis": t_axis
+            }
         elif target == "normalized-GS":
-            return self.process_energy(norm_kwargs, binning_kwargs)
+            if self.dset_type == 'LASERD':
+                return self.process_laserd(norm_kwargs, binning_kwargs)
+            elif self.dset_type == 'EXAFS':
+                return self.process_energy(norm_kwargs, binning_kwargs)
         else:
             raise ValueError("Unknown target")
 
@@ -494,7 +514,7 @@ class TrXASDataset:
         num_orbitals, num_bunches = self.shape[1:3]
 
         if sync_type == "time":
-            sync_index = int(sync_value * 1000 / self.delta_t_ns)
+            sync_index = int(sync_value * 1000 / self.delta_t_s)
         else:
             sync_index = sync_value
 
@@ -533,65 +553,38 @@ class TrXASDataset:
         norm_kwargs,
         binning_kwargs,
     ):
-        if self.dset_type != "EXAFS":
-            raise TypeError(
-                f"Expect EXAFS scan, but the file is {self.dset_type} scan."
-            )
+        assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
-        t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns 
-        avg, t_axis = self.apply_binning(diff, t_axis_raw,sync_index,
+        t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s 
+        avg, t_axis = self.apply_binning(diff, t_axis_raw, sync_index,
                                          **binning_kwargs)
-        print(diff.shape, "-->", avg.shape)
-        return avg, self.get_x_axis(), t_axis
+        result = {
+            "avg": avg, "x_axis": self.get_x_axis(), "t_axis": t_axis,
+        }
+        return result
     
     def process_laserd(
         self,
-        sync_type="time",
-        sync_value=1820,
-        pre_avg_orbitals=5,
-        aft_avg_bunches=11,
-        do_perbunch="per_bunch",
+        norm_kwargs,
+        binning_kwargs,
     ):
-        if self.dset_type != "LASERD":
-            raise TypeError(
-                f"Expect LASERD scan, but the file is {self.dset_type} scan."
-            )
-        diff, sync_index = self.subtract_groundstate(
-            sync_type, sync_value, pre_avg_orbitals, do_perbunch
-        )    
-        # print('delta_t_ns', self.delta_t_ns)
-        # print(np.min(self.laserd), np.max(self.laserd))
-        t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns  
-        t_mat = np.tile(t_mat, (diff.shape[0], 1))
-        for n in range(self.num_rows):
-            t_mat[n] -= self.laserd[n]
-        roi = t_mat > 0
-        t_val = t_mat[roi]
-        diff_val = diff[roi]
-        pack = np.stack((t_val, diff_val), axis=1)
-        pack = pack[pack[:, 0].argsort()]
-        # plt.plot(pack[:, 0], pack[:, 1], 'o--')
-        # plt.imshow(diff)
-        # plt.colorbar()
-        # plt.show()
-        # apply binning
-        # num_elements = slice_pre.stop - slice_pre.start
-        # diff = diff.reshape(self.num_rows, -1)
-        # avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
-        # print(self.laserd)
-        # plt.plot(self.laserd, 'o--')
-        # plt.show()
-
-        # if aft_avg_bunches > 1:
-        #     sync_index, slice_aft = get_multiples(
-        #         num_elements, sync_index, aft_avg_bunches)
-        #     diff = diff[:, slice_aft].reshape(
-        #         self.num_rows, -1, aft_avg_bunches)
-        #     diff = np.mean(diff, axis=(2,))
-
-        # t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
-        t_axis = np.arange(0, diff.shape[1]) * self.delta_t_ns # * avg_delta_t_ns - t_offset
-        return diff, self.get_x_axis(), t_axis
+        assert self.dset_type == "LASERD", "Not a LASERD scan"
+        diff, sync_index = self.subtract_groundstate(**norm_kwargs)    
+        t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s  
+        t_mat = t_mat - self.laserd[:, np.newaxis]
+        avg, t_mat2 = self.apply_binning(diff, t_mat, sync_index,
+                                         **binning_kwargs)
+        t_axis = np.copy(t_mat2[0])
+        roi = t_mat2 > 0
+        t_val = t_mat2[roi]
+        diff_val = avg[roi]
+        kinetics = np.stack((t_val, diff_val), axis=1)
+        kinetics = kinetics[kinetics[:, 0].argsort()]
+        result = {
+            "avg": avg, "x_axis": self.get_x_axis(), "t_axis": t_axis,
+            "kinetics": kinetics,
+        }
+        return result
 
 
 if __name__ == "__main__":
