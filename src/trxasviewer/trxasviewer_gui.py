@@ -70,6 +70,7 @@ class AverageWorker(QObject):
     progress = Signal(int)
     start_task = Signal()
     stop_worker = Signal()
+    error = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -94,6 +95,7 @@ class AverageWorker(QObject):
             traceback.print_exc()
             logger.error(f"Error in AverageWorker.run: {e}")
             self.results = None
+            self.error.emit(str(e))
         self.finished.emit()
         t1 = time.perf_counter()
         logger.info(f'AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files')
@@ -191,6 +193,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker = AverageWorker()
         self.avg_worker.progress.connect(self.update_progress_bar)
         self.avg_worker.finished.connect(self.plot_results)
+        self.avg_worker.error.connect(self.show_status)
         self.progressBar.setValue(0)
         self.avg_worker.moveToThread(self.thread)
         self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
@@ -198,12 +201,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     
     def refresh_filesystem(self):
         self.proxy_model.layoutChanged.emit()
+    
+    def show_status(self, msg, level=logging.INFO, timeout=5000):
+        logger.log(level, msg)
+        self.statusBar().showMessage(msg, timeout)
         
     def update_binning_params(self, index=0, prev_enable=True):
         if index >= 5: return
 
         length = self.__dict__[f'spinBox_numb{index}'].value()
         anchor = self.__dict__[f'spinBox_anchor{index}'].value()
+        label_widget = self.__dict__[f'label_rtime{index}']
 
         if index == 0:
             prev_anchor = 0
@@ -213,6 +221,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if length == 0 or not prev_enable:
             self.__dict__[f'spinBox_anchor{index}'].setEnabled(False)
             self.update_binning_params(index=index+1, prev_enable=False)
+            label_widget.setText('∞')
             return
         else:
             self.__dict__[f'spinBox_anchor{index}'].setEnabled(True)
@@ -221,6 +230,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             fit_anchor = prev_anchor + fit_size
             if fit_anchor != anchor:
                 self.__dict__[f'spinBox_anchor{index}'].setValue(fit_anchor)
+            if self.results is not None:
+                rtime = self.results["delta_t_s"] * fit_anchor * 1e6  #us
+                label_widget.setText(f'{rtime:.3f}')
             self.update_binning_params(index=index+1, prev_enable=True)
         
     def process(self):
@@ -231,12 +243,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         elif self.radioButton_selection_by_index.isChecked():
             self.process_range()
         else:
-            logger.debug("No selection method selected")
+            self.show_message("No selection method selected", logging.ERROR)
 
     def process_selection(self, selected, deselected):
         if not self.radioButton_selection_by_mouse.isChecked():
             return
-        logger.debug("process_selection")
         indexes = self.treeView_fs.selectionModel().selectedIndexes()
         file_paths = []
         for proxy_index in indexes:
@@ -251,8 +262,6 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def process_range(self):
         if not self.radioButton_selection_by_index.isChecked():
             return
-        logger.debug("process_range")
-
         idx_min = self.spinBox_fileindex_min.value()
         idx_max = self.spinBox_fileindex_max.value()
         raw_folder = self.lineEdit_rawfolder.text()
@@ -484,7 +493,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.setText('Process')
         self.pushButton_replot.setEnabled(True)
     
-    def plot_kinetics(self):
+    def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
         if self.results['kinetics'] is None:
             self.tabWidget_kinetics.setCurrentIndex(0)
@@ -494,6 +503,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_kinetics.clear()
         data = self.results["kinetics"]
         self.pg_hdl_kinetics.plot(data[:, 0], data[:, 1], pen="b")
+        dt = self.results["delta_t_s"] * np.array(x_range)
+        dt[0] = max(dt[0], np.min(data[:, 0]))
+        self.pg_hdl_kinetics.setXRange(dt[0], dt[1])
         self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
         self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
     
