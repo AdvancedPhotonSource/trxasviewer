@@ -7,7 +7,7 @@ import numpy as np
 import logging
 import json
 import scienceplots
-from .utilities import get_scan_type, compare_versions
+from .utilities import get_scan_type, compare_versions, prepare_binning_matrix
 from . import __version__
 
 
@@ -407,7 +407,8 @@ class TrXASDataset:
                 "unit": "ns"}
         return payload
 
-    def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None):
+    def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None,
+                           binning_kwargs=None):
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_ns
             return self.xas_data[:, channel], self.get_x_axis(), t_axis
@@ -415,7 +416,7 @@ class TrXASDataset:
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_ns
             return self.xas_data_norm, self.get_x_axis(), t_axis
         elif target == "normalized-GS":
-            return self.process_energy(**norm_kwargs)
+            return self.process_energy(norm_kwargs, binning_kwargs)
         else:
             raise ValueError("Unknown target")
 
@@ -519,38 +520,29 @@ class TrXASDataset:
         diff = diff.reshape(self.num_rows, -1)
         return diff, sync_index
     
-    def apply_binning(self, method):
-        pass
+    def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
+        size = diff.shape[1]
+        self.idx_mask, self.binning_mat = prepare_binning_matrix(
+            size, sync_index, **binning_kwargs)
+        avg = diff @ self.binning_mat
+        t_axis = t_axis_raw @ self.binning_mat
+        return avg, t_axis
 
     def process_energy(
         self,
-        sync_type="time",
-        sync_value=1820,
-        pre_avg_orbitals=5,
-        aft_avg_bunches=11,
-        do_perbunch="per_bunch",
+        norm_kwargs,
+        binning_kwargs,
     ):
         if self.dset_type != "EXAFS":
             raise TypeError(
                 f"Expect EXAFS scan, but the file is {self.dset_type} scan."
             )
-        diff, sync_index = self.subtract_groundstate(
-            sync_type, sync_value, pre_avg_orbitals, do_perbunch
-        )
-        # apply binning
-        num_elements = diff.shape[1]
-        avg_delta_t_ns = self.delta_t_ns * aft_avg_bunches
-
-        if aft_avg_bunches > 1:
-            sync_index, slice_aft = get_multiples(
-                num_elements, sync_index, aft_avg_bunches)
-            diff = diff[:, slice_aft].reshape(
-                self.num_rows, -1, aft_avg_bunches)
-            diff = np.mean(diff, axis=(2,))
-
-        t_offset = sync_index // aft_avg_bunches * avg_delta_t_ns
-        t_axis = np.arange(0, diff.shape[1]) * avg_delta_t_ns - t_offset
-        return diff, self.get_x_axis(), t_axis
+        diff, sync_index = self.subtract_groundstate(**norm_kwargs)
+        t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_ns 
+        avg, t_axis = self.apply_binning(diff, t_axis_raw,sync_index,
+                                         **binning_kwargs)
+        print(diff.shape, "-->", avg.shape)
+        return avg, self.get_x_axis(), t_axis
     
     def process_laserd(
         self,
