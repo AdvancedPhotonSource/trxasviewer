@@ -285,6 +285,36 @@ class Ui_MainWindow(object):
 
         self.gridLayout_16.addWidget(self.spinBox_numb4, 4, 5, 1, 1)
 
+        self.label_rtime0 = QLabel(self.tab_5)
+        self.label_rtime0.setObjectName(u"label_rtime0")
+
+        self.gridLayout_16.addWidget(self.label_rtime0, 0, 1, 1, 1)
+
+        self.label_rtime1 = QLabel(self.tab_5)
+        self.label_rtime1.setObjectName(u"label_rtime1")
+
+        self.gridLayout_16.addWidget(self.label_rtime1, 0, 2, 1, 1)
+
+        self.label_rtime2 = QLabel(self.tab_5)
+        self.label_rtime2.setObjectName(u"label_rtime2")
+
+        self.gridLayout_16.addWidget(self.label_rtime2, 0, 3, 1, 1)
+
+        self.label_rtime3 = QLabel(self.tab_5)
+        self.label_rtime3.setObjectName(u"label_rtime3")
+
+        self.gridLayout_16.addWidget(self.label_rtime3, 0, 4, 1, 1)
+
+        self.label_rtime4 = QLabel(self.tab_5)
+        self.label_rtime4.setObjectName(u"label_rtime4")
+
+        self.gridLayout_16.addWidget(self.label_rtime4, 0, 5, 1, 1)
+
+        self.label_18 = QLabel(self.tab_5)
+        self.label_18.setObjectName(u"label_18")
+
+        self.gridLayout_16.addWidget(self.label_18, 0, 0, 1, 1)
+
         self.tabWidget_binning.addTab(self.tab_5, "")
 
         self.gridLayout_11.addWidget(self.tabWidget_binning, 0, 0, 1, 1)
@@ -678,6 +708,12 @@ class Ui_MainWindow(object):
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Log", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
+        self.label_rtime0.setText("")
+        self.label_rtime1.setText("")
+        self.label_rtime2.setText("")
+        self.label_rtime3.setText("")
+        self.label_rtime4.setText("")
+        self.label_18.setText(QCoreApplication.translate("MainWindow", u"Rel-Time (\u03bcs)", None))
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
         self.groupBox_timing.setTitle(QCoreApplication.translate("MainWindow", u"Sync Timing", None))
         self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
