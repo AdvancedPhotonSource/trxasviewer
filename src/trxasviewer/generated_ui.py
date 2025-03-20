@@ -179,18 +179,19 @@ class Ui_MainWindow(object):
 
         self.gridLayout_18.addWidget(self.label_11, 1, 0, 1, 1)
 
-        self.spinBox_binning_lognum = QSpinBox(self.tab_4)
-        self.spinBox_binning_lognum.setObjectName(u"spinBox_binning_lognum")
-        self.spinBox_binning_lognum.setMinimum(1)
-        self.spinBox_binning_lognum.setSingleStep(1)
-        self.spinBox_binning_lognum.setValue(2)
-
-        self.gridLayout_18.addWidget(self.spinBox_binning_lognum, 1, 1, 1, 1)
-
         self.label_binning_logmsg = QLabel(self.tab_4)
         self.label_binning_logmsg.setObjectName(u"label_binning_logmsg")
 
         self.gridLayout_18.addWidget(self.label_binning_logmsg, 0, 0, 1, 2)
+
+        self.spinBox_binning_lognum = QDoubleSpinBox(self.tab_4)
+        self.spinBox_binning_lognum.setObjectName(u"spinBox_binning_lognum")
+        self.spinBox_binning_lognum.setDecimals(3)
+        self.spinBox_binning_lognum.setMinimum(1.000000000000000)
+        self.spinBox_binning_lognum.setSingleStep(0.010000000000000)
+        self.spinBox_binning_lognum.setValue(1.200000000000000)
+
+        self.gridLayout_18.addWidget(self.spinBox_binning_lognum, 1, 1, 1, 1)
 
         self.tabWidget_binning.addTab(self.tab_4, "")
         self.tab_5 = QWidget()
