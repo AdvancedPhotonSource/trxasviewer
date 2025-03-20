@@ -383,8 +383,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             return
 
         if kwargs["target"] in ["normalized-GS"]:
-            norm_kwargs = self.get_normalization_subgs_kwargs()
-            kwargs["norm_kwargs"] = norm_kwargs
+            kwargs["norm_kwargs"] = self.get_normalization_subgs_kwargs()
+            kwargs["binning_kwargs"] = self.get_binning_kwargs()
         if kwargs["target"] in ["normalized-GS", "normalized"]:
             self.comboBox_channel_num.setEnabled(False)
         else:
@@ -412,25 +412,25 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "sync_value": sync_value,
             "do_perbunch": self.comboBox_groundstate_method.currentText(),
             "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
-            "aft_avg_bunches": self.spinBox_binning_linnum.value(),
         }
         return norm_kwargs
     
     def get_binning_kwargs(self):
         current_tab_index = self.tabWidget_binning.currentIndex()
         method = self.tabWidget_binning.tabText(current_tab_index)
+        # those are common for all methods
+        binning_kwargs = {
+            "lin_num": self.spinBox_binning_linnum.value(),
+            "log_num": self.spinBox_binning_lognum.value(),
+            "method": method
+            }
         if method == "Manual":
             anchors = [self.__dict__[f'spinBox_anchor{n}'].value() for n in range(5)]
-            numbs = [self.__dict__[f'spinBox_numb{n}'].value() for n in range(5)]
-            binning_kwargs = {
-                "anchors": anchors,
-                "numbs": numbs,
-            }
-        else:
-            binning_kwargs = {
-                "lin_num": self.spinBox_binning_linnum.value(),
-                "log_num": self.spinBox_binning_lognum.value()}
-        binning_kwargs['binning_method'] = method
+            lengths = [self.__dict__[f'spinBox_numb{n}'].value() for n in range(5)]
+            binning_kwargs.update({
+                "anchors": tuple(anchors),
+                "lengths": tuple(lengths),
+            })
         return binning_kwargs
 
     def plot_results(self):
@@ -527,11 +527,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             file_filter,  # Filter to only show .npz files
         )
 
-        norm_kwargs = self.get_normalization_subgs_kwargs()
-        # norm_kwargs['aft_avg_bunches'] = 1
         kwargs = {
             "target": "normalized-GS",
-            "norm_kwargs": norm_kwargs
+            "norm_kwargs":self.get_normalization_subgs_kwargs(),
+            "binning_kwargs": self.get_binning_kwargs(),
         }
 
         if filename and not filename.endswith(".npz"):
