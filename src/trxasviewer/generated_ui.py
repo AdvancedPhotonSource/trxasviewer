@@ -583,35 +583,13 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.groupBox_3, 0, 1, 1, 1)
 
-        self.groupBox_2 = QGroupBox(self.layoutWidget)
-        self.groupBox_2.setObjectName(u"groupBox_2")
-        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy10.setHorizontalStretch(2)
-        sizePolicy10.setVerticalStretch(1)
-        sizePolicy10.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
-        self.groupBox_2.setSizePolicy(sizePolicy10)
-        self.gridLayout_7 = QGridLayout(self.groupBox_2)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.pg_hdl_hline = PlotWidget(self.groupBox_2)
-        self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
-        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy11.setHorizontalStretch(2)
-        sizePolicy11.setVerticalStretch(1)
-        sizePolicy11.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_hline.setSizePolicy(sizePolicy11)
-
-        self.gridLayout_7.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
-
-
-        self.gridLayout.addWidget(self.groupBox_2, 1, 0, 1, 1)
-
         self.groupBox_4 = QGroupBox(self.layoutWidget)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy12.setHorizontalStretch(1)
-        sizePolicy12.setVerticalStretch(1)
-        sizePolicy12.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy12)
+        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy10.setHorizontalStretch(1)
+        sizePolicy10.setVerticalStretch(1)
+        sizePolicy10.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy10)
         self.gridLayout_10 = QGridLayout(self.groupBox_4)
         self.gridLayout_10.setObjectName(u"gridLayout_10")
         self.pg_hdl_zoomin = PlotWidget(self.groupBox_4)
@@ -621,6 +599,36 @@ class Ui_MainWindow(object):
 
 
         self.gridLayout.addWidget(self.groupBox_4, 1, 1, 1, 1)
+
+        self.tabWidget_kinetics = QTabWidget(self.layoutWidget)
+        self.tabWidget_kinetics.setObjectName(u"tabWidget_kinetics")
+        self.tab_6 = QWidget()
+        self.tab_6.setObjectName(u"tab_6")
+        self.gridLayout_19 = QGridLayout(self.tab_6)
+        self.gridLayout_19.setObjectName(u"gridLayout_19")
+        self.pg_hdl_hline = PlotWidget(self.tab_6)
+        self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
+        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy11.setHorizontalStretch(2)
+        sizePolicy11.setVerticalStretch(1)
+        sizePolicy11.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_hline.setSizePolicy(sizePolicy11)
+
+        self.gridLayout_19.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
+
+        self.tabWidget_kinetics.addTab(self.tab_6, "")
+        self.tab_7 = QWidget()
+        self.tab_7.setObjectName(u"tab_7")
+        self.gridLayout_7 = QGridLayout(self.tab_7)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.pg_hdl_kinetics = PlotWidget(self.tab_7)
+        self.pg_hdl_kinetics.setObjectName(u"pg_hdl_kinetics")
+
+        self.gridLayout_7.addWidget(self.pg_hdl_kinetics, 0, 0, 1, 1)
+
+        self.tabWidget_kinetics.addTab(self.tab_7, "")
+
+        self.gridLayout.addWidget(self.tabWidget_kinetics, 1, 0, 1, 1)
 
         self.splitter.addWidget(self.layoutWidget)
 
@@ -643,6 +651,7 @@ class Ui_MainWindow(object):
 
         self.tabWidget.setCurrentIndex(0)
         self.tabWidget_binning.setCurrentIndex(1)
+        self.tabWidget_kinetics.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -710,7 +719,8 @@ class Ui_MainWindow(object):
         self.comboBox_channel_num.setItemText(2, QCoreApplication.translate("MainWindow", u"0", None))
 
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Vertical linecut", None))
-        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal linecut", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))
+        self.tabWidget_kinetics.setTabText(self.tabWidget_kinetics.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"Horizontal linecut", None))
+        self.tabWidget_kinetics.setTabText(self.tabWidget_kinetics.indexOf(self.tab_7), QCoreApplication.translate("MainWindow", u"Kinetics", None))
     # retranslateUi
 
