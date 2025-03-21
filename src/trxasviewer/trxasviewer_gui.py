@@ -48,7 +48,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
             return False
         full_path = model.filePath(index)
         scan_type = self.cache_db["scan_type"].get(full_path, None)
-        if scan_type is None:
+        if scan_type in (None, "writing"):
             scan_type = get_scan_type(full_path)
             if scan_type in ['exafs', 'laserd']:
                 self.cache_db["scan_type"][full_path] = scan_type
@@ -212,7 +212,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.thread.start()
 
     def refresh_filesystem(self):
+        self.proxy_model.invalidate()
         self.proxy_model.layoutChanged.emit()
+        # self.model.layoutChanged.emit()
+        # self.model.setRootPath(self.model.rootPath())  # Refresh the model
 
     def show_status(self, msg, level=logging.INFO, timeout=5000):
         logger.log(level, msg)
