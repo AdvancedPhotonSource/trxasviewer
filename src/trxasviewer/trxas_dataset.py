@@ -283,6 +283,7 @@ class TrXASDatasetManager:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
             dset = create_trxas_dataset(
                 fname, ignore_incomplete=self.ignore_incomplete)
+            logger.info(f"{dset.num_rows} rows in {fname}")
             if dset_type is None:
                 dset_type = dset.dset_type
             elif dset_type != dset.dset_type:
@@ -304,7 +305,7 @@ class TrXASDatasetManager:
         return good_results
 
 
-@lru_cache(maxsize=512)
+# @lru_cache(maxsize=512)
 def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):

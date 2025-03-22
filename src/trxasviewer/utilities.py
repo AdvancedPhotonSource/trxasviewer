@@ -21,8 +21,8 @@ def get_scan_type(fname):
         return "directory"
 
     try:
-        if not is_writing_done(fname):
-            return "writing"
+        # if not is_writing_done(fname):
+        #     return "writing"
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         line_count = 0
