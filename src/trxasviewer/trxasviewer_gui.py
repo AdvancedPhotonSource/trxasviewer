@@ -7,8 +7,8 @@ from pathlib import Path
 import traceback
 from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt, QModelIndex,
-                            Signal, Slot, QObject, QThread)
+from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt,
+                            Signal, Slot, QObject, QThread, QTimer)
 
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
                                QMainWindow)
@@ -29,6 +29,15 @@ pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 pg.setConfigOptions(antialias=True)
 pg.setConfigOptions(imageAxisOrder="row-major")
+
+
+def get_human_readable_size(full_path):
+    size = os.path.getsize(full_path)
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"  # fallback for extremely large files
 
 
 class DatasetFilterModel(QSortFilterProxyModel):
@@ -64,6 +73,14 @@ class DatasetFilterModel(QSortFilterProxyModel):
             full_path = self.sourceModel().filePath(source_index)  # Get full path
             scan_type = self.cache_db["scan_type"].get(full_path, None)
             return scan_type
+
+        if role == Qt.DisplayRole and index.column() == 1:  # Size column
+            source_index = self.mapToSource(index)
+            full_path = self.sourceModel().filePath(source_index)
+            try:
+                return get_human_readable_size(full_path)
+            except OSError:
+                return 0
         return super().data(index, role)  # Default behavior
 
 
@@ -210,6 +227,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.thread.started.connect(
             lambda: logger.info("Starting AverageWorker..."))
         self.thread.start()
+
+        # Create a QTimer
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)  # 1000 ms = 1 second
+        self.timer.timeout.connect(self.refresh_filesystem)
+        self.timer.start()
 
     def refresh_filesystem(self):
         self.proxy_model.invalidate()
