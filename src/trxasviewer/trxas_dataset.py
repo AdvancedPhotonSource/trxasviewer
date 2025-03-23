@@ -489,6 +489,7 @@ class TrXASDataset:
         data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
         data_full[0, 1:] = t_axis
         data_full[1:, 0] = energy_axis
+        data_full[1:, 1:] = diff
         np.savetxt(save_name, data_full, fmt="%.8e")
 
     def subtract_groundstate(
