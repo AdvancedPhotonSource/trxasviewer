@@ -485,11 +485,12 @@ class TrXASDataset:
 
     @staticmethod
     def save_as_origin_format(save_name, diff, energy_axis, t_axis, title=None):
+        diff = np.flipud(diff.T)
         shape = diff.shape
         data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
-        data_full[0, 1:] = t_axis
-        data_full[1:, 0] = energy_axis
         data_full[1:, 1:] = diff
+        data_full[1:, 0] = t_axis[::-1]
+        data_full[0, 1:] = energy_axis
         np.savetxt(save_name, data_full, fmt="%.8e")
 
     def subtract_groundstate(

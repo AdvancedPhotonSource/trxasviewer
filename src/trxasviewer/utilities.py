@@ -40,7 +40,14 @@ def get_scan_type(fname):
                         matched = True
                 if line_count >= 12:  # Stop reading after 12 lines
                     break
-        return scan_type if line_count >= 12 else "invalid"
+
+        if scan_type == "invalid":
+            return "invalid"
+        if line_count >= 12:
+            return scan_type
+        if line_count < 12 and is_writing_done(fname):
+            return "invalid"
+        return "writing"
 
     except Exception:  # Catch all exceptions
         return "invalid"
