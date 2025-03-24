@@ -5,7 +5,10 @@ from packaging.version import Version
 from functools import lru_cache
 import numpy as np
 from scipy.sparse import coo_array
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 # @lru_cache(maxsize=1024)
 def get_scan_type(fname):
@@ -23,7 +26,7 @@ def get_scan_type(fname):
     try:
         # if not is_writing_done(fname):
         #     return "writing"
-        pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_scan")
+        pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         line_count = 0
         scan_type = "invalid"  # Move this outside the loop
@@ -42,10 +45,12 @@ def get_scan_type(fname):
                     break
 
         if scan_type == "invalid":
+            logger.debug(f"Invalid scan type. {matched=}/{fname=}")
             return "invalid"
         if line_count >= 12:
             return scan_type
         if line_count < 12 and is_writing_done(fname):
+            logger.debug(f"Line count < 12 and writing done. {fname=}")
             return "invalid"
         return "writing"
 
