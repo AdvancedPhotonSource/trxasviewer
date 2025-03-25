@@ -215,6 +215,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
+        self.setup_tooltips()
 
         self.is_processing = False
         self.thread = QThread()
@@ -233,6 +234,24 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.timer.setInterval(1000)  # 1000 ms = 1 second
         self.timer.timeout.connect(self.refresh_filesystem)
         self.timer.start()
+    
+    def setup_tooltips(self):
+        self.label_binbunches.setToolTip(
+            """ Number of bunches to bin:
+            -1: disable this level and beyond.
+            0: do not bin/average the lasered/delayed branches.
+            1: bin all lasered/delayed branches into one bunch.
+            N>=2: bin all lasered delayed branches as one bunch and then 
+            bin N bunches into one.
+            """)
+        self.label_anchorbunch.setToolTip(
+            """ Index of bunch to anchor:
+            Laser trigggered at bunch of 0. The binning happens between the
+            anchor of the previous level [inclusive] (0 if it's the first level)
+            and the anchor of the current level [exclusive], using the number
+            of "Bin Bunches" defined below.
+            """
+        )
 
     def refresh_filesystem(self):
         self.proxy_model.invalidate()
@@ -256,8 +275,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             prev_anchor = 0
         else:
             prev_anchor = self.__dict__[f'spinBox_anchor{index-1}'].value()
-            prev_length = self.__dict__[f'spinBox_numb{index-1}'].value()
-        if length == 0 or not prev_enable:
+        if length == -1 or not prev_enable:
             self.__dict__[f'spinBox_anchor{index}'].setEnabled(False)
             self.update_binning_params(index=index+1, prev_enable=False)
             label_widget.setText('∞')
@@ -265,6 +283,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         else:
             self.__dict__[f'spinBox_anchor{index}'].setEnabled(True)
             total_size = max(1, anchor - prev_anchor)
+            if length == 0:
+                length = 1  # length = 0 means do not bin lasered
             fit_size = (total_size + length - 1) // length * length
             fit_anchor = prev_anchor + fit_size
             if fit_anchor != anchor:
@@ -547,6 +567,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_kinetics.clear()
         data = self.results["kinetics"]
         self.pg_hdl_kinetics.plot(data[:, 0], data[:, 1], pen="b")
+        scatter_plot = pg.ScatterPlotItem(x=data[:, 0], y=data[:, 1], size=5, pen='red', brush=None)
+        self.pg_hdl_kinetics.addItem(scatter_plot)
         dt = self.results["delta_t_s"] * np.array(x_range)
         dt[0] = max(dt[0], np.min(data[:, 0]))
         self.pg_hdl_kinetics.setXRange(dt[0], dt[1])
