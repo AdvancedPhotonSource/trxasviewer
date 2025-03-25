@@ -559,11 +559,15 @@ class TrXASDataset:
 
     def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
         size = diff.shape[1]
-        self.idx_mask, self.binning_mat = prepare_binning_matrix(
-            size, sync_index, **binning_kwargs)
-        avg = diff @ self.binning_mat
-        t_axis = t_axis_raw @ self.binning_mat
-        return avg, t_axis
+        binning_mat, nobin_laserd_idx = prepare_binning_matrix(size,
+                sync_index, **binning_kwargs)
+        # diff is always 2d
+        avg = (diff @ binning_mat)[:, 1:]
+        if t_axis_raw.ndim == 1:
+            t_axis = (t_axis_raw @ binning_mat)[1:]
+        else:
+            t_axis = (t_axis_raw @ binning_mat)[:, 1:]
+        return avg, t_axis, nobin_laserd_idx
 
     def process_energy(
         self,
@@ -573,8 +577,8 @@ class TrXASDataset:
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
-        avg, t_axis = self.apply_binning(diff, t_axis_raw, sync_index,
-                                         **binning_kwargs)
+        avg, t_axis, _ = self.apply_binning(diff, t_axis_raw, sync_index,
+                                            **binning_kwargs)
         return self.compile_results(avg, t_axis)
 
     def process_laserd(
@@ -586,13 +590,22 @@ class TrXASDataset:
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         t_mat = t_mat - self.laserd[:, np.newaxis]
-        avg, t_mat2 = self.apply_binning(diff, t_mat, sync_index,
-                                         **binning_kwargs)
+        avg, t_mat2, nobin_idx = self.apply_binning(diff, t_mat, sync_index,
+                                                         **binning_kwargs)
         t_axis = np.copy(t_mat2[0])
-        roi = t_mat2 > 0
-        t_val = t_mat2[roi]
-        diff_val = avg[roi]
-        kinetics = np.stack((t_val, diff_val), axis=1)
+
+        # assemble kinetics
+        sval = []
+        tval = []
+        for n in range(avg.shape[1]):
+            if n in nobin_idx:
+                sval.extend(avg[:, n].tolist())
+                tval.extend(t_mat2[:, n].tolist())
+            else:
+                sval.append(np.mean(avg[:, n]))
+                tval.append(np.mean(t_mat2[:, n]))
+
+        kinetics = np.stack((tval, sval), axis=1)
         kinetics = kinetics[kinetics[:, 0].argsort()]
         return self.compile_results(avg, t_axis, kinetics=kinetics)
 
