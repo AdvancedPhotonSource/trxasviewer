@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.2
+## Created by: Qt User Interface Compiler version 6.8.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -202,33 +202,33 @@ class Ui_MainWindow(object):
         self.spinBox_anchor1.setObjectName(u"spinBox_anchor1")
         self.spinBox_anchor1.setMinimum(1)
         self.spinBox_anchor1.setMaximum(9999)
-        self.spinBox_anchor1.setValue(40)
+        self.spinBox_anchor1.setValue(4)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor1, 3, 2, 1, 1)
 
-        self.label_8 = QLabel(self.tab_5)
-        self.label_8.setObjectName(u"label_8")
+        self.label_binbunches = QLabel(self.tab_5)
+        self.label_binbunches.setObjectName(u"label_binbunches")
 
-        self.gridLayout_16.addWidget(self.label_8, 4, 0, 1, 1)
+        self.gridLayout_16.addWidget(self.label_binbunches, 4, 0, 1, 1)
 
-        self.label_4 = QLabel(self.tab_5)
-        self.label_4.setObjectName(u"label_4")
+        self.label_anchorbunch = QLabel(self.tab_5)
+        self.label_anchorbunch.setObjectName(u"label_anchorbunch")
 
-        self.gridLayout_16.addWidget(self.label_4, 3, 0, 1, 1)
+        self.gridLayout_16.addWidget(self.label_anchorbunch, 3, 0, 1, 1)
 
         self.spinBox_anchor3 = QSpinBox(self.tab_5)
         self.spinBox_anchor3.setObjectName(u"spinBox_anchor3")
         self.spinBox_anchor3.setMinimum(1)
         self.spinBox_anchor3.setMaximum(9999)
-        self.spinBox_anchor3.setValue(640)
+        self.spinBox_anchor3.setValue(256)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor3, 3, 4, 1, 1)
 
         self.spinBox_anchor2 = QSpinBox(self.tab_5)
         self.spinBox_anchor2.setObjectName(u"spinBox_anchor2")
-        self.spinBox_anchor2.setMinimum(1)
+        self.spinBox_anchor2.setMinimum(0)
         self.spinBox_anchor2.setMaximum(9999)
-        self.spinBox_anchor2.setValue(160)
+        self.spinBox_anchor2.setValue(32)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor2, 3, 3, 1, 1)
 
@@ -236,52 +236,55 @@ class Ui_MainWindow(object):
         self.spinBox_anchor0.setObjectName(u"spinBox_anchor0")
         self.spinBox_anchor0.setMinimum(1)
         self.spinBox_anchor0.setMaximum(9999)
-        self.spinBox_anchor0.setValue(10)
+        self.spinBox_anchor0.setValue(1)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor0, 3, 1, 1, 1)
 
         self.spinBox_numb0 = QSpinBox(self.tab_5)
         self.spinBox_numb0.setObjectName(u"spinBox_numb0")
-        self.spinBox_numb0.setMinimum(1)
-        self.spinBox_numb0.setMaximum(9999)
+        self.spinBox_numb0.setMinimum(0)
+        self.spinBox_numb0.setMaximum(10)
+        self.spinBox_numb0.setValue(0)
 
         self.gridLayout_16.addWidget(self.spinBox_numb0, 4, 1, 1, 1)
 
         self.spinBox_numb1 = QSpinBox(self.tab_5)
         self.spinBox_numb1.setObjectName(u"spinBox_numb1")
-        self.spinBox_numb1.setMinimum(0)
+        self.spinBox_numb1.setMinimum(-1)
         self.spinBox_numb1.setMaximum(9999)
-        self.spinBox_numb1.setValue(2)
+        self.spinBox_numb1.setValue(1)
 
         self.gridLayout_16.addWidget(self.spinBox_numb1, 4, 2, 1, 1)
 
         self.spinBox_numb2 = QSpinBox(self.tab_5)
         self.spinBox_numb2.setObjectName(u"spinBox_numb2")
-        self.spinBox_numb2.setMinimum(0)
+        self.spinBox_numb2.setMinimum(-1)
         self.spinBox_numb2.setMaximum(9999)
         self.spinBox_numb2.setValue(4)
+        self.spinBox_numb2.setDisplayIntegerBase(10)
 
         self.gridLayout_16.addWidget(self.spinBox_numb2, 4, 3, 1, 1)
 
         self.spinBox_numb3 = QSpinBox(self.tab_5)
         self.spinBox_numb3.setObjectName(u"spinBox_numb3")
-        self.spinBox_numb3.setMinimum(0)
+        self.spinBox_numb3.setMinimum(-1)
         self.spinBox_numb3.setMaximum(9999)
-        self.spinBox_numb3.setValue(8)
+        self.spinBox_numb3.setValue(16)
 
         self.gridLayout_16.addWidget(self.spinBox_numb3, 4, 4, 1, 1)
 
         self.spinBox_anchor4 = QSpinBox(self.tab_5)
         self.spinBox_anchor4.setObjectName(u"spinBox_anchor4")
         self.spinBox_anchor4.setMaximum(9999)
-        self.spinBox_anchor4.setValue(960)
+        self.spinBox_anchor4.setValue(1024)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor4, 3, 5, 1, 1)
 
         self.spinBox_numb4 = QSpinBox(self.tab_5)
         self.spinBox_numb4.setObjectName(u"spinBox_numb4")
+        self.spinBox_numb4.setMinimum(-1)
         self.spinBox_numb4.setMaximum(9999)
-        self.spinBox_numb4.setValue(8)
+        self.spinBox_numb4.setValue(64)
 
         self.gridLayout_16.addWidget(self.spinBox_numb4, 4, 5, 1, 1)
 
@@ -670,7 +673,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1403, 23))
+        self.menubar.setGeometry(QRect(0, 0, 1403, 22))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -680,7 +683,7 @@ class Ui_MainWindow(object):
         self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_max.setEnabled)
 
         self.tabWidget.setCurrentIndex(0)
-        self.tabWidget_binning.setCurrentIndex(0)
+        self.tabWidget_binning.setCurrentIndex(2)
         self.tabWidget_kinetics.setCurrentIndex(1)
 
 
@@ -706,8 +709,8 @@ class Ui_MainWindow(object):
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"Number of bunches Base", None))
         self.label_binning_logmsg.setText(QCoreApplication.translate("MainWindow", u"Logarithmic binning:", None))
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Log", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
+        self.label_binbunches.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
+        self.label_anchorbunch.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
         self.label_rtime0.setText("")
         self.label_rtime1.setText("")
         self.label_rtime2.setText("")

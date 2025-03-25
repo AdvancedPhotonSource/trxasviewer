@@ -204,7 +204,7 @@
                  <item row="0" column="0">
                   <widget class="QTabWidget" name="tabWidget_binning">
                    <property name="currentIndex">
-                    <number>0</number>
+                    <number>2</number>
                    </property>
                    <widget class="QWidget" name="tab_3">
                     <attribute name="title">
@@ -291,19 +291,19 @@
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>40</number>
+                        <number>4</number>
                        </property>
                       </widget>
                      </item>
                      <item row="4" column="0">
-                      <widget class="QLabel" name="label_8">
+                      <widget class="QLabel" name="label_binbunches">
                        <property name="text">
                         <string>Bin Bunchs</string>
                        </property>
                       </widget>
                      </item>
                      <item row="3" column="0">
-                      <widget class="QLabel" name="label_4">
+                      <widget class="QLabel" name="label_anchorbunch">
                        <property name="text">
                         <string>Anchor Bunch</string>
                        </property>
@@ -318,20 +318,20 @@
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>640</number>
+                        <number>256</number>
                        </property>
                       </widget>
                      </item>
                      <item row="3" column="3">
                       <widget class="QSpinBox" name="spinBox_anchor2">
                        <property name="minimum">
-                        <number>1</number>
+                        <number>0</number>
                        </property>
                        <property name="maximum">
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>160</number>
+                        <number>32</number>
                        </property>
                       </widget>
                      </item>
@@ -344,37 +344,40 @@
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>10</number>
+                        <number>1</number>
                        </property>
                       </widget>
                      </item>
                      <item row="4" column="1">
                       <widget class="QSpinBox" name="spinBox_numb0">
                        <property name="minimum">
-                        <number>1</number>
+                        <number>0</number>
                        </property>
                        <property name="maximum">
-                        <number>9999</number>
+                        <number>10</number>
+                       </property>
+                       <property name="value">
+                        <number>0</number>
                        </property>
                       </widget>
                      </item>
                      <item row="4" column="2">
                       <widget class="QSpinBox" name="spinBox_numb1">
                        <property name="minimum">
-                        <number>0</number>
+                        <number>-1</number>
                        </property>
                        <property name="maximum">
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>2</number>
+                        <number>1</number>
                        </property>
                       </widget>
                      </item>
                      <item row="4" column="3">
                       <widget class="QSpinBox" name="spinBox_numb2">
                        <property name="minimum">
-                        <number>0</number>
+                        <number>-1</number>
                        </property>
                        <property name="maximum">
                         <number>9999</number>
@@ -382,18 +385,21 @@
                        <property name="value">
                         <number>4</number>
                        </property>
+                       <property name="displayIntegerBase">
+                        <number>10</number>
+                       </property>
                       </widget>
                      </item>
                      <item row="4" column="4">
                       <widget class="QSpinBox" name="spinBox_numb3">
                        <property name="minimum">
-                        <number>0</number>
+                        <number>-1</number>
                        </property>
                        <property name="maximum">
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>8</number>
+                        <number>16</number>
                        </property>
                       </widget>
                      </item>
@@ -403,17 +409,20 @@
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>960</number>
+                        <number>1024</number>
                        </property>
                       </widget>
                      </item>
                      <item row="4" column="5">
                       <widget class="QSpinBox" name="spinBox_numb4">
+                       <property name="minimum">
+                        <number>-1</number>
+                       </property>
                        <property name="maximum">
                         <number>9999</number>
                        </property>
                        <property name="value">
-                        <number>8</number>
+                        <number>64</number>
                        </property>
                       </widget>
                      </item>
@@ -1058,7 +1067,7 @@
      <x>0</x>
      <y>0</y>
      <width>1403</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
