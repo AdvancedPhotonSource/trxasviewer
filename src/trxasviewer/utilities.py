@@ -95,7 +95,7 @@ def compare_versions(version1, version2):
 
 def construct_transform_mat(idx_mask, weights):
     num_ins = idx_mask.size
-    num_outs = idx_mask[-1] + 1
+    num_outs = np.max(idx_mask) + 1 # idx = 0 is reserved for BAD data 
     row = np.arange(num_ins)
     mat = coo_array((weights, (row, idx_mask)),
                      shape=(num_ins, num_outs)).tocsr()
@@ -109,7 +109,8 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
     assert method in ("Manual", "Linear", "Log")
     begin = (sync_index + lin_num - 1) // lin_num * lin_num - sync_index
     idx_mask = np.arange(begin, begin + size)
-    idx_mask = idx_mask // lin_num
+    idx_mask = idx_mask // lin_num + 1  # idx = 0 is reserved for BAD data
+    nobin_laserd_idx = []
 
     if method == "Log":
         index_start = idx_mask[sync_index]
@@ -127,25 +128,39 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
         cutoff = max(0, index_start - (index_end - index_start) * fraction)
         cutoff = int(cutoff)
         idx_mask[idx_mask < cutoff] = cutoff
-        idx_mask -= cutoff  # offset everything to start from 0
+        idx_mask -= cutoff  # offset everything to start from 0, which means BAD
 
     elif method == "Manual":
-        start = sync_index + 1
-        idx_offset = idx_mask[sync_index] + 1
+        start = sync_index
+        idx_offset = idx_mask[sync_index]
         for n, length in enumerate(lengths):
-            if length == 0:
+            flag_append_nobin = False
+            if length == -1:
+                idx_mask[start:] = 0    # mark the rest as BAD
                 break
+            elif length == 0:   # length = 0 means do not bin lasered
+                flag_append_nobin = True
+                length = 1
             end = min(size, start + anchors[n])
-            if n == len(anchors) - 1:
+            if n == len(anchors) - 1:   # last level 
                 end = size
-            temp = np.arange(end - start) // length
-            idx_mask[start:end] = temp + idx_offset
+            temp = np.arange(end - start) // length + idx_offset
+            idx_mask[start:end] = temp
+            if flag_append_nobin:
+                nobin_laserd_idx.extend(temp.tolist())
             start = end
-            idx_offset += temp[-1] + 1
+            idx_offset = temp[-1] + 1  # number of unique values in temp
             if start == size:
                 break
+        # apply cutoff to reduce the pre-trigger bunches for better visualization
+        bunch_start = max(0, sync_index - int((end - sync_index) * fraction))
+        cutoff = idx_mask[bunch_start]
+        idx_mask[idx_mask < cutoff] = cutoff
+        idx_mask -= cutoff  # offset everything to start from 0, which means BAD
+        nobin_laserd_idx = [x - cutoff for x in nobin_laserd_idx]
 
     counts = np.bincount(idx_mask)
     weights = np.reciprocal(counts[idx_mask], dtype=float)
     mat = construct_transform_mat(idx_mask, weights)
-    return idx_mask, mat
+    nobin_laserd_idx =[x - 1 for x in nobin_laserd_idx] # convert to 0-based
+    return mat, nobin_laserd_idx 
