@@ -2,19 +2,22 @@ import argparse
 import sys
 from trxasviewer import main_gui, __version__
 
+
 def create_argparser():
     """Creates and returns an argument parser for trxasviewer CLI."""
     parser = argparse.ArgumentParser(
         prog="trxasviewer",
-        description="TRXAS Viewer - A GUI application for TRXAS data visualization."
+        description="TRXAS Viewer - A GUI application for TRXAS data visualization.",
     )
-    
+
     # Version support
-    parser.add_argument("--version", action="version",
-                        version=f"trxasviewer {__version__}")
-    parser.add_argument("--rawfolder", "-r", type=str, 
-                        help="Path to the raw data folder.", default=None)
-    
+    parser.add_argument(
+        "--version", action="version", version=f"trxasviewer {__version__}"
+    )
+    parser.add_argument(
+        "--rawfolder", "-r", type=str, help="Path to the raw data folder.", default=None
+    )
+
     return parser
 
 

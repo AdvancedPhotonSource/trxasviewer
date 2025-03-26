@@ -10,11 +10,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 # @lru_cache(maxsize=1024)
 def get_scan_type(fname):
     """
     Determines the scan type from a file's first 10 lines.
-    
+
     - If a line starts with "#S XXX exafs_scan", returns "exafs".
     - If a line starts with "#S XXX rscan laserd", returns "laserd".
     - If the file has less than 12 lines, returns "invalid".
@@ -61,11 +62,11 @@ def get_scan_type(fname):
 def is_writing_done(fname, threshold=60):
     """
     Check if a file has not been modified in the last 'threshold' seconds.
-    
+
     Returns True if the last modification was more than 'threshold' seconds ago.
     """
     file = Path(fname)
-    
+
     if not file.exists():
         return False  # File doesn't exist yet
 
@@ -90,22 +91,27 @@ def compare_versions(version1, version2):
         return False
     elif v1 >= v2:
         return True
-    
-    
+
 
 def construct_transform_mat(idx_mask, weights):
     num_ins = idx_mask.size
-    num_outs = np.max(idx_mask) + 1 # idx = 0 is reserved for BAD data 
+    num_outs = np.max(idx_mask) + 1  # idx = 0 is reserved for BAD data
     row = np.arange(num_ins)
-    mat = coo_array((weights, (row, idx_mask)),
-                     shape=(num_ins, num_outs)).tocsr()
+    mat = coo_array((weights, (row, idx_mask)), shape=(num_ins, num_outs)).tocsr()
     return mat
-    
+
 
 @lru_cache(maxsize=1024)
-def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5, 
-                           log_num=None, anchors=None, lengths=None,
-                           fraction=0.25):
+def prepare_binning_matrix(
+    size,
+    sync_index,
+    method="Linear",
+    lin_num=5,
+    log_num=None,
+    anchors=None,
+    lengths=None,
+    fraction=0.25,
+):
     assert method in ("Manual", "Linear", "Log")
     begin = (sync_index + lin_num - 1) // lin_num * lin_num - sync_index
     idx_mask = np.arange(begin, begin + size)
@@ -117,14 +123,14 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
         start = sync_index
         power = 0
         while True:
-            end = min(size, start + int(log_num ** power))
+            end = min(size, start + int(log_num**power))
             idx_mask[start:end] = power + index_start
             power += 1
             start = end  # Removed redundant else statement
             if start == size:
                 break
         index_end = idx_mask[-1]
-        # apply cutoff since log binning only have a few points after sync 
+        # apply cutoff since log binning only have a few points after sync
         cutoff = max(0, index_start - (index_end - index_start) * fraction)
         cutoff = int(cutoff)
         idx_mask[idx_mask < cutoff] = cutoff
@@ -136,13 +142,13 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
         for n, length in enumerate(lengths):
             flag_append_nobin = False
             if length == -1:
-                idx_mask[start:] = 0    # mark the rest as BAD
+                idx_mask[start:] = 0  # mark the rest as BAD
                 break
-            elif length == 0:   # length = 0 means do not bin lasered
+            elif length == 0:  # length = 0 means do not bin lasered
                 flag_append_nobin = True
                 length = 1
             end = min(size, start + anchors[n])
-            if n == len(anchors) - 1:   # last level 
+            if n == len(anchors) - 1:  # last level
                 end = size
             temp = np.arange(end - start) // length + idx_offset
             idx_mask[start:end] = temp
@@ -162,5 +168,5 @@ def prepare_binning_matrix(size, sync_index, method="Linear", lin_num=5,
     counts = np.bincount(idx_mask)
     weights = np.reciprocal(counts[idx_mask], dtype=float)
     mat = construct_transform_mat(idx_mask, weights)
-    nobin_laserd_idx =[x - 1 for x in nobin_laserd_idx] # convert to 0-based
-    return mat, nobin_laserd_idx 
+    nobin_laserd_idx = [x - 1 for x in nobin_laserd_idx]  # convert to 0-based
+    return mat, nobin_laserd_idx

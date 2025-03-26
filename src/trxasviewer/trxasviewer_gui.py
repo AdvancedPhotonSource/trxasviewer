@@ -7,21 +7,34 @@ from pathlib import Path
 import traceback
 from multiprocessing import Process
 from .generated_ui import Ui_MainWindow
-from PySide6.QtCore import (QDir, QSortFilterProxyModel, Qt,
-                            Signal, Slot, QObject, QThread, QTimer)
+from PySide6.QtCore import (
+    QDir,
+    QSortFilterProxyModel,
+    Qt,
+    Signal,
+    Slot,
+    QObject,
+    QThread,
+    QTimer,
+)
 
-from PySide6.QtWidgets import (QApplication, QFileDialog, QFileSystemModel,
-                               QMainWindow)
+from PySide6.QtWidgets import QApplication, QFileDialog, QFileSystemModel, QMainWindow
 
-from .trxas_dataset import TrXASDatasetManager, create_trxas_cache_from_flist, build_cache_database
+from .trxas_dataset import (
+    TrXASDatasetManager,
+    create_trxas_cache_from_flist,
+    build_cache_database,
+)
 from .utilities import get_scan_type
 import logging
 from . import __version__
 
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    datefmt='%m-%d %H:%M:%S')
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +46,7 @@ pg.setConfigOptions(imageAxisOrder="row-major")
 
 def get_human_readable_size(full_path):
     size = os.path.getsize(full_path)
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size < 1024:
             return f"{size:.2f} {unit}"
         size /= 1024
@@ -59,7 +72,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
         scan_type = self.cache_db["scan_type"].get(full_path, None)
         if scan_type in (None, "writing"):
             scan_type = get_scan_type(full_path)
-            if scan_type in ['exafs', 'laserd']:
+            if scan_type in ["exafs", "laserd"]:
                 self.cache_db["scan_type"][full_path] = scan_type
         # show the directory and parent directory
         return scan_type != "invalid"
@@ -109,7 +122,8 @@ class AverageWorker(QObject):
         self.dset_manager.update_flist(self.flist)
         try:
             self.results = self.dset_manager.get_energy_vs_time(
-                progress=self.progress, **self.kwargs)
+                progress=self.progress, **self.kwargs
+            )
         except Exception as e:
             traceback.print_exc()
             logger.error(f"Error in AverageWorker.run: {e}")
@@ -118,7 +132,8 @@ class AverageWorker(QObject):
         self.finished.emit()
         t1 = time.perf_counter()
         logger.info(
-            f'AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files')
+            f"AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files"
+        )
 
     def get_results(self):
         # data, energy, delta_t_ns
@@ -130,6 +145,7 @@ class AverageWorker(QObject):
 
 class CacheWorker(QThread):
     """Manages multiple processes for cache generation"""
+
     # progress = Signal(int)
     finished = Signal()
 
@@ -142,14 +158,16 @@ class CacheWorker(QThread):
     def run(self):
         t0 = time.perf_counter()
         k, m = divmod(len(self.file_list), self.number_of_processes)
-        flist_parts = [self.file_list[i * k + min(i, m): (i + 1) * k + min(i + 1, m)]
-                       for i in range(self.number_of_processes)]
+        flist_parts = [
+            self.file_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
+            for i in range(self.number_of_processes)
+        ]
         logger.info(
-            f"Starting CacheWorker with {self.number_of_processes} processes to prepare {len(self.file_list)} datasets.")
+            f"Starting CacheWorker with {self.number_of_processes} processes to prepare {len(self.file_list)} datasets."
+        )
 
         for part in flist_parts:
-            process = Process(
-                target=create_trxas_cache_from_flist, args=(part,))
+            process = Process(target=create_trxas_cache_from_flist, args=(part,))
             process.start()
             self.processes.append(process)
 
@@ -197,21 +215,24 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.clicked.connect(self.process)
         self.pushButton_select_savefname.clicked.connect(self.select_savefname)
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(
-            self.update_fileindex)
+            self.update_fileindex
+        )
         self.toolButton_refresh.clicked.connect(self.refresh_filesystem)
         self.spinBox_syncbunch_number.valueChanged.connect(
-            self.update_sync_timing_parameters)
+            self.update_sync_timing_parameters
+        )
         self.doubleSpinBox_sync_time_us.valueChanged.connect(
-            self.update_sync_timing_parameters)
-        self.radioButton_sync_time.toggled.connect(
-            self.update_sync_timing_parameters)
+            self.update_sync_timing_parameters
+        )
+        self.radioButton_sync_time.toggled.connect(self.update_sync_timing_parameters)
 
         for n in range(5):
+
             def callback(index=n):
                 self.update_binning_params(index=index)
-            self.__dict__[
-                f'spinBox_anchor{n}'].editingFinished.connect(callback)
-            self.__dict__[f'spinBox_numb{n}'].editingFinished.connect(callback)
+
+            self.__dict__[f"spinBox_anchor{n}"].editingFinished.connect(callback)
+            self.__dict__[f"spinBox_numb{n}"].editingFinished.connect(callback)
 
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
@@ -225,8 +246,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker.error.connect(self.show_status)
         self.progressBar.setValue(0)
         self.avg_worker.moveToThread(self.thread)
-        self.thread.started.connect(
-            lambda: logger.info("Starting AverageWorker..."))
+        self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
         self.thread.start()
 
         # Create a QTimer
@@ -234,7 +254,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.timer.setInterval(1000)  # 1000 ms = 1 second
         self.timer.timeout.connect(self.refresh_filesystem)
         self.timer.start()
-    
+
     def setup_tooltips(self):
         self.label_binbunches.setToolTip(
             """ Number of bunches to bin:
@@ -243,7 +263,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             1: bin all lasered/delayed branches into one bunch.
             N>=2: bin all lasered delayed branches as one bunch and then 
             bin N bunches into one.
-            """)
+            """
+        )
         self.label_anchorbunch.setToolTip(
             """ Index of bunch to anchor:
             Laser trigggered at bunch of 0. The binning happens between the
@@ -267,32 +288,32 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if index >= 5:
             return
 
-        length = self.__dict__[f'spinBox_numb{index}'].value()
-        anchor = self.__dict__[f'spinBox_anchor{index}'].value()
-        label_widget = self.__dict__[f'label_rtime{index}']
+        length = self.__dict__[f"spinBox_numb{index}"].value()
+        anchor = self.__dict__[f"spinBox_anchor{index}"].value()
+        label_widget = self.__dict__[f"label_rtime{index}"]
 
         if index == 0:
             prev_anchor = 0
         else:
-            prev_anchor = self.__dict__[f'spinBox_anchor{index-1}'].value()
+            prev_anchor = self.__dict__[f"spinBox_anchor{index-1}"].value()
         if length == -1 or not prev_enable:
-            self.__dict__[f'spinBox_anchor{index}'].setEnabled(False)
-            self.update_binning_params(index=index+1, prev_enable=False)
-            label_widget.setText('∞')
+            self.__dict__[f"spinBox_anchor{index}"].setEnabled(False)
+            self.update_binning_params(index=index + 1, prev_enable=False)
+            label_widget.setText("∞")
             return
         else:
-            self.__dict__[f'spinBox_anchor{index}'].setEnabled(True)
+            self.__dict__[f"spinBox_anchor{index}"].setEnabled(True)
             total_size = max(1, anchor - prev_anchor)
             if length == 0:
                 length = 1  # length = 0 means do not bin lasered
             fit_size = (total_size + length - 1) // length * length
             fit_anchor = prev_anchor + fit_size
             if fit_anchor != anchor:
-                self.__dict__[f'spinBox_anchor{index}'].setValue(fit_anchor)
+                self.__dict__[f"spinBox_anchor{index}"].setValue(fit_anchor)
             if self.results is not None:
                 rtime = self.results["delta_t_s"] * fit_anchor * 1e6  # us
-                label_widget.setText(f'{rtime:.3f}')
-            self.update_binning_params(index=index+1, prev_enable=True)
+                label_widget.setText(f"{rtime:.3f}")
+            self.update_binning_params(index=index + 1, prev_enable=True)
 
     def process(self):
         if self.is_processing:
@@ -344,15 +365,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         # Add crosshair
         self.view = self.pg_hdl_img2d.getView()
-        self.vLine = pg.InfiniteLine(
-            angle=90, movable=False, pen=pg.mkPen("r"))
+        self.vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen("r"))
         self.hLine = pg.InfiniteLine(angle=0, movable=False, pen=pg.mkPen("b"))
         self.view.addItem(self.vLine, ignoreBounds=True)
         self.view.addItem(self.hLine, ignoreBounds=True)
         # Initialize plots
         self.h_curve = self.pg_hdl_hline.plot(pen="b")
         self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
-        self.pg_hdl_hline.setLabel("left", "Intensity (a.u.)",)
+        self.pg_hdl_hline.setLabel(
+            "left",
+            "Intensity (a.u.)",
+        )
         self.v_curve = self.pg_hdl_vline.plot(pen="r")
         self.pg_hdl_vline.setLabel("left", "Time", units="s")
         self.pg_hdl_vline.setLabel("bottom", "Intensity (a.u.)")
@@ -370,7 +393,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         roi_size = (self.spinBox_roix.value(), self.spinBox_roiy.value())
         if self.roi is None:
             self.roi = pg.RectROI(
-                [0, 0], roi_size, pen="k", hoverPen="k", sideScalers=False)
+                [0, 0], roi_size, pen="k", hoverPen="k", sideScalers=False
+            )
             self.roi.mouseClickEvent = lambda ev: ev.ignore()
             self.pg_hdl_img2d.addItem(self.roi)
 
@@ -409,8 +433,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 horizontal_data = self.image[y, :]
                 vertical_data = self.image[:, x]
                 # Create y-axis values for vertical cut
-                x_positions = self.results["x_axis"]["value"][0:horizontal_data.size]
-                y_positions = self.results["t_axis"][0:vertical_data.size]
+                x_positions = self.results["x_axis"]["value"][0 : horizontal_data.size]
+                y_positions = self.results["t_axis"][0 : vertical_data.size]
                 y_positions = y_positions[::-1]
 
                 # Update horizontal cut
@@ -438,8 +462,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if self.roi is None:
             return
         image_data = self.image
-        roi_data = self.roi.getArrayRegion(
-            image_data, self.pg_hdl_img2d.getImageItem())
+        roi_data = self.roi.getArrayRegion(image_data, self.pg_hdl_img2d.getImageItem())
         if roi_data.size > 0:
             self.zoomin_image.setImage(np.flipud(roi_data))
 
@@ -457,7 +480,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "channel": int(self.comboBox_channel_num.currentText()),
             "target": self.comboBox_target.currentText(),
         }
-        if kwargs["target"] == "raw":    # fix me; disable raw plotting
+        if kwargs["target"] == "raw":  # fix me; disable raw plotting
             return
 
         if kwargs["target"] in ["normalized-GS"]:
@@ -471,7 +494,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.progressBar.setValue(0)
         self.avg_worker.set_kwargs(flist, **kwargs)
         self.is_processing = True
-        self.pushButton_replot.setText('Processing...')
+        self.pushButton_replot.setText("Processing...")
         self.pushButton_replot.setDisabled(True)
         self.avg_worker.start_task.emit()
 
@@ -481,7 +504,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         bunch_mode = self.results["bunch_mode"]
         dt_ns = self.results["delta_t_s"] * 1e9
         self.groupBox_timing.setTitle(
-            f"Sync Timing: [{bunch_mode}-bunch]:[{dt_ns:.3f} ns]")
+            f"Sync Timing: [{bunch_mode}-bunch]:[{dt_ns:.3f} ns]"
+        )
         kwargs = self.get_normalization_subgs_kwargs()
         stype, sval = kwargs["sync_type"], kwargs["sync_value"]
         if stype == "time":
@@ -499,7 +523,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         sync_value = (
             self.spinBox_syncbunch_number.value()
             if sync_bunch
-            else self.doubleSpinBox_sync_time_us.value() * 1e-6     # us to s
+            else self.doubleSpinBox_sync_time_us.value() * 1e-6  # us to s
         )
         norm_kwargs = {
             "sync_type": sync_type,
@@ -516,17 +540,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         binning_kwargs = {
             "lin_num": self.spinBox_binning_linnum.value(),
             "log_num": self.spinBox_binning_lognum.value(),
-            "method": method
+            "method": method,
         }
         if method == "Manual":
-            anchors = [self.__dict__[
-                f'spinBox_anchor{n}'].value() for n in range(5)]
-            lengths = [self.__dict__[
-                f'spinBox_numb{n}'].value() for n in range(5)]
-            binning_kwargs.update({
-                "anchors": tuple(anchors),
-                "lengths": tuple(lengths),
-            })
+            anchors = [self.__dict__[f"spinBox_anchor{n}"].value() for n in range(5)]
+            lengths = [self.__dict__[f"spinBox_numb{n}"].value() for n in range(5)]
+            binning_kwargs.update(
+                {
+                    "anchors": tuple(anchors),
+                    "lengths": tuple(lengths),
+                }
+            )
         return binning_kwargs
 
     def plot_results(self):
@@ -544,7 +568,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.spinBox_roix.setValue(data.shape[1] // 10)
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
 
-            if self.comboBox_target.currentText() == 'normalized-GS':
+            if self.comboBox_target.currentText() == "normalized-GS":
                 vmin, vmax = np.percentile(data.ravel(), [0.1, 99.9])
             else:
                 vmin, vmax = np.percentile(data.ravel(), [0, 100])
@@ -554,12 +578,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.plot_kinetics()
 
         self.is_processing = False
-        self.pushButton_replot.setText('Process')
+        self.pushButton_replot.setText("Process")
         self.pushButton_replot.setEnabled(True)
 
     def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
-        if self.results['kinetics'] is None:
+        if self.results["kinetics"] is None:
             self.tabWidget_kinetics.setCurrentIndex(0)
             return
 
@@ -567,7 +591,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_kinetics.clear()
         data = self.results["kinetics"]
         self.pg_hdl_kinetics.plot(data[:, 0], data[:, 1], pen="b")
-        scatter_plot = pg.ScatterPlotItem(x=data[:, 0], y=data[:, 1], size=5, pen='red', brush=None)
+        scatter_plot = pg.ScatterPlotItem(
+            x=data[:, 0], y=data[:, 1], size=5, pen="red", brush=None
+        )
         self.pg_hdl_kinetics.addItem(scatter_plot)
         dt = self.results["delta_t_s"] * np.array(x_range)
         dt[0] = max(dt[0], np.min(data[:, 0]))
@@ -581,8 +607,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def select_rawfolder(self, placeholder=None, folder_path=None):
         if not folder_path or not Path(folder_path).is_dir():
-            folder_path = QFileDialog.getExistingDirectory(
-                self, "Select Input Folder")
+            folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
             self.cache_db = build_cache_database(folder_path)
@@ -616,8 +641,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if num_workers is None:
             num_workers = max(2, os.cpu_count() // 2)
 
-        file_paths = [k for k, v in self.cache_db["scan_type"].items()
-                      if v in ("exafs", "laserd")]
+        file_paths = [
+            k for k, v in self.cache_db["scan_type"].items() if v in ("exafs", "laserd")
+        ]
 
         if len(file_paths) > 0:
             num_workers = min(num_workers, len(file_paths))

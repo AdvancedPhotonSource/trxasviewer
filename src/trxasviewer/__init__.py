@@ -1,4 +1,5 @@
 """Top-level package for TrXASViewer."""
+
 from importlib.metadata import version, PackageNotFoundError
 
 # Metadata
@@ -14,4 +15,4 @@ except PackageNotFoundError:
 from .trxasviewer_gui import main_gui
 from .trxas_dataset import TrXASDataset
 
-__all__ = ['main_gui', 'TrXASDataset']
+__all__ = ["main_gui", "TrXASDataset"]

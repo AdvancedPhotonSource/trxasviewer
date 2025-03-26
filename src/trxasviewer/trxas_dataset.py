@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
 P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
-CACHE_PATH = '.cache'
+CACHE_PATH = ".cache"
 
 
 def build_cache_database(folder, min_version="0.2.0"):
@@ -27,7 +27,7 @@ def build_cache_database(folder, min_version="0.2.0"):
     - Stores results in `cache.json` inside the `cache` subdirectory.
     """
     cache_path = Path(folder) / CACHE_PATH
-    cache_name = cache_path / 'cache.json'
+    cache_name = cache_path / "cache.json"
 
     # Ensure the cache directory exists before doing anything else
     cache_path.mkdir(parents=True, exist_ok=True)
@@ -45,10 +45,10 @@ def build_cache_database(folder, min_version="0.2.0"):
     if cache_name.is_file():
         try:
             temp_db = json.loads(cache_name.read_text())
-            curr_version = temp_db.get('version', "0.2.0")
+            curr_version = temp_db.get("version", "0.2.0")
             if compare_versions(curr_version, min_version):
                 cache_db = temp_db  # Use the existing cache
-                cache_db["version"] = __version__   # update version
+                cache_db["version"] = __version__  # update version
                 cache_db["datetime"] = time_now
         except json.JSONDecodeError:
             logger.warning(f"{cache_name} is corrupted. Rebuilding cache...")
@@ -92,7 +92,7 @@ def process_header(header_line):
     """
     Processes a header line to determine the dataset type and extract relevant metadata.
 
-    This function extracts the dataset type (either "Energy" or "laserd") from the header line, 
+    This function extracts the dataset type (either "Energy" or "laserd") from the header line,
     parses labels, and computes indexing information for a structured dataset.
 
     Parameters
@@ -162,8 +162,7 @@ def process_header(header_line):
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
     shape = (c_max + 1, o_max + 1, b_max + 1)
-    index = record[:, 0] * shape[1] * shape[2] + \
-        record[:, 1] * shape[2] + record[:, 2]
+    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
     payload_mask = np.zeros(np.prod(shape), dtype=bool)
     payload_mask[index] = True
     return dset_type, shape, labels, labels_mask, payload_mask
@@ -205,7 +204,7 @@ def fix_incomplete_dataset(payload_mask, shape, xas_data):
 def get_multiples(size, pos, unit_len):
     """
     Get the start and end positions of the multiples of unit_len that contain
-    the position pos. 
+    the position pos.
     """
     assert 0 < pos < size, f"Sync Bunch [{pos}] is not valid."
     start = pos - pos // unit_len * unit_len
@@ -222,8 +221,7 @@ def safe_mean(data_list):
     max_shape = np.max(shapes, axis=0)
     max_time_steps = max(shapes[:, 0])
 
-    data_full = np.full(
-        (len(data_list), max_time_steps, max_shape[1]), np.nan)
+    data_full = np.full((len(data_list), max_time_steps, max_shape[1]), np.nan)
 
     # Fill the array with valid data
     for i, d in enumerate(data_list):
@@ -251,11 +249,13 @@ class TrXASDatasetManager:
         fname_plot = fname.with_name(f"{base_name}_plot.pdf")
 
         results = self.get_energy_vs_time(progress=None, **kwargs)
-        results.update({
-            "flist": self.flist,
-            "analysis_type": "normalized-GS",
-            "analysis_kwargs": kwargs,
-        })
+        results.update(
+            {
+                "flist": self.flist,
+                "analysis_type": "normalized-GS",
+                "analysis_kwargs": kwargs,
+            }
+        )
         np.savez_compressed(fname_numpy, **results)
 
         if results["dset_type"] == "EXAFS":
@@ -263,13 +263,12 @@ class TrXASDatasetManager:
             x_axis = results.get("x_axis")["value"]
             t_axis = results.get("t_axis")
             TrXASDataset.plot_and_save(fname_plot, diff, x_axis, t_axis)
-            TrXASDataset.save_as_origin_format(
-                fname_origin, diff, x_axis, t_axis)
-            logger.info(
-                f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+            TrXASDataset.save_as_origin_format(fname_origin, diff, x_axis, t_axis)
+            logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
         else:
             logger.info(
-                f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}")
+                f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}"
+            )
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -281,8 +280,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(
-                fname, ignore_incomplete=self.ignore_incomplete)
+            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
             logger.info(f"{dset.num_rows} rows in {fname}")
             if dset_type is None:
                 dset_type = dset.dset_type
@@ -312,7 +310,9 @@ def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache)
+        return TrXASDataset(
+            fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache
+        )
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         return None
@@ -332,8 +332,9 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname)
         if not cache_exists:
-            TrXASDataset(fname, ignore_incomplete=ignore_incomplete,
-                         load_cache=load_cache)
+            TrXASDataset(
+                fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache
+            )
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -344,9 +345,17 @@ class TrXASDataset:
     def __init__(self, fname, ignore_incomplete=True, load_cache=True):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
-        self.dset_attributes = ["energy", "laserd", "num_rows", "labels",
-                                "meta_data", "dset_type", "shape", "delta_t_s",
-                                "xas_data_norm"]
+        self.dset_attributes = [
+            "energy",
+            "laserd",
+            "num_rows",
+            "labels",
+            "meta_data",
+            "dset_type",
+            "shape",
+            "delta_t_s",
+            "xas_data_norm",
+        ]
 
         if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
@@ -371,8 +380,10 @@ class TrXASDataset:
     def save_to_cache(self):
         self.cache_name.parent.mkdir(parents=True, exist_ok=True)
         temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
-        np.savez(temp_cache_name, **{attr: getattr(self, attr) for attr in
-                                     self.dset_attributes})
+        np.savez(
+            temp_cache_name,
+            **{attr: getattr(self, attr) for attr in self.dset_attributes},
+        )
         temp_cache_name.replace(self.cache_name)
 
     def init_from_file(self, fname, ignore_incomplete=True):
@@ -383,17 +394,16 @@ class TrXASDataset:
                         process_header(line)
                     )
                     break
-        data = np.loadtxt(fname, comments="#",
-                          dtype=np.float32, delimiter="\t")
+        data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
         self.num_rows = data.shape[0]
         self.labels = labels
         self.meta_data = data[:, labels_mask]
         self.dset_type = dset_type
 
-        if self.dset_type == 'EXAFS':
+        if self.dset_type == "EXAFS":
             self.energy = self.get("Energy")
             self.laserd = 0.0
-        elif self.dset_type == 'LASERD':
+        elif self.dset_type == "LASERD":
             self.laserd = self.get("laserd") * 1e-9  # convert to seconds
             self.energy = 0.0
 
@@ -403,16 +413,16 @@ class TrXASDataset:
         xas_full[:, payload_mask] = xas_part
         if ignore_incomplete and np.prod(shape) != np.sum(payload_mask):
             # fix the incomplete dataset and remove all nan items
-            xas_full, shape = fix_incomplete_dataset(
-                payload_mask, shape, xas_full)
+            xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
 
         self.shape = shape
         self.delta_t_s = 1 / P0 / self.shape[2]
         self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
         self.xas_data_norm = self.normalize()
 
-    def get_energy_vs_time(self, channel=0, target="raw", norm_kwargs=None,
-                           binning_kwargs=None):
+    def get_energy_vs_time(
+        self, channel=0, target="raw", norm_kwargs=None, binning_kwargs=None
+    ):
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(self.xas_data[:, channel, :], t_axis)
@@ -422,9 +432,9 @@ class TrXASDataset:
             return self.compile_results(self.xas_data_norm, t_axis)
 
         elif target == "normalized-GS":
-            if self.dset_type == 'LASERD':
+            if self.dset_type == "LASERD":
                 return self.process_laserd(norm_kwargs, binning_kwargs)
-            elif self.dset_type == 'EXAFS':
+            elif self.dset_type == "EXAFS":
                 return self.process_energy(norm_kwargs, binning_kwargs)
         else:
             raise ValueError("Unknown target")
@@ -462,7 +472,7 @@ class TrXASDataset:
     def plot_and_save(save_name, diff, energy_axis, t_axis, title=None):
         # plt.style.use('science')
         plt.rcParams["text.usetex"] = False
-        t_axis = t_axis * 1e6   # convert to microseconds
+        t_axis = t_axis * 1e6  # convert to microseconds
         extent = (energy_axis[0], energy_axis[-1], t_axis[0], t_axis[-1])
         data = np.flipud(diff.T)
         fig_width = 4.8
@@ -472,8 +482,9 @@ class TrXASDataset:
         vmax = -1 * vmin
 
         fig, ax = plt.subplots(1, 1, figsize=(fig_width, fig_height))
-        im = ax.imshow(data, aspect="auto", extent=extent, cmap='bwr',
-                       vmin=vmin, vmax=vmax)
+        im = ax.imshow(
+            data, aspect="auto", extent=extent, cmap="bwr", vmin=vmin, vmax=vmax
+        )
         # ax.set_aspect(1/aspect)
         ax.set_xlabel("Energy (keV)")
         ax.set_ylabel("Time (μs)")
@@ -534,17 +545,10 @@ class TrXASDataset:
         return diff, sync_index
 
     def compile_results(self, avg, t_axis, kinetics=None):
-        if self.dset_type == 'EXAFS':
-            x_axis = {
-                "value": self.energy,
-                "label": "Energy",
-                "unit": "keV"
-            }
-        elif self.dset_type == 'LASERD':
-            x_axis = {
-                "value": self.laserd * (-1),
-                "label": "Delay",
-                "unit": "s"}
+        if self.dset_type == "EXAFS":
+            x_axis = {"value": self.energy, "label": "Energy", "unit": "keV"}
+        elif self.dset_type == "LASERD":
+            x_axis = {"value": self.laserd * (-1), "label": "Delay", "unit": "s"}
         # y_axis = {"value": t_axis, "label": "Time", "unit": "s"}
 
         results = {
@@ -555,14 +559,15 @@ class TrXASDataset:
             "bunch_mode": self.shape[2],
             "delta_t_s": self.delta_t_s,
             "shape": self.shape,
-            "dset_type": self.dset_type
+            "dset_type": self.dset_type,
         }
         return results
 
     def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
         size = diff.shape[1]
-        binning_mat, nobin_laserd_idx = prepare_binning_matrix(size,
-                sync_index, **binning_kwargs)
+        binning_mat, nobin_laserd_idx = prepare_binning_matrix(
+            size, sync_index, **binning_kwargs
+        )
         # diff is always 2d
         avg = (diff @ binning_mat)[:, 1:]
         if t_axis_raw.ndim == 1:
@@ -579,8 +584,9 @@ class TrXASDataset:
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
-        avg, t_axis, _ = self.apply_binning(diff, t_axis_raw, sync_index,
-                                            **binning_kwargs)
+        avg, t_axis, _ = self.apply_binning(
+            diff, t_axis_raw, sync_index, **binning_kwargs
+        )
         return self.compile_results(avg, t_axis)
 
     def process_laserd(
@@ -592,8 +598,9 @@ class TrXASDataset:
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         t_mat = t_mat - self.laserd[:, np.newaxis]
-        avg, t_mat2, nobin_idx = self.apply_binning(diff, t_mat, sync_index,
-                                                         **binning_kwargs)
+        avg, t_mat2, nobin_idx = self.apply_binning(
+            diff, t_mat, sync_index, **binning_kwargs
+        )
         t_axis = np.copy(t_mat2[0])
 
         # assemble kinetics
