@@ -25,8 +25,8 @@ def get_scan_type(fname):
         return "directory"
 
     try:
-        # if not is_writing_done(fname):
-        #     return "writing"
+        if was_recently_created(fname, 30):
+            return "writting"
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         line_count = 0
@@ -59,7 +59,7 @@ def get_scan_type(fname):
         return "invalid"
 
 
-def is_writing_done(fname, threshold=60):
+def is_writing_done(fname, threshold=100):
     """
     Check if a file has not been modified in the last 'threshold' seconds.
 
@@ -74,6 +74,27 @@ def is_writing_done(fname, threshold=60):
     elapsed_time = time.time() - last_modified  # Time since last modification
 
     return elapsed_time > threshold  # True if more than 'threshold' seconds
+
+
+def was_recently_created(fname, threshold=15):
+    """
+    Check if a file was created within the last 'threshold' seconds.
+
+    Returns True if the file exists and was created <= 'threshold' seconds ago.
+    """
+    file = Path(fname)
+
+    if not file.exists():
+        return False  # File doesn't exist yet
+
+    try:
+        created_time = file.stat().st_ctime  # Creation time on most OSes
+        elapsed_time = time.time() - created_time
+        return elapsed_time <= threshold
+    except AttributeError:
+        # On some systems (e.g. some Linux), st_ctime is change time, not creation
+        print("Warning: 'st_ctime' may not be reliable for creation time on this OS.")
+        return False
 
 
 def compare_versions(version1, version2):

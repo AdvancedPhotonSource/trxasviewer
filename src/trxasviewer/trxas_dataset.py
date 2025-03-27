@@ -75,7 +75,9 @@ def build_cache_database(folder, min_version="0.2.0"):
         if scan_type in (None, "writting"):
             # retry to get type if it was writting, or if it was not in cache
             scan_type = get_scan_type(entry)
-            cache_db["scan_type"][full_path] = scan_type
+            # append only if its a valid type
+            if scan_type in ("exafs", "laserd"):
+                cache_db["scan_type"][full_path] = scan_type
         if scan_type in ("exafs", "laserd"):
             append_entry(cache_db, scan_type, entry)
             flag_save = True
