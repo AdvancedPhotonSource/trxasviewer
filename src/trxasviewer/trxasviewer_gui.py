@@ -1,7 +1,9 @@
 import os
 import sys
+import argparse
 import time
 import numpy as np
+import json
 import pyqtgraph as pg
 from pathlib import Path
 import traceback
@@ -19,6 +21,13 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtWidgets import QApplication, QFileDialog, QFileSystemModel, QMainWindow
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDoubleSpinBox,
+    QLineEdit,
+    QRadioButton,
+    QSpinBox,
+)
 
 from .trxas_dataset import (
     TrXASDatasetManager,
@@ -29,6 +38,8 @@ from .utilities import get_scan_type
 import logging
 from . import __version__
 
+CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
+CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -69,11 +80,11 @@ class DatasetFilterModel(QSortFilterProxyModel):
         if not index.isValid():
             return False
         full_path = model.filePath(index)
-        scan_type = self.cache_db["scan_type"].get(full_path, None)
-        if scan_type in (None, "writing"):
-            scan_type = get_scan_type(full_path)
-            if scan_type in ["exafs", "laserd"]:
-                self.cache_db["scan_type"][full_path] = scan_type
+        # scan_type = self.cache_db["scan_type"].get(full_path, None)
+        # if scan_type in (None, "writing"):
+        scan_type = get_scan_type(full_path)
+        # if scan_type in ["exafs", "laserd"]:
+        #     self.cache_db["scan_type"][full_path] = scan_type
         # show the directory and parent directory
         return scan_type != "invalid"
 
@@ -180,7 +191,7 @@ class CacheWorker(QThread):
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
-    def __init__(self, rawfolder=None):
+    def __init__(self, rawfolder=None, syncbunch=None, autoload=False):
         super(TrXASViewer, self).__init__()
         self.setupUi(self)
         self.image = None
@@ -234,9 +245,15 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.__dict__[f"spinBox_anchor{n}"].editingFinished.connect(callback)
             self.__dict__[f"spinBox_numb{n}"].editingFinished.connect(callback)
 
+        self.setup_tooltips()
+
+        self.auto_save_load = autoload
+        if autoload:
+            self.save_load_settings(mode="load")
         if rawfolder:
             self.select_rawfolder(folder_path=rawfolder)
-        self.setup_tooltips()
+        if syncbunch:
+            self.spinBox_syncbunch_number.setValue(syncbunch)
 
         self.is_processing = False
         self.thread = QThread()
@@ -254,6 +271,56 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.timer.setInterval(1000)  # 1000 ms = 1 second
         self.timer.timeout.connect(self.refresh_filesystem)
         self.timer.start()
+
+    def save_load_settings(self, mode="save"):
+        keys = [
+            "lineEdit_rawfolder",
+            "radioButton_sync_time",
+            "doubleSpinBox_sync_time_us",
+            "radioButton_sync_bunch",
+            "spinBox_syncbunch_number",
+            "comboBox_groundstate_method",
+            "spinBox_orbitals_number",
+            "spinBox_binning_linnum",
+            "spinBox_binning_lognum",
+            "radioButton_selection_by_mouse",
+            "radioButton_selection_by_index",
+        ]
+        keys += [f"spinBox_anchor{n}" for n in range(5)]
+        keys += [f"spinBox_numb{n}" for n in range(5)]
+        if mode == "save":
+            config = {}
+            for key in keys:
+                widget = self.__dict__.get(key)
+                if isinstance(widget, QLineEdit):
+                    config[key] = widget.text()
+                elif isinstance(widget, QRadioButton):
+                    config[key] = widget.isChecked()
+                elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+                    config[key] = widget.value()
+                elif isinstance(widget, QComboBox):
+                    config[key] = widget.currentIndex()
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(config, f, indent=4)
+            logger.info(f"Saving to configuration file [{CONFIG_FILE}]")
+
+        elif mode == "load":
+            if CONFIG_FILE.is_file():
+                logger.info(f"Loading configuration file [{CONFIG_FILE}]")
+                with open(CONFIG_FILE, "r") as f:
+                    config = json.load(f)
+                for key, value in config.items():
+                    widget = self.__dict__.get(key)
+                    if isinstance(widget, QLineEdit):
+                        widget.setText(value)
+                    elif isinstance(widget, QRadioButton):
+                        widget.setChecked(value)
+                    elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+                        widget.setValue(value)
+                    elif isinstance(widget, QComboBox):
+                        widget.setCurrentIndex(value)
+            else:
+                logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
 
     def setup_tooltips(self):
         self.label_binbunches.setToolTip(
@@ -569,7 +636,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
 
             if self.comboBox_target.currentText() == "normalized-GS":
-                vmin, vmax = np.percentile(data.ravel(), [0.1, 99.9])
+                vmin, vmax = np.percentile(data.ravel(), [0.5, 99.5])
             else:
                 vmin, vmax = np.percentile(data.ravel(), [0, 100])
             self.image = np.flipud(data)
@@ -684,14 +751,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             return
         self.avg_worker.quit()
         self.avg_worker.stop_worker.emit()  # Tell the worker to stop
+        if self.auto_save_load:
+            self.save_load_settings(mode="save")
         self.thread.quit()  # Quit the thread event loop
         self.thread.wait()  # Wait for thread to finish
         event.accept()  # Allow closing
 
 
-def main_gui(rawfolder=None):
+def main_gui(rawfolder=None, syncbunch=None, autoload=True):
     app = QApplication(sys.argv)
-    window = TrXASViewer(rawfolder=rawfolder)
+    window = TrXASViewer(rawfolder=rawfolder, syncbunch=syncbunch, autoload=autoload)
     window.show()
     sys.exit(app.exec())
 

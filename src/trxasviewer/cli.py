@@ -17,6 +17,13 @@ def create_argparser():
     parser.add_argument(
         "--rawfolder", "-r", type=str, help="Path to the raw data folder.", default=None
     )
+    parser.add_argument(
+       "--syncbunch", "-s", type=int, help="Sync bunch index number.", default=None 
+    )
+    parser.add_argument(
+        "--disable-autoload", "-d", action="store_true", 
+        help="Disable automatically load previous settings.", default=False,
+    )
 
     return parser
 
@@ -27,7 +34,9 @@ def main():
     args = parser.parse_args()  # No positional arguments needed for now
 
     # Run the GUI
-    sys.exit(main_gui(args.rawfolder))
+    print(args)
+    sys.exit(main_gui(rawfolder=args.rawfolder, syncbunch=args.syncbunch, 
+                      autoload=(not args.disable_autoload)))
 
 
 if __name__ == "__main__":
