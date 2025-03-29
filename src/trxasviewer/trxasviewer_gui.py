@@ -290,6 +290,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         ]
         keys += [f"spinBox_anchor{n}" for n in range(5)]
         keys += [f"spinBox_numb{n}" for n in range(5)]
+        keys += [f'doubleSpinBox_kinetics_ecenter{n}' for n in range(1, 5)]
+        keys += [f'doubleSpinBox_kinetics_edelta{n}' for n in range(1, 5)]
+        keys += [f'checkBox_kinetics_roi{n}' for n in range(1, 5)]
         if mode == "save":
             config = {}
             for key in keys:
