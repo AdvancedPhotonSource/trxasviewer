@@ -165,6 +165,7 @@ class CacheWorker(QThread):
         self.file_list = file_list
         self.processes = []
         self.number_of_processes = number_of_processes
+        self.is_done = False 
 
     def run(self):
         t0 = time.perf_counter()
@@ -186,6 +187,7 @@ class CacheWorker(QThread):
             process.join()  # Wait for each process to finish (in background thread)
 
         self.finished.emit()
+        self.is_done = True 
         t1 = time.perf_counter()
         logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
 
@@ -228,7 +230,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(
             self.update_fileindex
         )
-        self.toolButton_refresh.clicked.connect(self.refresh_filesystem)
+        self.toolButton_refresh.clicked.connect(self.reload_rawfolder)
         self.spinBox_syncbunch_number.valueChanged.connect(
             self.update_sync_timing_parameters
         )
@@ -340,6 +342,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             of "Bin Bunches" defined below.
             """
         )
+    
+    def reload_rawfolder(self):
+        raw_folder = self.lineEdit_rawfolder.text()
+        if raw_folder and self.cache_worker and self.cache_worker.is_done:
+            self.select_rawfolder(placeholder=None, folder_path=raw_folder)
+            self.show_status(f"Reloaded raw folder: {raw_folder}")
 
     def refresh_filesystem(self):
         self.proxy_model.invalidate()
@@ -695,14 +703,15 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def update_fileindex(self):
         selection = self.comboBox_fileindex_prefix.currentText()
-        current_prefix, scan_type = selection.split("@")
-        file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
-        if len(file_indexes) > 0:
-            vbeg, vend = min(file_indexes), max(file_indexes)
-        else:
-            vbeg, vend = 0, 0
-        self.spinBox_fileindex_min.setValue(vbeg)
-        self.spinBox_fileindex_max.setValue(vend)
+        if selection:
+            current_prefix, scan_type = selection.split("@")
+            file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
+            if len(file_indexes) > 0:
+                vbeg, vend = min(file_indexes), max(file_indexes)
+            else:
+                vbeg, vend = 0, 0
+            self.spinBox_fileindex_min.setValue(vbeg)
+            self.spinBox_fileindex_max.setValue(vend)
 
     def build_cache(self, num_workers=None):
         if num_workers is None:
