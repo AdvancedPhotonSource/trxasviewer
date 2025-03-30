@@ -1,6 +1,5 @@
 import os
 import sys
-import argparse
 import time
 import numpy as np
 import json
@@ -27,7 +26,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QRadioButton,
     QSpinBox,
-    QCheckBox,
+    QCheckBox, QTabWidget
 )
 
 from .trxas_dataset import (
@@ -36,11 +35,13 @@ from .trxas_dataset import (
     build_cache_database,
 )
 from .utilities import get_scan_type
+from .widgets import VlockedRectROI
 import logging
 from . import __version__
 
 CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
 CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+PGCOLORS = ("r", "b", "k", "m", "g", "m", "y")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -259,6 +260,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if syncbunch:
             self.spinBox_syncbunch_number.setValue(syncbunch)
         self.update_kinetics_signal()
+        self.create_kinetics_ROIs()
 
         self.is_processing = False
         self.thread = QThread()
@@ -290,6 +292,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "spinBox_binning_lognum",
             "radioButton_selection_by_mouse",
             "radioButton_selection_by_index",
+            "tabWidget_binning",
         ]
         keys += [f"spinBox_anchor{n}" for n in range(5)]
         keys += [f"spinBox_numb{n}" for n in range(5)]
@@ -310,6 +313,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     config[key] = widget.currentIndex()
                 elif isinstance(widget, QCheckBox):
                     config[key] = widget.isChecked()
+                elif isinstance(widget, QTabWidget):
+                    config[key] = widget.currentIndex()
             with open(CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=4)
             logger.info(f"Saving to configuration file [{CONFIG_FILE}]")
@@ -331,6 +336,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                         widget.setCurrentIndex(value)
                     elif isinstance(widget, QCheckBox):
                         widget.setChecked(value)
+                    elif isinstance(widget, QTabWidget):
+                        widget.setCurrentIndex(value)
             else:
                 logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
 
@@ -371,13 +378,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def update_kinetics_signal(self):
         for n in range(1, 5):
-            signal_func = lambda: self.update_kinetics_ROI(target=n, mode="value-roi")
+
+            def signal_func(value=None, target=n):  # Capture the current value of n
+                return self.update_kinetics_ROI(target=target, mode="value-roi")
+
             widget = getattr(self, f"doubleSpinBox_kinetics_ecenter{n}")
             widget.editingFinished.connect(signal_func)
             widget = getattr(self, f"doubleSpinBox_kinetics_edelta{n}")
             widget.editingFinished.connect(signal_func)
             widget = getattr(self, f"checkBox_kinetics_roi{n}")
-            widget.stateChanged.connect(signal_func)
+            widget.toggled.connect(signal_func)
 
     def update_binning_params(self, index=0, prev_enable=True):
         if index >= 5:
@@ -505,7 +515,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def compute_ROI_geometry(self, center, delta):
         energy = self.results["x_axis"]["value"]
         idx = np.argmin(np.abs(energy - center))
-        v_size = self.image.shape[1]
+        v_size = self.image.shape[0]
         e0, e1 = center - delta, center + delta
         h_size = np.argmin(np.abs(energy - e1)) - np.argmin(np.abs(energy - e0))
         pos = (idx - h_size // 2, 0)
@@ -514,13 +524,51 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def compute_energy_bounds(self, pos, size):
         energy = self.results["x_axis"]["value"]
-        e0 = energy[int(pos[0])]
-        e1 = energy[int(pos[0] + size[0])]
+        e0 = energy[max(0, int(pos[0]))]
+        e1 = energy[min(int(pos[0] + size[0]), len(energy) - 1)]
         center_energy = (e0 + e1) / 2.0
         delta_energy = (e1 - e0) / 2.0
         return center_energy, delta_energy
 
+    def create_kinetics_ROIs(self):
+        if not self.kinetics_roi and self.results:
+            for target, kwargs in enumerate(self.get_kinetics_kwargs()):
+                target += 1
+                pos, size = self.compute_ROI_geometry(
+                    kwargs["center_energy"], kwargs["delta_energy"]
+                )
+                color = PGCOLORS[(target - 1) % len(PGCOLORS)]
+                pen = pg.mkPen(color, width=2, style=Qt.PenStyle.DotLine)
+                handle_pen = pg.mkPen(color=color, width=3)
+                handlehover_pen = pg.mkPen(color=color, width=5)
+                hover_pen = pg.mkPen(color=color, width=5, style=Qt.PenStyle.DotLine)
+                roi = VlockedRectROI(
+                    pos,
+                    size,
+                    pen=pen,
+                    hoverPen=hover_pen,
+                    handlePen=handle_pen,
+                    handleHoverPen=handlehover_pen,
+                )
+                roi.setVisible(kwargs["enabled"])
+                roi.mouseClickEvent = lambda ev: ev.ignore()
+                self.kinetics_roi[target] = roi
+                self.pg_hdl_img2d.addItem(roi)
+
+                def update_values(value=None, target=target):
+                    self.update_kinetics_ROI(mode="roi-value", target=target)
+
+                roi.sigRegionChanged.connect(update_values)
+
+    def remove_kinetics_ROIs(self):
+        for roi in self.kinetics_roi.values():
+            self.pg_hdl_img2d.removeItem(roi)
+        self.kinetics_roi = {}
+
     def update_kinetics_ROI(self, mode="roi-value", target=None):
+        if not self.kinetics_roi:
+            self.create_kinetics_ROIs()
+
         if self.results is None or target is None:
             return
         assert target in (1, 2, 3, 4)  # for kinetics ROI 1, 2, 3, 4
@@ -529,20 +577,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             pos, size = self.compute_ROI_geometry(
                 kwargs["center_energy"], kwargs["delta_energy"]
             )
-            if target not in self.kinetics_roi:
-                roi = pg.RectROI(pos, size, pen="k", hoverPen="k", sideScalers=False)
-                self.kinetics_roi[target] = roi
-                self.pg_hdl_img2d.addItem(roi)
-                print(pos, size)
-            else:
-                self.kinetics_roi[target].setPos(pos)
-                self.kinetics_roi[target].setSize(size)
-            if not kwargs["enabled"]:
-                pass
-                # self.kinetics_roi[target].hide()
+            self.kinetics_roi[target].setPos(pos)
+            self.kinetics_roi[target].setSize(size)
+            self.kinetics_roi[target].setVisible(kwargs["enabled"])
         elif mode == "roi-value":
             roi = self.kinetics_roi[target]
-            center_energy, delta_energy = self.compute_energy(roi.pos(), roi.size())
+            center_energy, delta_energy = self.compute_energy_bounds(
+                roi.pos(), roi.size()
+            )
             getattr(self, f"doubleSpinBox_kinetics_ecenter{target}").setValue(
                 center_energy
             ),
@@ -732,8 +774,15 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 vmin, vmax = np.percentile(data.ravel(), [0.5, 99.5])
             else:
                 vmin, vmax = np.percentile(data.ravel(), [0, 100])
-            self.image = np.flipud(data)
+
+            self.image, prev_image = np.flipud(data), self.image
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
+
+            if prev_image is None or prev_image.shape[0] != self.image.shape[0]:
+                self.remove_kinetics_ROIs()
+            if not self.kinetics_roi:
+                self.create_kinetics_ROIs()
+
             self.mouse_clicked()
             self.plot_kinetics()
 
@@ -751,11 +800,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_kinetics.clear()
         self.pg_hdl_kinetics.addLegend()
 
-        # colors = [pg.intColor(i, hues=4) for i in range(4)]
-        colors = ("r", "g", "b", "m", "k", "m", "y")
         for idx, (key, value) in enumerate(self.results["kinetics"].items()):
             data = value["profile"]
-            pen = pg.mkPen(colors[idx % len(colors)], width=2)
+            pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
             self.pg_hdl_kinetics.plot(data[0], data[1], pen=pen)
             scatter_plot = pg.ScatterPlotItem(
                 x=data[0],
