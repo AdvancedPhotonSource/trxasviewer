@@ -381,7 +381,7 @@
               <item row="3" column="0" colspan="2">
                <widget class="QToolBox" name="toolBox">
                 <property name="currentIndex">
-                 <number>0</number>
+                 <number>1</number>
                 </property>
                 <widget class="QWidget" name="page">
                  <property name="geometry">
@@ -700,7 +700,11 @@
                    </widget>
                   </item>
                   <item row="0" column="2">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_ecenter1"/>
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_ecenter1">
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                   </widget>
                   </item>
                   <item row="0" column="3" rowspan="3">
                    <widget class="Line" name="line_2">
@@ -710,7 +714,11 @@
                    </widget>
                   </item>
                   <item row="0" column="4">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_ecenter2"/>
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_ecenter2">
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                   </widget>
                   </item>
                   <item row="0" column="5" rowspan="3">
                    <widget class="Line" name="line_3">
@@ -723,6 +731,9 @@
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_ecenter3">
                     <property name="enabled">
                      <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
                     </property>
                    </widget>
                   </item>
@@ -738,25 +749,39 @@
                     <property name="enabled">
                      <bool>false</bool>
                     </property>
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
                    </widget>
                   </item>
                   <item row="1" column="0">
                    <widget class="QLabel" name="label_12">
                     <property name="text">
-                     <string>±δE (eV)</string>
+                     <string>±δE (keV)</string>
                     </property>
                    </widget>
                   </item>
                   <item row="1" column="2">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta1"/>
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta1">
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                   </widget>
                   </item>
                   <item row="1" column="4">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta2"/>
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta2">
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                   </widget>
                   </item>
                   <item row="1" column="6">
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta3">
                     <property name="enabled">
                      <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
                     </property>
                    </widget>
                   </item>
@@ -764,6 +789,9 @@
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_kinetics_edelta4">
                     <property name="enabled">
                      <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
                     </property>
                    </widget>
                   </item>

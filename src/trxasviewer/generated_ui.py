@@ -451,6 +451,7 @@ class Ui_MainWindow(object):
 
         self.doubleSpinBox_kinetics_ecenter1 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_ecenter1.setObjectName(u"doubleSpinBox_kinetics_ecenter1")
+        self.doubleSpinBox_kinetics_ecenter1.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_ecenter1, 0, 2, 1, 1)
 
@@ -463,6 +464,7 @@ class Ui_MainWindow(object):
 
         self.doubleSpinBox_kinetics_ecenter2 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_ecenter2.setObjectName(u"doubleSpinBox_kinetics_ecenter2")
+        self.doubleSpinBox_kinetics_ecenter2.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_ecenter2, 0, 4, 1, 1)
 
@@ -476,6 +478,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_kinetics_ecenter3 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_ecenter3.setObjectName(u"doubleSpinBox_kinetics_ecenter3")
         self.doubleSpinBox_kinetics_ecenter3.setEnabled(False)
+        self.doubleSpinBox_kinetics_ecenter3.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_ecenter3, 0, 6, 1, 1)
 
@@ -489,6 +492,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_kinetics_ecenter4 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_ecenter4.setObjectName(u"doubleSpinBox_kinetics_ecenter4")
         self.doubleSpinBox_kinetics_ecenter4.setEnabled(False)
+        self.doubleSpinBox_kinetics_ecenter4.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_ecenter4, 0, 8, 1, 1)
 
@@ -499,23 +503,27 @@ class Ui_MainWindow(object):
 
         self.doubleSpinBox_kinetics_edelta1 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_edelta1.setObjectName(u"doubleSpinBox_kinetics_edelta1")
+        self.doubleSpinBox_kinetics_edelta1.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_edelta1, 1, 2, 1, 1)
 
         self.doubleSpinBox_kinetics_edelta2 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_edelta2.setObjectName(u"doubleSpinBox_kinetics_edelta2")
+        self.doubleSpinBox_kinetics_edelta2.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_edelta2, 1, 4, 1, 1)
 
         self.doubleSpinBox_kinetics_edelta3 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_edelta3.setObjectName(u"doubleSpinBox_kinetics_edelta3")
         self.doubleSpinBox_kinetics_edelta3.setEnabled(False)
+        self.doubleSpinBox_kinetics_edelta3.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_edelta3, 1, 6, 1, 1)
 
         self.doubleSpinBox_kinetics_edelta4 = QDoubleSpinBox(self.page_2)
         self.doubleSpinBox_kinetics_edelta4.setObjectName(u"doubleSpinBox_kinetics_edelta4")
         self.doubleSpinBox_kinetics_edelta4.setEnabled(False)
+        self.doubleSpinBox_kinetics_edelta4.setDecimals(4)
 
         self.gridLayout_13.addWidget(self.doubleSpinBox_kinetics_edelta4, 1, 8, 1, 1)
 
@@ -774,7 +782,7 @@ class Ui_MainWindow(object):
         self.checkBox_kinetics_roi4.toggled.connect(self.doubleSpinBox_kinetics_edelta4.setEnabled)
         self.checkBox_kinetics_roi4.toggled.connect(self.doubleSpinBox_kinetics_ecenter4.setEnabled)
 
-        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setCurrentIndex(1)
         self.tabWidget_binning.setCurrentIndex(2)
         self.tabWidget_kinetics.setCurrentIndex(0)
 
@@ -821,7 +829,7 @@ class Ui_MainWindow(object):
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.page), QCoreApplication.translate("MainWindow", u"Binning", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"E (keV)", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u00b1\u03b4E (eV)", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u00b1\u03b4E (keV)", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Enable", None))
         self.checkBox_kinetics_roi1.setText(QCoreApplication.translate("MainWindow", u"ROI1", None))
         self.checkBox_kinetics_roi2.setText(QCoreApplication.translate("MainWindow", u"ROI2", None))
