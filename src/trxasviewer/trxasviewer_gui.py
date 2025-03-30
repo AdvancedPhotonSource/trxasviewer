@@ -165,7 +165,7 @@ class CacheWorker(QThread):
         self.file_list = file_list
         self.processes = []
         self.number_of_processes = number_of_processes
-        self.is_done = False 
+        self.is_done = False
 
     def run(self):
         t0 = time.perf_counter()
@@ -187,7 +187,7 @@ class CacheWorker(QThread):
             process.join()  # Wait for each process to finish (in background thread)
 
         self.finished.emit()
-        self.is_done = True 
+        self.is_done = True
         t1 = time.perf_counter()
         logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
 
@@ -290,9 +290,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         ]
         keys += [f"spinBox_anchor{n}" for n in range(5)]
         keys += [f"spinBox_numb{n}" for n in range(5)]
-        keys += [f'doubleSpinBox_kinetics_ecenter{n}' for n in range(1, 5)]
-        keys += [f'doubleSpinBox_kinetics_edelta{n}' for n in range(1, 5)]
-        keys += [f'checkBox_kinetics_roi{n}' for n in range(1, 5)]
+        keys += [f"doubleSpinBox_kinetics_ecenter{n}" for n in range(1, 5)]
+        keys += [f"doubleSpinBox_kinetics_edelta{n}" for n in range(1, 5)]
+        keys += [f"checkBox_kinetics_roi{n}" for n in range(1, 5)]
         if mode == "save":
             config = {}
             for key in keys:
@@ -345,7 +345,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             of "Bin Bunches" defined below.
             """
         )
-    
+
     def reload_rawfolder(self):
         raw_folder = self.lineEdit_rawfolder.text()
         if raw_folder and self.cache_worker and self.cache_worker.is_done:
@@ -558,12 +558,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "channel": int(self.comboBox_channel_num.currentText()),
             "target": self.comboBox_target.currentText(),
         }
-        if kwargs["target"] == "raw":  # fix me; disable raw plotting
-            return
+        # if kwargs["target"] == "raw":  # fix me; disable raw plotting
+        #     return
 
         if kwargs["target"] in ["normalized-GS"]:
             kwargs["norm_kwargs"] = self.get_normalization_subgs_kwargs()
             kwargs["binning_kwargs"] = self.get_binning_kwargs()
+            kwargs["kinetics_kwargs"] = self.get_kinetics_kwargs()
         if kwargs["target"] in ["normalized-GS", "normalized"]:
             self.comboBox_channel_num.setEnabled(False)
         else:
@@ -610,6 +611,22 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
         }
         return norm_kwargs
+
+    def get_kinetics_kwargs(self):
+        roi_list = []
+        for n in range(1, 5):
+            kwargs = {
+                "center_energy": getattr(
+                    self, f"doubleSpinBox_kinetics_ecenter{n}"
+                ).value(),
+                "delta_energy": getattr(
+                    self, f"doubleSpinBox_kinetics_edelta{n}"
+                ).value(),
+                "enabled": getattr(self, f"checkBox_kinetics_roi{n}").isChecked(),
+                "label": f"ROI{n}",
+            }
+            roi_list.append(kwargs)
+        return tuple(roi_list)
 
     def get_binning_kwargs(self):
         current_tab_index = self.tabWidget_binning.currentIndex()
@@ -667,15 +684,26 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
         self.tabWidget_kinetics.setCurrentIndex(1)
         self.pg_hdl_kinetics.clear()
-        data = self.results["kinetics"]
-        self.pg_hdl_kinetics.plot(data[:, 0], data[:, 1], pen="b")
-        scatter_plot = pg.ScatterPlotItem(
-            x=data[:, 0], y=data[:, 1], size=5, pen="red", brush=None
-        )
-        self.pg_hdl_kinetics.addItem(scatter_plot)
-        dt = self.results["delta_t_s"] * np.array(x_range)
-        dt[0] = max(dt[0], np.min(data[:, 0]))
-        self.pg_hdl_kinetics.setXRange(dt[0], dt[1])
+        self.pg_hdl_kinetics.addLegend()
+
+        # colors = [pg.intColor(i, hues=4) for i in range(4)]
+        colors = ("r", "g", "b", "m", "k", "m", "y")
+        for idx, (key, value) in enumerate(self.results["kinetics"].items()):
+            data = value["profile"]
+            pen = pg.mkPen(colors[idx % len(colors)], width=2)
+            self.pg_hdl_kinetics.plot(data[0], data[1], pen=pen)
+            scatter_plot = pg.ScatterPlotItem(
+                x=data[0],
+                y=data[1],
+                size=3,
+                pen=pen,
+                brush=None,
+                name=value["long_label"],
+            )
+            self.pg_hdl_kinetics.addItem(scatter_plot)
+            # dt = self.results["delta_t_s"] * np.array(x_range)
+            # dt[0] = max(dt[0], np.min(data[:, 0]))
+        # self.pg_hdl_kinetics.setXRange(dt[0], dt[1])
         self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
         self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
 

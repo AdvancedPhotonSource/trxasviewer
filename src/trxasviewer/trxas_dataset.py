@@ -276,7 +276,7 @@ class TrXASDatasetManager:
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
-        kinetics_list = []
+        kinetics_dict = {}
         dset_type = None
         # Load datasets
         for n, fname in enumerate(self.flist):
@@ -291,17 +291,20 @@ class TrXASDatasetManager:
             if dset is not None:
                 results = dset.get_energy_vs_time(**kwargs)
                 data_list.append(results["avg"])
-                if results["kinetics"] is not None:
-                    kinetics_list.append(results["kinetics"])
-
-        avg_data = safe_mean(data_list)
-        avg_kinetics = safe_mean(kinetics_list)
+                if results["kinetics"]:
+                    for key in results["kinetics"].keys():
+                        if key not in kinetics_dict.keys():
+                            kinetics_dict[key] = []
+                        kinetics_dict[key].append(results["kinetics"][key]["profile"])
 
         good_idx = 0  # np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
         good_results = good_dset.get_energy_vs_time(**kwargs)
-        good_results["avg"] = avg_data
-        good_results["kinetics"] = avg_kinetics
+
+        good_results["avg"] = safe_mean(data_list)
+        for key in kinetics_dict.keys():
+            good_results["kinetics"][key]["profile"] = safe_mean(kinetics_dict[key])
+
         return good_results
 
 
@@ -423,9 +426,16 @@ class TrXASDataset:
         self.xas_data_norm = self.normalize()
 
     def get_energy_vs_time(
-        self, channel=0, target="raw", norm_kwargs=None, binning_kwargs=None
+        self,
+        channel=0,
+        target="raw",
+        norm_kwargs=None,
+        binning_kwargs=None,
+        kinetics_kwargs=None,
     ):
         if target == "raw":
+            if self.xas_data == None:
+                self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(self.xas_data[:, channel, :], t_axis)
 
@@ -437,7 +447,7 @@ class TrXASDataset:
             if self.dset_type == "LASERD":
                 return self.process_laserd(norm_kwargs, binning_kwargs)
             elif self.dset_type == "EXAFS":
-                return self.process_energy(norm_kwargs, binning_kwargs)
+                return self.process_energy(norm_kwargs, binning_kwargs, kinetics_kwargs)
         else:
             raise ValueError("Unknown target")
 
@@ -578,10 +588,34 @@ class TrXASDataset:
             t_axis = (t_axis_raw @ binning_mat)[:, 1:]
         return avg, t_axis, nobin_laserd_idx
 
+    def extract_single_kinetics(
+        self, avg, t_axis, center_energy, delta_energy, label, enabled=True
+    ):
+        assert self.dset_type == "EXAFS", "Not an EXAFS scan"
+        if not enabled:
+            return None
+        e0, e1 = center_energy - delta_energy, center_energy + delta_energy
+        slected = (self.energy >= e0) & (self.energy <= e1)
+        kinetics_profile = np.stack([t_axis, avg[slected].mean(axis=0)])
+        result = {
+            "profile": kinetics_profile,
+            "long_label": f"{label}: {center_energy:.3f}±{delta_energy:.3f} keV",
+        }
+        return {label: result}
+
+    def extract_kenetics(self, avg, t_axis, kwargs_list):
+        results = {}
+        for kwargs in kwargs_list:
+            temp = self.extract_single_kinetics(avg, t_axis, **kwargs)
+            if temp:
+                results.update(temp)
+        return results
+
     def process_energy(
         self,
         norm_kwargs,
         binning_kwargs,
+        kinetics_kwargs,
     ):
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
@@ -589,7 +623,8 @@ class TrXASDataset:
         avg, t_axis, _ = self.apply_binning(
             diff, t_axis_raw, sync_index, **binning_kwargs
         )
-        return self.compile_results(avg, t_axis)
+        kinetics = self.extract_kenetics(avg, t_axis, kinetics_kwargs)
+        return self.compile_results(avg, t_axis, kinetics=kinetics)
 
     def process_laserd(
         self,
@@ -616,9 +651,13 @@ class TrXASDataset:
                 sval.append(np.mean(avg[:, n]))
                 tval.append(np.mean(t_mat2[:, n]))
 
-        kinetics = np.stack((tval, sval), axis=1)
-        kinetics = kinetics[kinetics[:, 0].argsort()]
-        return self.compile_results(avg, t_axis, kinetics=kinetics)
+        kinetics = np.stack((tval, sval))
+        kinetics = kinetics[kinetics[0].argsort()]
+        kinetics = {
+            "profile": kinetics,
+            "long_label": f"laser delay",
+        }
+        return self.compile_results(avg, t_axis, kinetics={"laserd": kinetics})
 
 
 if __name__ == "__main__":
