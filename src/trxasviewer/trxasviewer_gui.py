@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QRadioButton,
     QSpinBox,
+    QCheckBox,
 )
 
 from .trxas_dataset import (
@@ -201,6 +202,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.last_position = None
         self.roi = None
         self.cache_db = {}
+        self.kinetics_roi = {}
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
         self.setup_imageview()
@@ -256,6 +258,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.select_rawfolder(folder_path=rawfolder)
         if syncbunch:
             self.spinBox_syncbunch_number.setValue(syncbunch)
+        self.update_kinetics_signal()
 
         self.is_processing = False
         self.thread = QThread()
@@ -296,7 +299,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if mode == "save":
             config = {}
             for key in keys:
-                widget = self.__dict__.get(key)
+                widget = getattr(self, key)
                 if isinstance(widget, QLineEdit):
                     config[key] = widget.text()
                 elif isinstance(widget, QRadioButton):
@@ -305,6 +308,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     config[key] = widget.value()
                 elif isinstance(widget, QComboBox):
                     config[key] = widget.currentIndex()
+                elif isinstance(widget, QCheckBox):
+                    config[key] = widget.isChecked()
             with open(CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=4)
             logger.info(f"Saving to configuration file [{CONFIG_FILE}]")
@@ -324,6 +329,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                         widget.setValue(value)
                     elif isinstance(widget, QComboBox):
                         widget.setCurrentIndex(value)
+                    elif isinstance(widget, QCheckBox):
+                        widget.setChecked(value)
             else:
                 logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
 
@@ -361,6 +368,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def show_status(self, msg, level=logging.INFO, timeout=5000):
         logger.log(level, msg)
         self.statusBar().showMessage(msg, timeout)
+
+    def update_kinetics_signal(self):
+        for n in range(1, 5):
+            signal_func = lambda: self.update_kinetics_ROI(target=n, mode="value-roi")
+            widget = getattr(self, f"doubleSpinBox_kinetics_ecenter{n}")
+            widget.editingFinished.connect(signal_func)
+            widget = getattr(self, f"doubleSpinBox_kinetics_edelta{n}")
+            widget.editingFinished.connect(signal_func)
+            widget = getattr(self, f"checkBox_kinetics_roi{n}")
+            widget.stateChanged.connect(signal_func)
 
     def update_binning_params(self, index=0, prev_enable=True):
         if index >= 5:
@@ -484,6 +501,54 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.roi.setPos(
                 (position[0] - roi_size[0] / 2, position[1] - roi_size[1] / 2)
             )
+
+    def compute_ROI_geometry(self, center, delta):
+        energy = self.results["x_axis"]["value"]
+        idx = np.argmin(np.abs(energy - center))
+        v_size = self.image.shape[1]
+        e0, e1 = center - delta, center + delta
+        h_size = np.argmin(np.abs(energy - e1)) - np.argmin(np.abs(energy - e0))
+        pos = (idx - h_size // 2, 0)
+        size = (h_size, v_size)
+        return pos, size
+
+    def compute_energy_bounds(self, pos, size):
+        energy = self.results["x_axis"]["value"]
+        e0 = energy[int(pos[0])]
+        e1 = energy[int(pos[0] + size[0])]
+        center_energy = (e0 + e1) / 2.0
+        delta_energy = (e1 - e0) / 2.0
+        return center_energy, delta_energy
+
+    def update_kinetics_ROI(self, mode="roi-value", target=None):
+        if self.results is None or target is None:
+            return
+        assert target in (1, 2, 3, 4)  # for kinetics ROI 1, 2, 3, 4
+        if mode == "value-roi":
+            kwargs = self.get_kinetics_kwargs()[target - 1]  # target is 1-based
+            pos, size = self.compute_ROI_geometry(
+                kwargs["center_energy"], kwargs["delta_energy"]
+            )
+            if target not in self.kinetics_roi:
+                roi = pg.RectROI(pos, size, pen="k", hoverPen="k", sideScalers=False)
+                self.kinetics_roi[target] = roi
+                self.pg_hdl_img2d.addItem(roi)
+                print(pos, size)
+            else:
+                self.kinetics_roi[target].setPos(pos)
+                self.kinetics_roi[target].setSize(size)
+            if not kwargs["enabled"]:
+                pass
+                # self.kinetics_roi[target].hide()
+        elif mode == "roi-value":
+            roi = self.kinetics_roi[target]
+            center_energy, delta_energy = self.compute_energy(roi.pos(), roi.size())
+            getattr(self, f"doubleSpinBox_kinetics_ecenter{target}").setValue(
+                center_energy
+            ),
+            getattr(self, f"doubleSpinBox_kinetics_edelta{target}").setValue(
+                delta_energy
+            ),
 
     def mouse_clicked(self, event=None):
         if self.image is None:
