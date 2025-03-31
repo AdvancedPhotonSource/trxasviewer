@@ -652,10 +652,10 @@ class TrXASDataset:
                 tval.append(np.mean(t_mat2[:, n]))
 
         kinetics = np.stack((tval, sval))
-        kinetics = kinetics[kinetics[0].argsort()]
+        kinetics = kinetics[:, kinetics[0].argsort()]
         kinetics = {
             "profile": kinetics,
-            "long_label": f"laser delay",
+            "long_label": "Laser Delay",
         }
         return self.compile_results(avg, t_axis, kinetics={"laserd": kinetics})
 
