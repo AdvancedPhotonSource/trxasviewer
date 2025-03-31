@@ -191,3 +191,26 @@ def prepare_binning_matrix(
     mat = construct_transform_mat(idx_mask, weights)
     nobin_laserd_idx = [x - 1 for x in nobin_laserd_idx]  # convert to 0-based
     return mat, nobin_laserd_idx
+
+
+def format_time(input_time):
+    """
+    Convert time in seconds to a human-readable string with appropriate time units,
+    preserving the sign. Returns 'invalid' if input is None or zero.
+
+    Args:
+        input_time (float): Time in seconds (can be negative).
+
+    Returns:
+        str: Formatted time string like "130 ns", "-5 µs", or "invalid".
+    """
+    units = [(1e-12, "ps"), (1e-9, "ns"), (1e-6, "µs"), (1e-3, "ms"), (1, "s")]
+
+    abs_time = abs(input_time)
+
+    for scale, unit in units:
+        if abs_time < scale * 1000:
+            value = input_time / scale
+            return f"{value:.0f} {unit}"
+
+    return f"{input_time:.3f} s"

@@ -34,7 +34,7 @@ from .trxas_dataset import (
     create_trxas_cache_from_flist,
     build_cache_database,
 )
-from .utilities import get_scan_type
+from .utilities import get_scan_type, format_time
 from .widgets import VlockedRectROI
 import logging
 from . import __version__
@@ -631,15 +631,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 pos_time = y_positions[y]
                 unit = self.results["x_axis"]["unit"]
                 label = self.results["x_axis"]["label"]
+
                 if label == "Energy":
-                    self.pg_hdl_zoomin.setTitle(
-                        f"Energy: {pos_value:.4f} {unit}, Time: {pos_time:.3e} s"
-                    )
+                    self.groupBox_vlinecut.setTitle(f"Vertical Cut @ Energy={pos_value:.4f} {unit}")
+                    self.groupBox_hlinecut.setTitle(f"Horizontal Cut @ Time={format_time(pos_time)}")
                     self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
                 elif label == "Delay":
-                    self.pg_hdl_zoomin.setTitle(
-                        f"Delay: {pos_value:.3e} {unit}, Time: {pos_time:.3e} s"
-                    )
+                    self.groupBox_vlinecut.setTitle(f"Vertical Cut @ Delay={format_time(pos_value)}")
+                    self.groupBox_hlinecut.setTitle(f"Horizontal Cut @ Time={format_time(pos_time)}")
                     self.pg_hdl_hline.setLabel("bottom", "Delay", units=unit)
             self.update_zoomed_view()
 
@@ -771,7 +770,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
 
             if self.comboBox_target.currentText() == "normalized-GS":
-                vmin, vmax = np.percentile(data.ravel(), [0.5, 99.5])
+                vmin, vmax = np.percentile(data.ravel(), [0.2, 99.8])
+                vmax = max(abs(vmax), abs(vmin))
+                vmin = -vmax
             else:
                 vmin, vmax = np.percentile(data.ravel(), [0, 100])
 
@@ -792,13 +793,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
-        if self.results["kinetics"] is None:
-            self.tabWidget_kinetics.setCurrentIndex(0)
-            return
-
-        self.tabWidget_kinetics.setCurrentIndex(1)
         self.pg_hdl_kinetics.clear()
         self.pg_hdl_kinetics.addLegend()
+        if not self.results["kinetics"]:
+            return
 
         for idx, (key, value) in enumerate(self.results["kinetics"].items()):
             data = value["profile"]
