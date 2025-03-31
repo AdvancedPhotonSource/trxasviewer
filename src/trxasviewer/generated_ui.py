@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.2
+## Created by: Qt User Interface Compiler version 6.8.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -37,12 +37,12 @@ class Ui_MainWindow(object):
         self.splitter_2 = QSplitter(self.centralwidget)
         self.splitter_2.setObjectName(u"splitter_2")
         self.splitter_2.setOrientation(Qt.Orientation.Horizontal)
-        self.widget = QWidget(self.splitter_2)
-        self.widget.setObjectName(u"widget")
-        self.verticalLayout = QVBoxLayout(self.widget)
+        self.layoutWidget = QWidget(self.splitter_2)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.verticalLayout = QVBoxLayout(self.layoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.groupBox_2 = QGroupBox(self.widget)
+        self.groupBox_2 = QGroupBox(self.layoutWidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.groupBox_2)
 
-        self.groupBox_5 = QGroupBox(self.widget)
+        self.groupBox_5 = QGroupBox(self.layoutWidget)
         self.groupBox_5.setObjectName(u"groupBox_5")
         sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         sizePolicy3.setHorizontalStretch(1)
@@ -278,15 +278,15 @@ class Ui_MainWindow(object):
         self.tab_4.setObjectName(u"tab_4")
         self.gridLayout_18 = QGridLayout(self.tab_4)
         self.gridLayout_18.setObjectName(u"gridLayout_18")
-        self.label_11 = QLabel(self.tab_4)
-        self.label_11.setObjectName(u"label_11")
-
-        self.gridLayout_18.addWidget(self.label_11, 1, 0, 1, 1)
-
         self.label_binning_logmsg = QLabel(self.tab_4)
         self.label_binning_logmsg.setObjectName(u"label_binning_logmsg")
 
         self.gridLayout_18.addWidget(self.label_binning_logmsg, 0, 0, 1, 2)
+
+        self.label_11 = QLabel(self.tab_4)
+        self.label_11.setObjectName(u"label_11")
+
+        self.gridLayout_18.addWidget(self.label_11, 1, 0, 1, 1)
 
         self.spinBox_binning_lognum = QDoubleSpinBox(self.tab_4)
         self.spinBox_binning_lognum.setObjectName(u"spinBox_binning_lognum")
@@ -438,30 +438,190 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.progressBar, 7, 1, 1, 1)
 
+        self.groupBox_6 = QGroupBox(self.groupBox_5)
+        self.groupBox_6.setObjectName(u"groupBox_6")
+        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        sizePolicy7.setHorizontalStretch(0)
+        sizePolicy7.setVerticalStretch(0)
+        sizePolicy7.setHeightForWidth(self.groupBox_6.sizePolicy().hasHeightForWidth())
+        self.groupBox_6.setSizePolicy(sizePolicy7)
+        self.gridLayout_11 = QGridLayout(self.groupBox_6)
+        self.gridLayout_11.setObjectName(u"gridLayout_11")
+        self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
+        self.label_13 = QLabel(self.groupBox_6)
+        self.label_13.setObjectName(u"label_13")
+
+        self.gridLayout_11.addWidget(self.label_13, 1, 0, 1, 1)
+
+        self.comboBox = QComboBox(self.groupBox_6)
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.comboBox.setObjectName(u"comboBox")
+
+        self.gridLayout_11.addWidget(self.comboBox, 1, 1, 1, 1)
+
+        self.gridLayout_3 = QGridLayout()
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.doubleSpinBox_kinetics_edelta1 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_edelta1.setObjectName(u"doubleSpinBox_kinetics_edelta1")
+        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        sizePolicy8.setHorizontalStretch(0)
+        sizePolicy8.setVerticalStretch(0)
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_edelta1.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_edelta1.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_edelta1.setDecimals(4)
+        self.doubleSpinBox_kinetics_edelta1.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta1, 1, 1, 1, 1)
+
+        self.doubleSpinBox_kinetics_ecenter1 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_ecenter1.setObjectName(u"doubleSpinBox_kinetics_ecenter1")
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter1.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_ecenter1.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_ecenter1.setDecimals(4)
+        self.doubleSpinBox_kinetics_ecenter1.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter1, 0, 1, 1, 1)
+
+        self.checkBox_kinetics_roi4 = QCheckBox(self.groupBox_6)
+        self.checkBox_kinetics_roi4.setObjectName(u"checkBox_kinetics_roi4")
+        sizePolicy8.setHeightForWidth(self.checkBox_kinetics_roi4.sizePolicy().hasHeightForWidth())
+        self.checkBox_kinetics_roi4.setSizePolicy(sizePolicy8)
+
+        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi4, 2, 4, 1, 1)
+
+        self.checkBox_kinetics_roi1 = QCheckBox(self.groupBox_6)
+        self.checkBox_kinetics_roi1.setObjectName(u"checkBox_kinetics_roi1")
+        sizePolicy8.setHeightForWidth(self.checkBox_kinetics_roi1.sizePolicy().hasHeightForWidth())
+        self.checkBox_kinetics_roi1.setSizePolicy(sizePolicy8)
+        self.checkBox_kinetics_roi1.setChecked(True)
+
+        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi1, 2, 1, 1, 1)
+
+        self.doubleSpinBox_kinetics_edelta2 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_edelta2.setObjectName(u"doubleSpinBox_kinetics_edelta2")
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_edelta2.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_edelta2.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_edelta2.setDecimals(4)
+        self.doubleSpinBox_kinetics_edelta2.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta2, 1, 2, 1, 1)
+
+        self.checkBox_kinetics_roi3 = QCheckBox(self.groupBox_6)
+        self.checkBox_kinetics_roi3.setObjectName(u"checkBox_kinetics_roi3")
+        sizePolicy8.setHeightForWidth(self.checkBox_kinetics_roi3.sizePolicy().hasHeightForWidth())
+        self.checkBox_kinetics_roi3.setSizePolicy(sizePolicy8)
+
+        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi3, 2, 3, 1, 1)
+
+        self.doubleSpinBox_kinetics_ecenter2 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_ecenter2.setObjectName(u"doubleSpinBox_kinetics_ecenter2")
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter2.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_ecenter2.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_ecenter2.setDecimals(4)
+        self.doubleSpinBox_kinetics_ecenter2.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter2, 0, 2, 1, 1)
+
+        self.label_8 = QLabel(self.groupBox_6)
+        self.label_8.setObjectName(u"label_8")
+        sizePolicy8.setHeightForWidth(self.label_8.sizePolicy().hasHeightForWidth())
+        self.label_8.setSizePolicy(sizePolicy8)
+
+        self.gridLayout_3.addWidget(self.label_8, 0, 0, 1, 1)
+
+        self.doubleSpinBox_kinetics_ecenter4 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_ecenter4.setObjectName(u"doubleSpinBox_kinetics_ecenter4")
+        self.doubleSpinBox_kinetics_ecenter4.setEnabled(False)
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter4.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_ecenter4.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_ecenter4.setDecimals(4)
+        self.doubleSpinBox_kinetics_ecenter4.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter4, 0, 4, 1, 1)
+
+        self.label_4 = QLabel(self.groupBox_6)
+        self.label_4.setObjectName(u"label_4")
+        sizePolicy8.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
+        self.label_4.setSizePolicy(sizePolicy8)
+
+        self.gridLayout_3.addWidget(self.label_4, 2, 0, 1, 1)
+
+        self.doubleSpinBox_kinetics_ecenter3 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_ecenter3.setObjectName(u"doubleSpinBox_kinetics_ecenter3")
+        self.doubleSpinBox_kinetics_ecenter3.setEnabled(False)
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter3.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_ecenter3.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_ecenter3.setDecimals(4)
+        self.doubleSpinBox_kinetics_ecenter3.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter3, 0, 3, 1, 1)
+
+        self.checkBox_kinetics_roi2 = QCheckBox(self.groupBox_6)
+        self.checkBox_kinetics_roi2.setObjectName(u"checkBox_kinetics_roi2")
+        sizePolicy8.setHeightForWidth(self.checkBox_kinetics_roi2.sizePolicy().hasHeightForWidth())
+        self.checkBox_kinetics_roi2.setSizePolicy(sizePolicy8)
+        self.checkBox_kinetics_roi2.setChecked(True)
+
+        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi2, 2, 2, 1, 1)
+
+        self.doubleSpinBox_kinetics_edelta4 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_edelta4.setObjectName(u"doubleSpinBox_kinetics_edelta4")
+        self.doubleSpinBox_kinetics_edelta4.setEnabled(False)
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_edelta4.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_edelta4.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_edelta4.setDecimals(4)
+        self.doubleSpinBox_kinetics_edelta4.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta4, 1, 4, 1, 1)
+
+        self.doubleSpinBox_kinetics_edelta3 = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_kinetics_edelta3.setObjectName(u"doubleSpinBox_kinetics_edelta3")
+        self.doubleSpinBox_kinetics_edelta3.setEnabled(False)
+        sizePolicy8.setHeightForWidth(self.doubleSpinBox_kinetics_edelta3.sizePolicy().hasHeightForWidth())
+        self.doubleSpinBox_kinetics_edelta3.setSizePolicy(sizePolicy8)
+        self.doubleSpinBox_kinetics_edelta3.setDecimals(4)
+        self.doubleSpinBox_kinetics_edelta3.setSingleStep(0.001000000000000)
+
+        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta3, 1, 3, 1, 1)
+
+        self.label_12 = QLabel(self.groupBox_6)
+        self.label_12.setObjectName(u"label_12")
+        sizePolicy8.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
+        self.label_12.setSizePolicy(sizePolicy8)
+
+        self.gridLayout_3.addWidget(self.label_12, 1, 0, 1, 1)
+
+
+        self.gridLayout_11.addLayout(self.gridLayout_3, 0, 0, 1, 2)
+
+
+        self.gridLayout_4.addWidget(self.groupBox_6, 3, 0, 1, 4)
+
 
         self.verticalLayout.addWidget(self.groupBox_5)
 
-        self.splitter_2.addWidget(self.widget)
+        self.splitter_2.addWidget(self.layoutWidget)
         self.splitter = QSplitter(self.splitter_2)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Orientation.Vertical)
         self.groupBox = QGroupBox(self.splitter)
         self.groupBox.setObjectName(u"groupBox")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy7.setHorizontalStretch(2)
-        sizePolicy7.setVerticalStretch(2)
-        sizePolicy7.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
-        self.groupBox.setSizePolicy(sizePolicy7)
+        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy9.setHorizontalStretch(2)
+        sizePolicy9.setVerticalStretch(2)
+        sizePolicy9.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+        self.groupBox.setSizePolicy(sizePolicy9)
         self.gridLayout_14 = QGridLayout(self.groupBox)
         self.gridLayout_14.setObjectName(u"gridLayout_14")
         self.gridLayout_14.setContentsMargins(0, 0, 0, 0)
         self.label_10 = QLabel(self.groupBox)
         self.label_10.setObjectName(u"label_10")
-        sizePolicy8 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-        sizePolicy8.setHorizontalStretch(0)
-        sizePolicy8.setVerticalStretch(0)
-        sizePolicy8.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
-        self.label_10.setSizePolicy(sizePolicy8)
+        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy10.setHorizontalStretch(0)
+        sizePolicy10.setVerticalStretch(0)
+        sizePolicy10.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
+        self.label_10.setSizePolicy(sizePolicy10)
 
         self.gridLayout_14.addWidget(self.label_10, 0, 0, 1, 1)
 
@@ -476,8 +636,8 @@ class Ui_MainWindow(object):
 
         self.label_9 = QLabel(self.groupBox)
         self.label_9.setObjectName(u"label_9")
-        sizePolicy8.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
-        self.label_9.setSizePolicy(sizePolicy8)
+        sizePolicy10.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        self.label_9.setSizePolicy(sizePolicy10)
 
         self.gridLayout_14.addWidget(self.label_9, 0, 2, 1, 1)
 
@@ -494,8 +654,8 @@ class Ui_MainWindow(object):
 
         self.label_3 = QLabel(self.groupBox)
         self.label_3.setObjectName(u"label_3")
-        sizePolicy8.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
-        self.label_3.setSizePolicy(sizePolicy8)
+        sizePolicy10.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        self.label_3.setSizePolicy(sizePolicy10)
 
         self.gridLayout_14.addWidget(self.label_3, 0, 4, 1, 1)
 
@@ -520,8 +680,8 @@ class Ui_MainWindow(object):
 
         self.label = QLabel(self.groupBox)
         self.label.setObjectName(u"label")
-        sizePolicy8.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy8)
+        sizePolicy10.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy10)
 
         self.gridLayout_14.addWidget(self.label, 0, 6, 1, 1)
 
@@ -544,20 +704,20 @@ class Ui_MainWindow(object):
         self.gridLayout_13.setObjectName(u"gridLayout_13")
         self.groupBox_9 = QGroupBox(self.groupBox)
         self.groupBox_9.setObjectName(u"groupBox_9")
-        sizePolicy9 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy9.setHorizontalStretch(3)
-        sizePolicy9.setVerticalStretch(3)
-        sizePolicy9.setHeightForWidth(self.groupBox_9.sizePolicy().hasHeightForWidth())
-        self.groupBox_9.setSizePolicy(sizePolicy9)
+        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy11.setHorizontalStretch(4)
+        sizePolicy11.setVerticalStretch(3)
+        sizePolicy11.setHeightForWidth(self.groupBox_9.sizePolicy().hasHeightForWidth())
+        self.groupBox_9.setSizePolicy(sizePolicy11)
         self.gridLayout_6 = QGridLayout(self.groupBox_9)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.pg_hdl_img2d = ImageView(self.groupBox_9)
         self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
-        sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy10.setHorizontalStretch(3)
-        sizePolicy10.setVerticalStretch(3)
-        sizePolicy10.setHeightForWidth(self.pg_hdl_img2d.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_img2d.setSizePolicy(sizePolicy10)
+        sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy12.setHorizontalStretch(4)
+        sizePolicy12.setVerticalStretch(3)
+        sizePolicy12.setHeightForWidth(self.pg_hdl_img2d.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_img2d.setSizePolicy(sizePolicy12)
 
         self.gridLayout_6.addWidget(self.pg_hdl_img2d, 0, 0, 1, 1)
 
@@ -566,21 +726,21 @@ class Ui_MainWindow(object):
 
         self.groupBox_vlinecut = QGroupBox(self.groupBox)
         self.groupBox_vlinecut.setObjectName(u"groupBox_vlinecut")
-        sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy11.setHorizontalStretch(1)
-        sizePolicy11.setVerticalStretch(3)
-        sizePolicy11.setHeightForWidth(self.groupBox_vlinecut.sizePolicy().hasHeightForWidth())
-        self.groupBox_vlinecut.setSizePolicy(sizePolicy11)
+        sizePolicy13 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy13.setHorizontalStretch(1)
+        sizePolicy13.setVerticalStretch(3)
+        sizePolicy13.setHeightForWidth(self.groupBox_vlinecut.sizePolicy().hasHeightForWidth())
+        self.groupBox_vlinecut.setSizePolicy(sizePolicy13)
         self.gridLayout_8 = QGridLayout(self.groupBox_vlinecut)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
         self.pg_hdl_vline = PlotWidget(self.groupBox_vlinecut)
         self.pg_hdl_vline.setObjectName(u"pg_hdl_vline")
-        sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy12.setHorizontalStretch(1)
-        sizePolicy12.setVerticalStretch(3)
-        sizePolicy12.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_vline.setSizePolicy(sizePolicy12)
+        sizePolicy14 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy14.setHorizontalStretch(1)
+        sizePolicy14.setVerticalStretch(3)
+        sizePolicy14.setHeightForWidth(self.pg_hdl_vline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_vline.setSizePolicy(sizePolicy14)
 
         self.gridLayout_8.addWidget(self.pg_hdl_vline, 0, 0, 1, 1)
 
@@ -589,18 +749,18 @@ class Ui_MainWindow(object):
 
         self.groupBox_hlinecut = QGroupBox(self.groupBox)
         self.groupBox_hlinecut.setObjectName(u"groupBox_hlinecut")
-        sizePolicy13 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy13.setHorizontalStretch(3)
-        sizePolicy13.setVerticalStretch(1)
-        sizePolicy13.setHeightForWidth(self.groupBox_hlinecut.sizePolicy().hasHeightForWidth())
-        self.groupBox_hlinecut.setSizePolicy(sizePolicy13)
+        sizePolicy15 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy15.setHorizontalStretch(4)
+        sizePolicy15.setVerticalStretch(1)
+        sizePolicy15.setHeightForWidth(self.groupBox_hlinecut.sizePolicy().hasHeightForWidth())
+        self.groupBox_hlinecut.setSizePolicy(sizePolicy15)
         self.gridLayout = QGridLayout(self.groupBox_hlinecut)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.pg_hdl_hline = PlotWidget(self.groupBox_hlinecut)
         self.pg_hdl_hline.setObjectName(u"pg_hdl_hline")
-        sizePolicy13.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_hline.setSizePolicy(sizePolicy13)
+        sizePolicy15.setHeightForWidth(self.pg_hdl_hline.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_hline.setSizePolicy(sizePolicy15)
 
         self.gridLayout.addWidget(self.pg_hdl_hline, 0, 0, 1, 1)
 
@@ -609,21 +769,21 @@ class Ui_MainWindow(object):
 
         self.groupBox_4 = QGroupBox(self.groupBox)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy14 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy14.setHorizontalStretch(1)
-        sizePolicy14.setVerticalStretch(1)
-        sizePolicy14.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy14)
+        sizePolicy16 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy16.setHorizontalStretch(1)
+        sizePolicy16.setVerticalStretch(1)
+        sizePolicy16.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy16)
         self.gridLayout_10 = QGridLayout(self.groupBox_4)
         self.gridLayout_10.setObjectName(u"gridLayout_10")
         self.gridLayout_10.setContentsMargins(0, 0, 0, 0)
         self.pg_hdl_zoomin = PlotWidget(self.groupBox_4)
         self.pg_hdl_zoomin.setObjectName(u"pg_hdl_zoomin")
-        sizePolicy15 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy15.setHorizontalStretch(1)
-        sizePolicy15.setVerticalStretch(0)
-        sizePolicy15.setHeightForWidth(self.pg_hdl_zoomin.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_zoomin.setSizePolicy(sizePolicy15)
+        sizePolicy17 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy17.setHorizontalStretch(1)
+        sizePolicy17.setVerticalStretch(0)
+        sizePolicy17.setHeightForWidth(self.pg_hdl_zoomin.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_zoomin.setSizePolicy(sizePolicy17)
 
         self.gridLayout_10.addWidget(self.pg_hdl_zoomin, 0, 0, 1, 1)
 
@@ -636,177 +796,24 @@ class Ui_MainWindow(object):
         self.splitter.addWidget(self.groupBox)
         self.groupBox_11 = QGroupBox(self.splitter)
         self.groupBox_11.setObjectName(u"groupBox_11")
-        sizePolicy16 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy16.setHorizontalStretch(0)
-        sizePolicy16.setVerticalStretch(0)
-        sizePolicy16.setHeightForWidth(self.groupBox_11.sizePolicy().hasHeightForWidth())
-        self.groupBox_11.setSizePolicy(sizePolicy16)
+        sizePolicy18 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy18.setHorizontalStretch(0)
+        sizePolicy18.setVerticalStretch(0)
+        sizePolicy18.setHeightForWidth(self.groupBox_11.sizePolicy().hasHeightForWidth())
+        self.groupBox_11.setSizePolicy(sizePolicy18)
         self.gridLayout_7 = QGridLayout(self.groupBox_11)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
         self.pg_hdl_kinetics = PlotWidget(self.groupBox_11)
         self.pg_hdl_kinetics.setObjectName(u"pg_hdl_kinetics")
-        sizePolicy17 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy17.setHorizontalStretch(2)
-        sizePolicy17.setVerticalStretch(1)
-        sizePolicy17.setHeightForWidth(self.pg_hdl_kinetics.sizePolicy().hasHeightForWidth())
-        self.pg_hdl_kinetics.setSizePolicy(sizePolicy17)
+        sizePolicy19 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy19.setHorizontalStretch(2)
+        sizePolicy19.setVerticalStretch(1)
+        sizePolicy19.setHeightForWidth(self.pg_hdl_kinetics.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_kinetics.setSizePolicy(sizePolicy19)
         self.gridLayout_17 = QGridLayout(self.pg_hdl_kinetics)
         self.gridLayout_17.setObjectName(u"gridLayout_17")
 
         self.gridLayout_7.addWidget(self.pg_hdl_kinetics, 0, 0, 1, 2)
-
-        self.groupBox_6 = QGroupBox(self.groupBox_11)
-        self.groupBox_6.setObjectName(u"groupBox_6")
-        sizePolicy18 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-        sizePolicy18.setHorizontalStretch(0)
-        sizePolicy18.setVerticalStretch(0)
-        sizePolicy18.setHeightForWidth(self.groupBox_6.sizePolicy().hasHeightForWidth())
-        self.groupBox_6.setSizePolicy(sizePolicy18)
-        self.gridLayout_11 = QGridLayout(self.groupBox_6)
-        self.gridLayout_11.setObjectName(u"gridLayout_11")
-        self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
-        self.gridLayout_3 = QGridLayout()
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.doubleSpinBox_kinetics_edelta1 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_edelta1.setObjectName(u"doubleSpinBox_kinetics_edelta1")
-        sizePolicy19 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        sizePolicy19.setHorizontalStretch(0)
-        sizePolicy19.setVerticalStretch(0)
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_edelta1.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_edelta1.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_edelta1.setDecimals(4)
-        self.doubleSpinBox_kinetics_edelta1.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta1, 1, 1, 1, 1)
-
-        self.doubleSpinBox_kinetics_ecenter1 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_ecenter1.setObjectName(u"doubleSpinBox_kinetics_ecenter1")
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter1.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_ecenter1.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_ecenter1.setDecimals(4)
-        self.doubleSpinBox_kinetics_ecenter1.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter1, 0, 1, 1, 1)
-
-        self.checkBox_kinetics_roi4 = QCheckBox(self.groupBox_6)
-        self.checkBox_kinetics_roi4.setObjectName(u"checkBox_kinetics_roi4")
-        sizePolicy19.setHeightForWidth(self.checkBox_kinetics_roi4.sizePolicy().hasHeightForWidth())
-        self.checkBox_kinetics_roi4.setSizePolicy(sizePolicy19)
-
-        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi4, 2, 4, 1, 1)
-
-        self.checkBox_kinetics_roi1 = QCheckBox(self.groupBox_6)
-        self.checkBox_kinetics_roi1.setObjectName(u"checkBox_kinetics_roi1")
-        sizePolicy19.setHeightForWidth(self.checkBox_kinetics_roi1.sizePolicy().hasHeightForWidth())
-        self.checkBox_kinetics_roi1.setSizePolicy(sizePolicy19)
-        self.checkBox_kinetics_roi1.setChecked(True)
-
-        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi1, 2, 1, 1, 1)
-
-        self.doubleSpinBox_kinetics_edelta2 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_edelta2.setObjectName(u"doubleSpinBox_kinetics_edelta2")
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_edelta2.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_edelta2.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_edelta2.setDecimals(4)
-        self.doubleSpinBox_kinetics_edelta2.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta2, 1, 2, 1, 1)
-
-        self.checkBox_kinetics_roi3 = QCheckBox(self.groupBox_6)
-        self.checkBox_kinetics_roi3.setObjectName(u"checkBox_kinetics_roi3")
-        sizePolicy19.setHeightForWidth(self.checkBox_kinetics_roi3.sizePolicy().hasHeightForWidth())
-        self.checkBox_kinetics_roi3.setSizePolicy(sizePolicy19)
-
-        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi3, 2, 3, 1, 1)
-
-        self.doubleSpinBox_kinetics_ecenter2 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_ecenter2.setObjectName(u"doubleSpinBox_kinetics_ecenter2")
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter2.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_ecenter2.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_ecenter2.setDecimals(4)
-        self.doubleSpinBox_kinetics_ecenter2.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter2, 0, 2, 1, 1)
-
-        self.label_8 = QLabel(self.groupBox_6)
-        self.label_8.setObjectName(u"label_8")
-        sizePolicy19.setHeightForWidth(self.label_8.sizePolicy().hasHeightForWidth())
-        self.label_8.setSizePolicy(sizePolicy19)
-
-        self.gridLayout_3.addWidget(self.label_8, 0, 0, 1, 1)
-
-        self.doubleSpinBox_kinetics_ecenter4 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_ecenter4.setObjectName(u"doubleSpinBox_kinetics_ecenter4")
-        self.doubleSpinBox_kinetics_ecenter4.setEnabled(False)
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter4.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_ecenter4.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_ecenter4.setDecimals(4)
-        self.doubleSpinBox_kinetics_ecenter4.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter4, 0, 4, 1, 1)
-
-        self.label_4 = QLabel(self.groupBox_6)
-        self.label_4.setObjectName(u"label_4")
-        sizePolicy19.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
-        self.label_4.setSizePolicy(sizePolicy19)
-
-        self.gridLayout_3.addWidget(self.label_4, 2, 0, 1, 1)
-
-        self.doubleSpinBox_kinetics_ecenter3 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_ecenter3.setObjectName(u"doubleSpinBox_kinetics_ecenter3")
-        self.doubleSpinBox_kinetics_ecenter3.setEnabled(False)
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_ecenter3.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_ecenter3.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_ecenter3.setDecimals(4)
-        self.doubleSpinBox_kinetics_ecenter3.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_ecenter3, 0, 3, 1, 1)
-
-        self.checkBox_kinetics_roi2 = QCheckBox(self.groupBox_6)
-        self.checkBox_kinetics_roi2.setObjectName(u"checkBox_kinetics_roi2")
-        sizePolicy19.setHeightForWidth(self.checkBox_kinetics_roi2.sizePolicy().hasHeightForWidth())
-        self.checkBox_kinetics_roi2.setSizePolicy(sizePolicy19)
-        self.checkBox_kinetics_roi2.setChecked(True)
-
-        self.gridLayout_3.addWidget(self.checkBox_kinetics_roi2, 2, 2, 1, 1)
-
-        self.doubleSpinBox_kinetics_edelta4 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_edelta4.setObjectName(u"doubleSpinBox_kinetics_edelta4")
-        self.doubleSpinBox_kinetics_edelta4.setEnabled(False)
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_edelta4.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_edelta4.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_edelta4.setDecimals(4)
-        self.doubleSpinBox_kinetics_edelta4.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta4, 1, 4, 1, 1)
-
-        self.doubleSpinBox_kinetics_edelta3 = QDoubleSpinBox(self.groupBox_6)
-        self.doubleSpinBox_kinetics_edelta3.setObjectName(u"doubleSpinBox_kinetics_edelta3")
-        self.doubleSpinBox_kinetics_edelta3.setEnabled(False)
-        sizePolicy19.setHeightForWidth(self.doubleSpinBox_kinetics_edelta3.sizePolicy().hasHeightForWidth())
-        self.doubleSpinBox_kinetics_edelta3.setSizePolicy(sizePolicy19)
-        self.doubleSpinBox_kinetics_edelta3.setDecimals(4)
-        self.doubleSpinBox_kinetics_edelta3.setSingleStep(0.001000000000000)
-
-        self.gridLayout_3.addWidget(self.doubleSpinBox_kinetics_edelta3, 1, 3, 1, 1)
-
-        self.label_12 = QLabel(self.groupBox_6)
-        self.label_12.setObjectName(u"label_12")
-        sizePolicy19.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
-        self.label_12.setSizePolicy(sizePolicy19)
-
-        self.gridLayout_3.addWidget(self.label_12, 1, 0, 1, 1)
-
-
-        self.gridLayout_11.addLayout(self.gridLayout_3, 0, 0, 1, 1)
-
-
-        self.gridLayout_7.addWidget(self.groupBox_6, 1, 0, 1, 1)
-
-        self.groupBox_12 = QGroupBox(self.groupBox_11)
-        self.groupBox_12.setObjectName(u"groupBox_12")
-
-        self.gridLayout_7.addWidget(self.groupBox_12, 1, 1, 1, 1)
 
         self.splitter.addWidget(self.groupBox_11)
         self.splitter_2.addWidget(self.splitter)
@@ -819,7 +826,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1758, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1758, 23))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -863,8 +870,8 @@ class Ui_MainWindow(object):
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches", None))
         self.label_binning_linmsg.setText(QCoreApplication.translate("MainWindow", u"Linear Binning:", None))
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Linear", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Number of bunches Base", None))
         self.label_binning_logmsg.setText(QCoreApplication.translate("MainWindow", u"Logarithmic binning:", None))
+        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Number of bunches Base", None))
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Log", None))
         self.label_binbunches.setText(QCoreApplication.translate("MainWindow", u"Bin Bunchs", None))
         self.label_anchorbunch.setText(QCoreApplication.translate("MainWindow", u"Anchor Bunch", None))
@@ -875,6 +882,18 @@ class Ui_MainWindow(object):
         self.label_rtime4.setText("")
         self.label_rtime0.setText("")
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics-Modeling", None))
+        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Fitting Model", None))
+        self.comboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"Placeholder1", None))
+        self.comboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"Placeholder2", None))
+
+        self.checkBox_kinetics_roi4.setText(QCoreApplication.translate("MainWindow", u"ROI4", None))
+        self.checkBox_kinetics_roi1.setText(QCoreApplication.translate("MainWindow", u"ROI1", None))
+        self.checkBox_kinetics_roi3.setText(QCoreApplication.translate("MainWindow", u"ROI3", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"E (keV)", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Enable", None))
+        self.checkBox_kinetics_roi2.setText(QCoreApplication.translate("MainWindow", u"ROI2", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u00b1\u03b4E (keV)", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Target", None))
         self.comboBox_target.setItemText(0, QCoreApplication.translate("MainWindow", u"normalized", None))
@@ -905,14 +924,5 @@ class Ui_MainWindow(object):
         self.groupBox_hlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal Linecut", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Selection", None))
-        self.checkBox_kinetics_roi4.setText(QCoreApplication.translate("MainWindow", u"ROI4", None))
-        self.checkBox_kinetics_roi1.setText(QCoreApplication.translate("MainWindow", u"ROI1", None))
-        self.checkBox_kinetics_roi3.setText(QCoreApplication.translate("MainWindow", u"ROI3", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"E (keV)", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Enable", None))
-        self.checkBox_kinetics_roi2.setText(QCoreApplication.translate("MainWindow", u"ROI2", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u00b1\u03b4E (keV)", None))
-        self.groupBox_12.setTitle(QCoreApplication.translate("MainWindow", u"Model", None))
     # retranslateUi
 
