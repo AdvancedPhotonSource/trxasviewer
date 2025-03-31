@@ -17,7 +17,9 @@ from PySide6.QtCore import (
     QObject,
     QThread,
     QTimer,
+    QByteArray
 )
+
 
 from PySide6.QtWidgets import QApplication, QFileDialog, QFileSystemModel, QMainWindow
 from PySide6.QtWidgets import (
@@ -299,10 +301,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         keys += [f"doubleSpinBox_kinetics_ecenter{n}" for n in range(1, 5)]
         keys += [f"doubleSpinBox_kinetics_edelta{n}" for n in range(1, 5)]
         keys += [f"checkBox_kinetics_roi{n}" for n in range(1, 5)]
+
         if mode == "save":
             config = {}
+
+            # Save widget states
             for key in keys:
-                widget = getattr(self, key)
+                widget = getattr(self, key, None)
                 if isinstance(widget, QLineEdit):
                     config[key] = widget.text()
                 elif isinstance(widget, QRadioButton):
@@ -315,18 +320,33 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     config[key] = widget.isChecked()
                 elif isinstance(widget, QTabWidget):
                     config[key] = widget.currentIndex()
+
+            # Save layout state
+            config["main_geometry"] = self.saveGeometry().toBase64().data().decode()
+            if hasattr(self, "splitter"):
+                config["splitter_state"] = self.splitter.saveState().toBase64().data().decode()
+            if hasattr(self, "splitter_2"):
+                config["splitter_2_state"] = self.splitter_2.saveState().toBase64().data().decode()
+
             with open(CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=4)
-            logger.info(f"Saving to configuration file [{CONFIG_FILE}]")
+            logger.info(f"Saved configuration to [{CONFIG_FILE}]")
 
         elif mode == "load":
             if CONFIG_FILE.is_file():
-                logger.info(f"Loading configuration file [{CONFIG_FILE}]")
+                logger.info(f"Loading configuration from [{CONFIG_FILE}]")
                 with open(CONFIG_FILE, "r") as f:
                     config = json.load(f)
+
                 for key, value in config.items():
-                    widget = self.__dict__.get(key)
-                    if isinstance(widget, QLineEdit):
+                    widget = getattr(self, key, None)
+                    if key == "main_geometry":
+                        self.restoreGeometry(QByteArray.fromBase64(value.encode()))
+                    elif key == "splitter_state" and hasattr(self, "splitter"):
+                        self.splitter.restoreState(QByteArray.fromBase64(value.encode()))
+                    elif key == "splitter_2_state" and hasattr(self, "splitter_2"):
+                        self.splitter_2.restoreState(QByteArray.fromBase64(value.encode()))
+                    elif isinstance(widget, QLineEdit):
                         widget.setText(value)
                     elif isinstance(widget, QRadioButton):
                         widget.setChecked(value)
@@ -340,7 +360,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                         widget.setCurrentIndex(value)
             else:
                 logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
-
+    
     def setup_tooltips(self):
         self.label_binbunches.setToolTip(
             """ Number of bunches to bin:
