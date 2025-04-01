@@ -290,6 +290,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def save_load_settings(self, mode="save"):
         keys = [
+            "comboBox_cmap",
+            "comboBox_target",
             "lineEdit_rawfolder",
             "radioButton_sync_time",
             "doubleSpinBox_sync_time_us",
@@ -665,6 +667,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     self.groupBox_hlinecut.setTitle(
                         f"Horizontal Cut @ Time={format_time(pos_time)}"
                     )
+                    self.groupBox_data.setTitle(
+                        f"Data @ Energy={pos_value:.4f} {unit}, Time={format_time(pos_time)}"
+                    )
                     self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
                 elif label == "Delay":
                     self.groupBox_vlinecut.setTitle(
@@ -672,6 +677,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     )
                     self.groupBox_hlinecut.setTitle(
                         f"Horizontal Cut @ Time={format_time(pos_time)}"
+                    )
+                    self.groupBox_data.setTitle(
+                        f"Data @ Delay={format_time(pos_value)}, Time={format_time(pos_time)}"
                     )
                     self.pg_hdl_hline.setLabel("bottom", "Delay", units=unit)
             self.update_zoomed_view()

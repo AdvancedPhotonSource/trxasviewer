@@ -702,16 +702,16 @@ class Ui_MainWindow(object):
 
         self.gridLayout_13 = QGridLayout()
         self.gridLayout_13.setObjectName(u"gridLayout_13")
-        self.groupBox_9 = QGroupBox(self.groupBox)
-        self.groupBox_9.setObjectName(u"groupBox_9")
+        self.groupBox_data = QGroupBox(self.groupBox)
+        self.groupBox_data.setObjectName(u"groupBox_data")
         sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy11.setHorizontalStretch(4)
         sizePolicy11.setVerticalStretch(3)
-        sizePolicy11.setHeightForWidth(self.groupBox_9.sizePolicy().hasHeightForWidth())
-        self.groupBox_9.setSizePolicy(sizePolicy11)
-        self.gridLayout_6 = QGridLayout(self.groupBox_9)
+        sizePolicy11.setHeightForWidth(self.groupBox_data.sizePolicy().hasHeightForWidth())
+        self.groupBox_data.setSizePolicy(sizePolicy11)
+        self.gridLayout_6 = QGridLayout(self.groupBox_data)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.pg_hdl_img2d = ImageView(self.groupBox_9)
+        self.pg_hdl_img2d = ImageView(self.groupBox_data)
         self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
         sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy12.setHorizontalStretch(4)
@@ -722,7 +722,7 @@ class Ui_MainWindow(object):
         self.gridLayout_6.addWidget(self.pg_hdl_img2d, 0, 0, 1, 1)
 
 
-        self.gridLayout_13.addWidget(self.groupBox_9, 0, 0, 1, 1)
+        self.gridLayout_13.addWidget(self.groupBox_data, 0, 0, 1, 1)
 
         self.groupBox_vlinecut = QGroupBox(self.groupBox)
         self.groupBox_vlinecut.setObjectName(u"groupBox_vlinecut")
@@ -921,7 +921,7 @@ class Ui_MainWindow(object):
         self.comboBox_cmap.setItemText(10, QCoreApplication.translate("MainWindow", u"Blues", None))
 
         self.label.setText(QCoreApplication.translate("MainWindow", u"ROI(x-y)", None))
-        self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
+        self.groupBox_data.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
         self.groupBox_vlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Vertical Linecut", None))
         self.groupBox_hlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal Linecut", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))

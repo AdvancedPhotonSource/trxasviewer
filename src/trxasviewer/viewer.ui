@@ -1196,7 +1196,7 @@
          <item row="1" column="0" colspan="9">
           <layout class="QGridLayout" name="gridLayout_13">
            <item row="0" column="0">
-            <widget class="QGroupBox" name="groupBox_9">
+            <widget class="QGroupBox" name="groupBox_data">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>4</horstretch>
