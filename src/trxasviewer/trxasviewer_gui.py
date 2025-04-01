@@ -17,7 +17,7 @@ from PySide6.QtCore import (
     QObject,
     QThread,
     QTimer,
-    QByteArray
+    QByteArray,
 )
 
 
@@ -28,16 +28,17 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QRadioButton,
     QSpinBox,
-    QCheckBox, QTabWidget
+    QCheckBox,
+    QTabWidget,
 )
 
 from .trxas_dataset import (
     TrXASDatasetManager,
     create_trxas_cache_from_flist,
-    build_cache_database,
 )
-from .utilities import get_scan_type, format_time
+from .utilities import format_time
 from .widgets import VlockedRectROI
+from .dtype_cache import DataTypeCache 
 import logging
 from . import __version__
 
@@ -60,7 +61,12 @@ pg.setConfigOptions(imageAxisOrder="row-major")
 
 
 def get_human_readable_size(full_path):
+    """
+    Get the size of a file in a human-readable format. 
+    """
     size = os.path.getsize(full_path)
+    if size <= 0:
+        return "0 B"
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size < 1024:
             return f"{size:.2f} {unit}"
@@ -71,10 +77,10 @@ def get_human_readable_size(full_path):
 class DatasetFilterModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.cache_db = {"scan_type": {}}
+        self.dtype_db = None
 
-    def update_cache_db(self, cache_db):
-        self.cache_db = cache_db
+    def update_cache_db(self, dtype_db):
+        self.dtype_db = dtype_db
 
     def filterAcceptsRow(self, source_row, source_parent):
         """Override this method to filter out non-dataset files."""
@@ -84,13 +90,15 @@ class DatasetFilterModel(QSortFilterProxyModel):
         if not index.isValid():
             return False
         full_path = model.filePath(index)
-        # scan_type = self.cache_db["scan_type"].get(full_path, None)
-        # if scan_type in (None, "writing"):
-        scan_type = get_scan_type(full_path)
-        # if scan_type in ["exafs", "laserd"]:
-        #     self.cache_db["scan_type"][full_path] = scan_type
-        # show the directory and parent directory
+        scan_type = self.get_scan_type(full_path)
         return scan_type != "invalid"
+    
+    def get_scan_type(self, full_path):
+        if self.dtype_db is None:
+            scan_type = DataTypeCache.get_scan_type(full_path)
+        else:
+            scan_type = self.dtype_db.get_record(full_path)
+        return scan_type
 
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
@@ -99,8 +107,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
         if index.column() == 2 and role == Qt.DisplayRole:
             source_index = self.mapToSource(index)
             full_path = self.sourceModel().filePath(source_index)  # Get full path
-            scan_type = self.cache_db["scan_type"].get(full_path, None)
-            return scan_type
+            return self.get_scan_type(full_path)
 
         if role == Qt.DisplayRole and index.column() == 1:  # Size column
             source_index = self.mapToSource(index)
@@ -204,7 +211,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.results = None
         self.last_position = None
         self.roi = None
-        self.cache_db = {}
+        self.dtype_db = None
         self.kinetics_roi = {}
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
@@ -324,9 +331,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             # Save layout state
             config["main_geometry"] = self.saveGeometry().toBase64().data().decode()
             if hasattr(self, "splitter"):
-                config["splitter_state"] = self.splitter.saveState().toBase64().data().decode()
+                config["splitter_state"] = (
+                    self.splitter.saveState().toBase64().data().decode()
+                )
             if hasattr(self, "splitter_2"):
-                config["splitter_2_state"] = self.splitter_2.saveState().toBase64().data().decode()
+                config["splitter_2_state"] = (
+                    self.splitter_2.saveState().toBase64().data().decode()
+                )
 
             with open(CONFIG_FILE, "w") as f:
                 json.dump(config, f, indent=4)
@@ -343,9 +354,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     if key == "main_geometry":
                         self.restoreGeometry(QByteArray.fromBase64(value.encode()))
                     elif key == "splitter_state" and hasattr(self, "splitter"):
-                        self.splitter.restoreState(QByteArray.fromBase64(value.encode()))
+                        self.splitter.restoreState(
+                            QByteArray.fromBase64(value.encode())
+                        )
                     elif key == "splitter_2_state" and hasattr(self, "splitter_2"):
-                        self.splitter_2.restoreState(QByteArray.fromBase64(value.encode()))
+                        self.splitter_2.restoreState(
+                            QByteArray.fromBase64(value.encode())
+                        )
                     elif isinstance(widget, QLineEdit):
                         widget.setText(value)
                     elif isinstance(widget, QRadioButton):
@@ -360,7 +375,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                         widget.setCurrentIndex(value)
             else:
                 logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
-    
+
     def setup_tooltips(self):
         self.label_binbunches.setToolTip(
             """ Number of bunches to bin:
@@ -381,16 +396,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         )
 
     def reload_rawfolder(self):
+        # on certain linux machine, it failed to show newly generated files
         raw_folder = self.lineEdit_rawfolder.text()
-        if raw_folder and self.cache_worker and self.cache_worker.is_done:
-            self.select_rawfolder(placeholder=None, folder_path=raw_folder)
-            self.show_status(f"Reloaded raw folder: {raw_folder}")
+        self.model.setRootPath("")
+        self.model.setRootPath(raw_folder)
+        self.refresh_filesystem()
 
     def refresh_filesystem(self):
         self.proxy_model.invalidate()
-        self.proxy_model.layoutChanged.emit()
-        # self.model.layoutChanged.emit()
-        # self.model.setRootPath(self.model.rootPath())  # Refresh the model
 
     def show_status(self, msg, level=logging.INFO, timeout=5000):
         logger.log(level, msg)
@@ -469,17 +482,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             return
         idx_min = self.spinBox_fileindex_min.value()
         idx_max = self.spinBox_fileindex_max.value()
-        raw_folder = self.lineEdit_rawfolder.text()
-
         selection = self.comboBox_fileindex_prefix.currentText()
         current_prefix, scan_type = selection.split("@")
-        file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
-
-        file_paths = []
-        for idx in range(idx_min, idx_max + 1):
-            if idx in file_indexes:
-                full_path = Path(raw_folder) / f"{current_prefix}{idx:05d}"
-                file_paths.append(full_path)
+        file_paths = self.dtype_db.get_valid_filepaths_with_condition(
+            current_prefix, scan_type, idx_min, idx_max)
         if file_paths:
             self.process_flist(file_paths)
 
@@ -653,12 +659,20 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 label = self.results["x_axis"]["label"]
 
                 if label == "Energy":
-                    self.groupBox_vlinecut.setTitle(f"Vertical Cut @ Energy={pos_value:.4f} {unit}")
-                    self.groupBox_hlinecut.setTitle(f"Horizontal Cut @ Time={format_time(pos_time)}")
+                    self.groupBox_vlinecut.setTitle(
+                        f"Vertical Cut @ Energy={pos_value:.4f} {unit}"
+                    )
+                    self.groupBox_hlinecut.setTitle(
+                        f"Horizontal Cut @ Time={format_time(pos_time)}"
+                    )
                     self.pg_hdl_hline.setLabel("bottom", "Energy", units="keV")
                 elif label == "Delay":
-                    self.groupBox_vlinecut.setTitle(f"Vertical Cut @ Delay={format_time(pos_value)}")
-                    self.groupBox_hlinecut.setTitle(f"Horizontal Cut @ Time={format_time(pos_time)}")
+                    self.groupBox_vlinecut.setTitle(
+                        f"Vertical Cut @ Delay={format_time(pos_value)}"
+                    )
+                    self.groupBox_hlinecut.setTitle(
+                        f"Horizontal Cut @ Time={format_time(pos_time)}"
+                    )
                     self.pg_hdl_hline.setLabel("bottom", "Delay", units=unit)
             self.update_zoomed_view()
 
@@ -846,19 +860,17 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            self.cache_db = build_cache_database(folder_path)
-            self.proxy_model.update_cache_db(self.cache_db)
-            prefix_db = self.cache_db["prefix_db"]
+            self.dtype_db = DataTypeCache(folder_path)
+            self.proxy_model.update_cache_db(self.dtype_db)
 
             self.comboBox_fileindex_prefix.clear()
-            combos = [f"{key}@exafs" for key in list(prefix_db.keys())]
-            combos += [f"{key}@laserd" for key in list(prefix_db.keys())]
+            combos = self.dtype_db.get_experiment_types()
             self.comboBox_fileindex_prefix.addItems(combos)
             self.comboBox_fileindex_prefix.setCurrentIndex(0)
 
-            fs_root_index = self.model.index(folder_path)
-            proxy_root_index = self.proxy_model.mapFromSource(fs_root_index)
-            self.treeView_fs.setRootIndex(proxy_root_index)
+            new_index = self.model.setRootPath(folder_path)
+            proxy_new_root = self.proxy_model.mapFromSource(new_index)
+            self.treeView_fs.setRootIndex(proxy_new_root)
             self.treeView_fs.sortByColumn(0, Qt.AscendingOrder)
             self.build_cache()
 
@@ -866,22 +878,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         selection = self.comboBox_fileindex_prefix.currentText()
         if selection:
             current_prefix, scan_type = selection.split("@")
-            file_indexes = self.cache_db["prefix_db"][current_prefix][scan_type]
-            if len(file_indexes) > 0:
-                vbeg, vend = min(file_indexes), max(file_indexes)
-            else:
-                vbeg, vend = 0, 0
+            vbeg, vend = self.dtype_db.get_index_range(current_prefix, scan_type)
             self.spinBox_fileindex_min.setValue(vbeg)
             self.spinBox_fileindex_max.setValue(vend)
 
     def build_cache(self, num_workers=None):
         if num_workers is None:
             num_workers = max(2, os.cpu_count() // 2)
-
-        file_paths = [
-            k for k, v in self.cache_db["scan_type"].items() if v in ("exafs", "laserd")
-        ]
-
+        file_paths = self.dtype_db.get_valid_filepaths()
         if len(file_paths) > 0:
             num_workers = min(num_workers, len(file_paths))
             self.cache_worker = CacheWorker(file_paths, num_workers)

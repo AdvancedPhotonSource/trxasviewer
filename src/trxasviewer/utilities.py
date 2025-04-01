@@ -23,10 +23,10 @@ def get_scan_type(fname):
     """
     if Path(fname).is_dir():
         return "directory"
-
+    elif is_recently_modified(fname):
+        return "writing"
+    
     try:
-        if was_recently_created(fname, 30):
-            return "writting"
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         line_count = 0
@@ -50,7 +50,7 @@ def get_scan_type(fname):
             return "invalid"
         if line_count >= 12:
             return scan_type
-        if line_count < 12 and is_writing_done(fname):
+        if line_count < 12:
             logger.debug(f"Line count < 12 and writing done. {fname=}")
             return "invalid"
         return "writing"
@@ -59,26 +59,10 @@ def get_scan_type(fname):
         return "invalid"
 
 
-def is_writing_done(fname, threshold=100):
+
+def is_recently_modified(fname, threshold=45):
     """
-    Check if a file has not been modified in the last 'threshold' seconds.
-
-    Returns True if the last modification was more than 'threshold' seconds ago.
-    """
-    file = Path(fname)
-
-    if not file.exists():
-        return False  # File doesn't exist yet
-
-    last_modified = file.stat().st_mtime  # Get last modified time
-    elapsed_time = time.time() - last_modified  # Time since last modification
-
-    return elapsed_time > threshold  # True if more than 'threshold' seconds
-
-
-def was_recently_created(fname, threshold=15):
-    """
-    Check if a file was created within the last 'threshold' seconds.
+    Check if a file was modified within the last 'threshold' seconds.
 
     Returns True if the file exists and was created <= 'threshold' seconds ago.
     """
@@ -91,9 +75,8 @@ def was_recently_created(fname, threshold=15):
         created_time = file.stat().st_ctime  # Creation time on most OSes
         elapsed_time = time.time() - created_time
         return elapsed_time <= threshold
-    except AttributeError:
-        # On some systems (e.g. some Linux), st_ctime is change time, not creation
-        print("Warning: 'st_ctime' may not be reliable for creation time on this OS.")
+    except Exception:
+        logger.debug(f"Error checking file modification time: {fname}")
         return False
 
 
