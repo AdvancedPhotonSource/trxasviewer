@@ -7,7 +7,7 @@ import numpy as np
 import logging
 import json
 import scienceplots
-from .utilities import get_scan_type, compare_versions, prepare_binning_matrix
+from .utilities import get_scan_type, compare_versions, prepare_binning_matrix, is_recently_modified
 from . import __version__
 
 
@@ -334,6 +334,9 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
         return None
+    if is_recently_modified(fname):
+        logger.warning(f"{fname} is recently modified, skip caching")
+        return None
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname)
         if not cache_exists:
@@ -366,8 +369,8 @@ class TrXASDataset:
             self.init_from_cache(self.cache_name)
         else:
             self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
-            # if not self.cache_name.exists():
-            #     self.save_to_cache()
+            if not self.cache_name.exists() and not is_recently_modified(self.fname):
+                self.save_to_cache()
         self.xas_data = None
 
     @staticmethod
@@ -634,11 +637,15 @@ class TrXASDataset:
         assert self.dset_type == "LASERD", "Not a LASERD scan"
         diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
-        t_mat = t_mat - self.laserd[:, np.newaxis]
+        # append a non-delayed time axis to the begining for display
+        laserd = np.insert(self.laserd, 0, 0)
+        t_mat = t_mat - laserd[:, np.newaxis]
         avg, t_mat2, nobin_idx = self.apply_binning(
             diff, t_mat, sync_index, **binning_kwargs
         )
-        t_axis = np.copy(t_mat2[0])
+        # separate the time axis from the rest of the matrix
+        t_axis = t_mat2[0]
+        t_mat2 = t_mat2[1:]
 
         # assemble kinetics
         sval = []
