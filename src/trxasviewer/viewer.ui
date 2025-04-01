@@ -383,7 +383,7 @@
                  <enum>QTabWidget::TabShape::Rounded</enum>
                 </property>
                 <property name="currentIndex">
-                 <number>1</number>
+                 <number>2</number>
                 </property>
                 <property name="elideMode">
                  <enum>Qt::TextElideMode::ElideRight</enum>
@@ -669,7 +669,7 @@
               </sizepolicy>
              </property>
              <property name="value">
-              <number>24</number>
+              <number>0</number>
              </property>
             </widget>
            </item>
@@ -1399,12 +1399,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>174</x>
-     <y>616</y>
+     <x>297</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>178</x>
-     <y>577</y>
+     <x>297</x>
+     <y>679</y>
     </hint>
    </hints>
   </connection>
@@ -1415,12 +1415,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>152</x>
-     <y>607</y>
+     <x>297</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>152</x>
-     <y>548</y>
+     <x>297</x>
+     <y>646</y>
     </hint>
    </hints>
   </connection>
@@ -1431,12 +1431,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>262</x>
-     <y>610</y>
+     <x>439</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>262</x>
-     <y>587</y>
+     <x>439</x>
+     <y>679</y>
     </hint>
    </hints>
   </connection>
@@ -1447,12 +1447,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>292</x>
-     <y>612</y>
+     <x>439</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>288</x>
-     <y>551</y>
+     <x>439</x>
+     <y>646</y>
     </hint>
    </hints>
   </connection>
@@ -1463,12 +1463,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>362</x>
-     <y>609</y>
+     <x>580</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>362</x>
-     <y>584</y>
+     <x>580</x>
+     <y>679</y>
     </hint>
    </hints>
   </connection>
@@ -1479,12 +1479,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>379</x>
-     <y>610</y>
+     <x>580</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>379</x>
-     <y>546</y>
+     <x>580</x>
+     <y>646</y>
     </hint>
    </hints>
   </connection>
@@ -1495,12 +1495,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>449</x>
-     <y>607</y>
+     <x>722</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>449</x>
-     <y>589</y>
+     <x>722</x>
+     <y>679</y>
     </hint>
    </hints>
   </connection>
@@ -1511,12 +1511,44 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>469</x>
-     <y>607</y>
+     <x>722</x>
+     <y>709</y>
     </hint>
     <hint type="destinationlabel">
-     <x>469</x>
-     <y>556</y>
+     <x>722</x>
+     <y>646</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_selection_by_index</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_fileindex_min</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>128</x>
+     <y>789</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>615</x>
+     <y>802</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_selection_by_index</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_fileindex_max</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>141</x>
+     <y>786</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>674</x>
+     <y>785</y>
     </hint>
    </hints>
   </connection>

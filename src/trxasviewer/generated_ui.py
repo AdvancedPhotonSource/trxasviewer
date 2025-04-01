@@ -434,7 +434,7 @@ class Ui_MainWindow(object):
         self.progressBar.setObjectName(u"progressBar")
         sizePolicy5.setHeightForWidth(self.progressBar.sizePolicy().hasHeightForWidth())
         self.progressBar.setSizePolicy(sizePolicy5)
-        self.progressBar.setValue(24)
+        self.progressBar.setValue(0)
 
         self.gridLayout_4.addWidget(self.progressBar, 7, 1, 1, 1)
 
@@ -838,8 +838,10 @@ class Ui_MainWindow(object):
         self.checkBox_kinetics_roi3.toggled.connect(self.doubleSpinBox_kinetics_ecenter3.setEnabled)
         self.checkBox_kinetics_roi4.toggled.connect(self.doubleSpinBox_kinetics_edelta4.setEnabled)
         self.checkBox_kinetics_roi4.toggled.connect(self.doubleSpinBox_kinetics_ecenter4.setEnabled)
+        self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_min.setEnabled)
+        self.radioButton_selection_by_index.toggled.connect(self.spinBox_fileindex_max.setEnabled)
 
-        self.tabWidget_binning.setCurrentIndex(1)
+        self.tabWidget_binning.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
