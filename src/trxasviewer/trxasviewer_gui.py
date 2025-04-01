@@ -213,6 +213,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.roi = None
         self.dtype_db = None
         self.kinetics_roi = {}
+        self.is_processing = False
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
         self.setup_imageview()
@@ -269,9 +270,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if syncbunch:
             self.spinBox_syncbunch_number.setValue(syncbunch)
         self.update_kinetics_signal()
-        self.create_kinetics_ROIs()
 
-        self.is_processing = False
         self.thread = QThread()
         self.avg_worker = AverageWorker()
         self.avg_worker.progress.connect(self.update_progress_bar)
@@ -559,34 +558,37 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         return center_energy, delta_energy
 
     def create_kinetics_ROIs(self):
-        if not self.kinetics_roi and self.results:
-            for target, kwargs in enumerate(self.get_kinetics_kwargs()):
-                target += 1
-                pos, size = self.compute_ROI_geometry(
-                    kwargs["center_energy"], kwargs["delta_energy"]
-                )
-                color = PGCOLORS[(target - 1) % len(PGCOLORS)]
-                pen = pg.mkPen(color, width=2, style=Qt.PenStyle.DotLine)
-                handle_pen = pg.mkPen(color=color, width=3)
-                handlehover_pen = pg.mkPen(color=color, width=5)
-                hover_pen = pg.mkPen(color=color, width=5, style=Qt.PenStyle.DotLine)
-                roi = VlockedRectROI(
-                    pos,
-                    size,
-                    pen=pen,
-                    hoverPen=hover_pen,
-                    handlePen=handle_pen,
-                    handleHoverPen=handlehover_pen,
-                )
-                roi.setVisible(kwargs["enabled"])
-                roi.mouseClickEvent = lambda ev: ev.ignore()
-                self.kinetics_roi[target] = roi
-                self.pg_hdl_img2d.addItem(roi)
+        if self.kinetics_roi or not self.results or self.results["dset_type"] != "EXAFS":
+            return False
 
-                def update_values(value=None, target=target):
-                    self.update_kinetics_ROI(mode="roi-value", target=target)
+        for target, kwargs in enumerate(self.get_kinetics_kwargs()):
+            target += 1
+            pos, size = self.compute_ROI_geometry(
+                kwargs["center_energy"], kwargs["delta_energy"]
+            )
+            color = PGCOLORS[(target - 1) % len(PGCOLORS)]
+            pen = pg.mkPen(color, width=2, style=Qt.PenStyle.DotLine)
+            handle_pen = pg.mkPen(color=color, width=3)
+            handlehover_pen = pg.mkPen(color=color, width=5)
+            hover_pen = pg.mkPen(color=color, width=5, style=Qt.PenStyle.DotLine)
+            roi = VlockedRectROI(
+                pos,
+                size,
+                pen=pen,
+                hoverPen=hover_pen,
+                handlePen=handle_pen,
+                handleHoverPen=handlehover_pen,
+            )
+            roi.setVisible(kwargs["enabled"])
+            roi.mouseClickEvent = lambda ev: ev.ignore()
+            self.kinetics_roi[target] = roi
+            self.pg_hdl_img2d.addItem(roi)
 
-                roi.sigRegionChanged.connect(update_values)
+            def update_values(value=None, target=target):
+                self.update_kinetics_ROI(mode="roi-value", target=target)
+
+            roi.sigRegionChanged.connect(update_values)
+        return True
 
     def remove_kinetics_ROIs(self):
         for roi in self.kinetics_roi.values():
@@ -594,12 +596,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.kinetics_roi = {}
 
     def update_kinetics_ROI(self, mode="roi-value", target=None):
-        if not self.kinetics_roi:
-            self.create_kinetics_ROIs()
-
-        if self.results is None or target is None:
+        if self.kinetics_roi is None or self.results is None or self.results["dset_type"] != "EXAFS":
             return
-        assert target in (1, 2, 3, 4)  # for kinetics ROI 1, 2, 3, 4
+        if  target not in (1, 2, 3, 4):
+            return 
+
         if mode == "value-roi":
             kwargs = self.get_kinetics_kwargs()[target - 1]  # target is 1-based
             pos, size = self.compute_ROI_geometry(
@@ -821,7 +822,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.image, prev_image = np.flipud(data), self.image
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
 
-            if prev_image is None or prev_image.shape[0] != self.image.shape[0]:
+            if prev_image is None or prev_image.shape[0] != self.image.shape[0] or self.results["dset_type"] != "EXAFS":
                 self.remove_kinetics_ROIs()
             if not self.kinetics_roi:
                 self.create_kinetics_ROIs()
