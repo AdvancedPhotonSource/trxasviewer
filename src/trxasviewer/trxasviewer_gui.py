@@ -38,7 +38,7 @@ from .trxas_dataset import (
 )
 from .utilities import format_time
 from .widgets import VlockedRectROI
-from .dtype_cache import DataTypeCache 
+from .dtype_cache import DataTypeCache
 import logging
 from . import __version__
 
@@ -62,7 +62,7 @@ pg.setConfigOptions(imageAxisOrder="row-major")
 
 def get_human_readable_size(full_path):
     """
-    Get the size of a file in a human-readable format. 
+    Get the size of a file in a human-readable format.
     """
     size = os.path.getsize(full_path)
     if size <= 0:
@@ -92,7 +92,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
         full_path = model.filePath(index)
         scan_type = self.get_scan_type(full_path)
         return scan_type != "invalid"
-    
+
     def get_scan_type(self, full_path):
         if self.dtype_db is None:
             scan_type = DataTypeCache.get_scan_type(full_path)
@@ -486,7 +486,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         selection = self.comboBox_fileindex_prefix.currentText()
         current_prefix, scan_type = selection.split("@")
         file_paths = self.dtype_db.get_valid_filepaths_with_condition(
-            current_prefix, scan_type, idx_min, idx_max)
+            current_prefix, scan_type, idx_min, idx_max
+        )
         if file_paths:
             self.process_flist(file_paths)
 
@@ -558,7 +559,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         return center_energy, delta_energy
 
     def create_kinetics_ROIs(self):
-        if self.kinetics_roi or not self.results or self.results["dset_type"] != "EXAFS":
+        if (
+            self.kinetics_roi
+            or not self.results
+            or self.results["dset_type"] != "EXAFS"
+        ):
             return False
 
         for target, kwargs in enumerate(self.get_kinetics_kwargs()):
@@ -596,10 +601,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.kinetics_roi = {}
 
     def update_kinetics_ROI(self, mode="roi-value", target=None):
-        if self.kinetics_roi is None or self.results is None or self.results["dset_type"] != "EXAFS":
+        if (
+            self.kinetics_roi is None
+            or self.results is None
+            or self.results["dset_type"] != "EXAFS"
+        ):
             return
-        if  target not in (1, 2, 3, 4):
-            return 
+        if target not in (1, 2, 3, 4):
+            return
 
         if mode == "value-roi":
             kwargs = self.get_kinetics_kwargs()[target - 1]  # target is 1-based
@@ -822,7 +831,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.image, prev_image = np.flipud(data), self.image
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
 
-            if prev_image is None or prev_image.shape[0] != self.image.shape[0] or self.results["dset_type"] != "EXAFS":
+            if (
+                prev_image is None
+                or prev_image.shape[0] != self.image.shape[0]
+                or self.results["dset_type"] != "EXAFS"
+            ):
                 self.remove_kinetics_ROIs()
             if not self.kinetics_roi:
                 self.create_kinetics_ROIs()
@@ -840,23 +853,30 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pg_hdl_kinetics.addLegend()
         if not self.results["kinetics"]:
             return
-
         for idx, (key, value) in enumerate(self.results["kinetics"].items()):
             data = value["profile"]
             pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
-            self.pg_hdl_kinetics.plot(data[0], data[1], pen=pen)
+            x, y = data[0], data[1]
+            # curve + Scatter + error (if present)
+            self.pg_hdl_kinetics.plot(x, y, pen=pen)
             scatter_plot = pg.ScatterPlotItem(
-                x=data[0],
-                y=data[1],
+                x=x,
+                y=y,
                 size=3,
                 pen=pen,
                 brush=None,
                 name=value["long_label"],
             )
             self.pg_hdl_kinetics.addItem(scatter_plot)
-            # dt = self.results["delta_t_s"] * np.array(x_range)
-            # dt[0] = max(dt[0], np.min(data[:, 0]))
-        # self.pg_hdl_kinetics.setXRange(dt[0], dt[1])
+
+            # Optional error bars
+            if data.shape[0] == 3:
+                yerr = data[2]
+                beam = (x.max() - x.min()) / 200
+                self.pg_hdl_kinetics.addItem(
+                    pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
+                )
+
         self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
         self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
 

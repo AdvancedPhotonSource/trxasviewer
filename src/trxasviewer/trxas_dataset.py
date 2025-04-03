@@ -7,7 +7,12 @@ import numpy as np
 import logging
 import json
 import scienceplots
-from .utilities import get_scan_type, compare_versions, prepare_binning_matrix, is_recently_modified
+from .utilities import (
+    get_scan_type,
+    compare_versions,
+    prepare_binning_matrix,
+    is_recently_modified,
+)
 from . import __version__
 
 
@@ -215,15 +220,16 @@ def get_multiples(size, pos, unit_len):
     return pos, slice(start, end)
 
 
-def safe_mean(data_list):
-    if len(data_list) == 0:
+def safe_mean(data_list, compute_kinetics_errorbar=False):
+    num_dsets = len(data_list)
+    if num_dsets == 0:
         return None
 
     shapes = np.array([d.shape for d in data_list])
     max_shape = np.max(shapes, axis=0)
     max_time_steps = max(shapes[:, 0])
 
-    data_full = np.full((len(data_list), max_time_steps, max_shape[1]), np.nan)
+    data_full = np.full((num_dsets, max_time_steps, max_shape[1]), np.nan)
 
     # Fill the array with valid data
     for i, d in enumerate(data_list):
@@ -232,6 +238,13 @@ def safe_mean(data_list):
         data_full[i, :valid_rows, :valid_cols] = d
 
     data_avg = np.nanmean(data_full, axis=0)
+    if num_dsets > 1 and compute_kinetics_errorbar:
+        assert data_avg.ndim == 2
+        # get the kinetics profile row and compute the error bar
+        # using the standard error of the mean as the error bar 
+        error = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
+        data_avg = np.vstack((data_avg[0], data_avg[1], error))
+
     return data_avg
 
 
@@ -303,7 +316,8 @@ class TrXASDatasetManager:
 
         good_results["avg"] = safe_mean(data_list)
         for key in kinetics_dict.keys():
-            good_results["kinetics"][key]["profile"] = safe_mean(kinetics_dict[key])
+            tmp = safe_mean(kinetics_dict[key], compute_kinetics_errorbar=True)
+            good_results["kinetics"][key]["profile"] = tmp
 
         return good_results
 
