@@ -266,45 +266,58 @@ class TrXASDatasetManager:
 
     def save_results(
         self,
+        results,
         directory=None,
         subdirectory="Avg",
         save_image=True,
         save_numpy=True,
         save_hdf=True,
         save_origin=True,
-        **kwargs,
     ):
-        results = self.get_energy_vs_time(progress=None, **kwargs)
-
         folder = Path(directory) / subdirectory
         folder.mkdir(parents=True, exist_ok=True)
-
         if save_numpy:
             np.savez_compressed(folder / "results.npz", **results)
-        if save_hdf:
-            self.save_as_hdf5(folder / "results.h5", **results)
 
-        if save_image:
-            TrXASDataset.plot_EXAFS(folder / "plot.pdf", results)
-
+        # if save_image:
+        #     TrXASDataset.plot_EXAFS(folder / "plot.pdf", results)
         if save_origin:
             o_folder = folder / "origin"
             o_folder.mkdir(parents=True, exist_ok=True)
-            TrXASDataset.save_as_origin_format(
-                o_folder / "exafs.txt", diff, x_axis, t_axis
-            )
+            TrXASDataset.save_as_origin_format(o_folder, results)
 
-            pass
+        if save_hdf:
+            self.save_as_hdf5(folder / "results.hdf", results)
 
-    def save_as_hdf5(self, fname, **kwargs):
+    def save_as_hdf5(self, fname, results_raw):
+        results = results_raw.copy()
+        # convert list to dict
+        kinetics_kwargs = results["analysis_kwargs"].pop("kinetics_kwargs")
+        kwargs = {}
+        for item in kinetics_kwargs:
+            kwargs[item["label"]] = item
+        results["analysis_kwargs"]["kinetics_kwargs"] = kwargs
+
+        def save_recursively(group, data):
+            for key, value in data.items():
+                if isinstance(value, dict):
+                    subgroup = group.create_group(key)
+                    save_recursively(subgroup, value)
+                else:
+                    if isinstance(value, str):
+                        string_dt = h5py.string_dtype(encoding="utf-8")
+                        group.create_dataset(key, data=value, dtype=string_dt)
+                    else:
+                        group.create_dataset(key, data=value)
+
         with h5py.File(fname, "w") as f:
-            for key, value in kwargs.items():
-                f.create_dataset(key, data=value)
+            save_recursively(f, results)
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
+        diff_list = []
         kinetics_dict = {}
         dset_type = None
         # Load datasets
@@ -319,7 +332,8 @@ class TrXASDatasetManager:
                 continue
             if dset is not None:
                 results = dset.get_energy_vs_time(**kwargs)
-                data_list.append(results["diff"])
+                diff_list.append(results["diff"])
+                data_list.append(results["data"])
                 if results["kinetics"]:
                     for key in results["kinetics"].keys():
                         if key not in kinetics_dict.keys():
@@ -330,7 +344,8 @@ class TrXASDatasetManager:
         good_dset = create_trxas_dataset(self.flist[good_idx])
         good_results = good_dset.get_energy_vs_time(**kwargs)
 
-        results["diff"] = safe_mean(data_list)
+        results["data"] = safe_mean(data_list)
+        results["diff"] = safe_mean(diff_list)
         for key in kinetics_dict.keys():
             tmp = safe_mean(kinetics_dict[key], compute_kinetics_errorbar=True)
             good_results["kinetics"][key]["profile"] = tmp
@@ -422,6 +437,7 @@ class TrXASDataset:
         data = np.load(fname, allow_pickle=True)
         for attr in self.dset_attributes:
             setattr(self, attr, data[attr])
+        self.dset_type = str(self.dset_type)
 
     def save_to_cache(self):
         self.cache_name.parent.mkdir(parents=True, exist_ok=True)
@@ -549,19 +565,33 @@ class TrXASDataset:
 
     @staticmethod
     def save_as_origin_format(origin_folder, results):
-        avg = results["diff"]
-        shape = avg.shape
-        data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
-        data_full[1:, 1:] = avg
-        data_full[1:, 0] = results["x_axis"]["value"]
-        data_full[0, 1:] = results["t_axis"]
-        data_full = data_full.astype(object)
-        # add header
-        if results["dset_type"] == "EXAFS":
-            data_full[0, 0] = "Energy(keV)/Time(s)"
-        else:
-            data_full[0, 0] = "Delay(s)/Time(s)"
-        np.savetxt(origin_folder / "diff.txt", data_full, fmt="%s")
+        # save diff and non-groundstate subtracted data
+        for key, label in zip(("data", "diff"), ("data_full", "data_diff")):
+            temp = results[key]
+            shape = temp.shape
+            data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
+            data_full[1:, 1:] = temp
+            data_full[1:, 0] = results["x_axis"]["value"]
+            data_full[0, 1:] = results["t_axis"]
+            data_full = data_full.astype(object)
+            # add header
+            if results["dset_type"] == "EXAFS":
+                data_full[0, 0] = "Energy(keV)/Time(s)"
+            else:
+                data_full[0, 0] = "Delay(s)/Time(s)"
+            np.savetxt(
+                origin_folder / f"{label}.txt", data_full, fmt="%s", delimiter=","
+            )
+
+        for key, value in results["kinetics"].items():
+            np.savetxt(
+                origin_folder / f"kinetics_{key}.txt",
+                value["profile"].T,
+                fmt="%.7e",
+                delimiter=",",
+                header="Delay(s),Intensity,Error",
+                comments="",  # remove '#' so header is raw and easy to parse
+            )
 
     def subtract_groundstate(
         self,
@@ -652,6 +682,8 @@ class TrXASDataset:
 
     def extract_kenetics(self, avg, t_axis, kwargs_list):
         results = {}
+        if not kwargs_list:
+            return results
         for kwargs in kwargs_list:
             temp = self.extract_single_kinetics(avg, t_axis, **kwargs)
             if temp:
@@ -702,10 +734,10 @@ class TrXASDataset:
                 sval.append(np.mean(b_diff[:, n]))
                 tval.append(np.mean(t_mat2[:, n]))
 
-        kinetics = np.stack((tval, sval))
-        kinetics = kinetics[:, kinetics[0].argsort()]
+        profile = np.stack((tval, sval))
+        profile = profile[:, profile[0].argsort()]
         kinetics = {
-            "profile": kinetics,
+            "profile": profile,
             "long_label": "Laser Delay",
         }
         return self.compile_results(
