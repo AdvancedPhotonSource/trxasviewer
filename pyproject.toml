@@ -38,7 +38,8 @@ dependencies = [
     "PySide6",
     "matplotlib",
     "scienceplots",
-    "scipy"
+    "scipy",
+    "h5py"
 ]
 
 [project.scripts]
