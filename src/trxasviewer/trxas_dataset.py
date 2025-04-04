@@ -10,8 +10,6 @@ import os
 import h5py
 import scienceplots
 from .utilities import (
-    get_scan_type,
-    compare_versions,
     prepare_binning_matrix,
     is_recently_modified,
 )
@@ -23,77 +21,6 @@ logger = logging.getLogger(__name__)
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
 P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
 CACHE_PATH = ".cache"
-
-
-def build_cache_database(folder, min_version="0.2.0"):
-    """
-    Builds or updates a cache database in JSON format for a given folder.
-
-    - Reads from an existing cache file if valid and meets `min_version`.
-    - Iterates through files, categorizing them based on `get_scan_type()`.
-    - Stores results in `cache.json` inside the `cache` subdirectory.
-    """
-    cache_path = Path(folder) / CACHE_PATH
-    cache_name = cache_path / "cache.json"
-
-    # Ensure the cache directory exists before doing anything else
-    cache_path.mkdir(parents=True, exist_ok=True)
-
-    time_now = time.strftime("%Y-%m-%d %H:%M:%S")
-    # Initialize an empty cache
-    cache_db = {
-        "version": __version__,
-        "datetime": time_now,
-        "prefix_db": {},
-        "scan_type": {},
-    }
-
-    # Load existing cache if possible
-    if cache_name.is_file():
-        try:
-            temp_db = json.loads(cache_name.read_text())
-            curr_version = temp_db.get("version", "0.2.0")
-            if compare_versions(curr_version, min_version):
-                cache_db = temp_db  # Use the existing cache
-                cache_db["version"] = __version__  # update version
-                cache_db["datetime"] = time_now
-        except json.JSONDecodeError:
-            logger.warning(f"{cache_name} is corrupted. Rebuilding cache...")
-
-    def append_entry(cache_db, scan_type, entry):
-        """Adds a scan entry to the cache, ensuring structure integrity."""
-        try:
-            index = int(entry.name[-5:])  # Extract numeric index
-            prefix = entry.name[:-5]
-        except ValueError:
-            logging.error(f"Skipping {entry.name}: Invalid filename format")
-            return
-        if prefix not in cache_db["prefix_db"]:
-            cache_db["prefix_db"][prefix] = {"exafs": [], "laserd": []}
-        cache_db["prefix_db"][prefix][scan_type].append(index)
-
-    flag_save = False
-    for entry in sorted(Path(folder).iterdir(), key=lambda x: x.name):
-        if not entry.is_file():
-            continue
-        # Check scan type in cache or compute it
-        full_path = str(entry.resolve())  # Ensure absolute path
-        scan_type = cache_db["scan_type"].get(full_path)
-        if scan_type in (None, "writting"):
-            # retry to get type if it was writting, or if it was not in cache
-            scan_type = get_scan_type(entry)
-            # append only if its a valid type
-            if scan_type in ("exafs", "laserd"):
-                cache_db["scan_type"][full_path] = scan_type
-        if scan_type in ("exafs", "laserd"):
-            append_entry(cache_db, scan_type, entry)
-            flag_save = True
-
-    # Save cache if updates were made
-    if flag_save:
-        cache_name.write_text(json.dumps(cache_db, indent=4))
-
-    return cache_db
 
 
 @lru_cache(maxsize=128)
