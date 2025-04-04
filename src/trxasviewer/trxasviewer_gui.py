@@ -20,8 +20,6 @@ from PySide6.QtCore import (
     QByteArray,
 )
 
-
-from PySide6.QtWidgets import QApplication, QFileDialog, QFileSystemModel, QMainWindow
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -30,6 +28,11 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QCheckBox,
     QTabWidget,
+    QDialog,
+    QApplication,
+    QFileDialog,
+    QFileSystemModel,
+    QMainWindow,
 )
 
 from .trxas_dataset import (
@@ -37,7 +40,7 @@ from .trxas_dataset import (
     create_trxas_cache_from_flist,
 )
 from .utilities import format_time
-from .widgets import VlockedRectROI
+from .widgets import VlockedRectROI, SaveOptionsDialog
 from .dtype_cache import DataTypeCache
 import logging
 from . import __version__
@@ -811,7 +814,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if results is not None:
             self.results = results
             self.update_sync_timing_parameters()
-            data = self.results["avg"].T
+            data = self.results["diff"].T
             if self.image is None or data.shape != self.image.shape:
                 # remove roi
                 if self.roi is not None:
@@ -928,26 +931,27 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if self.is_processing:
             return
 
-        file_filter = "NumPy Compressed File (*.npz)"
-
+        if self.results is None:
+            prefix = "Avg"
+        else:
+            prefix = self.results["label"]
         # Open the file dialog
-        filename, _ = QFileDialog.getSaveFileName(
-            None,  # Parent widget (None for standalone)
-            "Save File",  # Dialog title
-            "",  # Default directory
-            file_filter,  # Filter to only show .npz files
+        dialog = SaveOptionsDialog(parent=self, prefix=prefix)
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
+            kwargs = dialog.get_selected_options()
+        else:
+            return
+
+        kwargs.update(
+            {
+                "target": "normalized-GS",
+                "norm_kwargs": self.get_normalization_subgs_kwargs(),
+                "binning_kwargs": self.get_binning_kwargs(),
+            }
         )
 
-        kwargs = {
-            "target": "normalized-GS",
-            "norm_kwargs": self.get_normalization_subgs_kwargs(),
-            "binning_kwargs": self.get_binning_kwargs(),
-        }
-
-        if filename and not filename.endswith(".npz"):
-            filename += ".npz"
-        if filename:
-            self.avg_worker.dset_manager.save_results(filename, **kwargs)
+        self.avg_worker.dset_manager.save_results(**kwargs)
 
     def closeEvent(self, event):
         if self.is_processing:
