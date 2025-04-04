@@ -1,5 +1,123 @@
+import os
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+    QPushButton,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QLineEdit,
+    QHBoxLayout,
+    QCheckBox,
+    QFileDialog,
+)
+from PySide6.QtCore import Slot, QPointF
 import pyqtgraph as pg
-from PySide6.QtCore import QPointF
+
+
+class SaveOptionsDialog(QDialog):
+    def __init__(self, prefix="", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Save Options")
+        self.setMinimumWidth(400)  # Set a minimum width for better layout
+
+        # --- Widgets ---
+        self.instruction_label = QLabel("Select the directory and options for saving:")
+
+        # Directory Selection
+        self.dir_label = QLabel("Save Directory:")
+        self.path_edit = QLineEdit()
+        self.path_edit.setPlaceholderText("Click 'Browse...' to select a directory")
+        self.path_edit.setReadOnly(True)  # Make it read-only, changed via button
+
+        self.prefix_label = QLabel("Subdirectory")
+        self.prefix_edit = QLineEdit()
+        self.prefix_edit.setPlaceholderText(
+            "Enter a prefix for the files. It will create a folder with this name."
+        )
+        self.prefix_edit.setText(prefix)
+        self.browse_button = QPushButton("Browse...")
+
+        # Checkboxes
+        self.cb_image = QCheckBox("Save Image (.png)")
+        self.cb_numpy = QCheckBox("Save NumPy (.npy)")
+        self.cb_origin = QCheckBox("Save OriginLab (.txt)")
+        self.cb_hdf = QCheckBox("Save HDF5 (.hdf)")
+        # Set default checked states if desired
+        self.cb_image.setChecked(True)
+        self.cb_numpy.setChecked(True)
+        self.cb_origin.setChecked(True)
+        self.cb_hdf.setChecked(True)
+
+        # Standard Buttons (OK, Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+
+        # --- Layout ---
+        main_layout = QVBoxLayout(self)
+
+        # Directory Row Layout
+        dir_layout = QHBoxLayout()
+        dir_layout.addWidget(self.dir_label)
+        dir_layout.addWidget(self.path_edit)
+        dir_layout.addWidget(self.browse_button)
+
+        prefix_layout = QHBoxLayout()
+        prefix_layout.addWidget(self.prefix_label)
+        prefix_layout.addWidget(self.prefix_edit)
+
+        cb_layout = QHBoxLayout()
+        cb_layout.addWidget(self.cb_image)
+        cb_layout.addWidget(self.cb_numpy)
+        cb_layout.addWidget(self.cb_origin)
+        cb_layout.addWidget(self.cb_hdf)
+        # Add widgets to main layout
+        main_layout.addWidget(self.instruction_label)
+        main_layout.addLayout(dir_layout)  # Add the horizontal layout
+        main_layout.addLayout(prefix_layout)
+        main_layout.addLayout(cb_layout)
+        main_layout.addWidget(self.button_box)
+        # --- Connections ---
+        self.browse_button.clicked.connect(self.select_directory)
+        self.button_box.accepted.connect(self.accept)  # Connect OK to accept
+        self.button_box.rejected.connect(self.reject)  # Connect Cancel to reject
+
+        # --- Initial State ---
+        # Disable OK button until a directory is selected
+        ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
+        if ok_button:
+            ok_button.setEnabled(False)
+
+    @Slot()  # Decorator indicating this is a slot
+    def select_directory(self):
+        """
+        Opens a QFileDialog to select a directory and updates the line edit.
+        """
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Save Directory",
+            os.path.expanduser("~"),  # Start in user's home directory
+        )
+        if directory:  # If a directory was selected (not cancelled)
+            self.path_edit.setText(directory)
+            # Enable the OK button now that a path is selected
+            ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
+            if ok_button:
+                ok_button.setEnabled(True)
+
+    def get_selected_options(self):
+        """
+        Returns the selected directory path and checkbox states.
+        Should only be called after the dialog has been accepted.
+        """
+        return {
+            "directory": self.path_edit.text(),
+            "subdirectory": self.prefix_edit.text(),
+            "save_image": self.cb_image.isChecked(),
+            "save_numpy": self.cb_numpy.isChecked(),
+            "save_hdf": self.cb_origin.isChecked(),
+            "save_origin": self.cb_origin.isChecked(),
+        }
 
 
 class VlockedRectROI(pg.RectROI):
