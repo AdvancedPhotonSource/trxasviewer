@@ -928,30 +928,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         Opens a QFileDialog to allow the user to select a save location for an NPZ file.
         Returns the selected file path with a '.npz' extension.
         """
-        if self.is_processing:
+        if self.is_processing or self.results is None:
+            self.show_status("No data to save.", 3000)
             return
 
-        if self.results is None:
-            prefix = "Avg"
-        else:
-            prefix = self.results["label"]
-        # Open the file dialog
+        prefix = self.results["label"]
         dialog = SaveOptionsDialog(parent=self, prefix=prefix)
         result = dialog.exec()
         if result == QDialog.DialogCode.Accepted:
             kwargs = dialog.get_selected_options()
         else:
             return
-
-        kwargs.update(
-            {
-                "target": "normalized-GS",
-                "norm_kwargs": self.get_normalization_subgs_kwargs(),
-                "binning_kwargs": self.get_binning_kwargs(),
-            }
-        )
-
-        self.avg_worker.dset_manager.save_results(**kwargs)
+        self.avg_worker.dset_manager.save_results(self.results, **kwargs)
 
     def closeEvent(self, event):
         if self.is_processing:
