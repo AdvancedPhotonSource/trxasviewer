@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import json
+import os
+import h5py
 import scienceplots
 from .utilities import (
     get_scan_type,
@@ -241,7 +243,7 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
     if num_dsets > 1 and compute_kinetics_errorbar:
         assert data_avg.ndim == 2
         # get the kinetics profile row and compute the error bar
-        # using the standard error of the mean as the error bar 
+        # using the standard error of the mean as the error bar
         error = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
         data_avg = np.vstack((data_avg[0], data_avg[1], error))
 
@@ -251,39 +253,53 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
 class TrXASDatasetManager:
     def __init__(self, ignore_incomplete=True):
         self.flist = []
+        self.label = None
         self.ignore_incomplete = ignore_incomplete
 
     def update_flist(self, flist):
         self.flist = flist
-
-    def save_results(self, fname, **kwargs):
-        fname = Path(fname).with_suffix("")
-        base_name = fname.name
-        fname_origin = fname.with_name(f"{base_name}_origin.txt")
-        fname_numpy = fname.with_name(f"{base_name}_numpy.npz")
-        fname_plot = fname.with_name(f"{base_name}_plot.pdf")
-
-        results = self.get_energy_vs_time(progress=None, **kwargs)
-        results.update(
-            {
-                "flist": self.flist,
-                "analysis_type": "normalized-GS",
-                "analysis_kwargs": kwargs,
-            }
-        )
-        np.savez_compressed(fname_numpy, **results)
-
-        if results["dset_type"] == "EXAFS":
-            diff = results.get("avg")
-            x_axis = results.get("x_axis")["value"]
-            t_axis = results.get("t_axis")
-            TrXASDataset.plot_and_save(fname_plot, diff, x_axis, t_axis)
-            TrXASDataset.save_as_origin_format(fname_origin, diff, x_axis, t_axis)
-            logger.info(f"Saved results to {fname}_[numpy.npz, origin.txt, plot.pdf]")
+        if len(flist) == 1:
+            self.label = f"result_{os.path.basename(flist[0])}"
         else:
-            logger.info(
-                f"Saved results to {fname}_numpy.npz. origin/plot not implemented for {results['dset_type']}"
+            flist.sort()
+            self.label = f"result_{os.path.basename(flist[0])}-{flist[-1][-5:]}"
+
+    def save_results(
+        self,
+        directory=None,
+        subdirectory="Avg",
+        save_image=True,
+        save_numpy=True,
+        save_hdf=True,
+        save_origin=True,
+        **kwargs,
+    ):
+        results = self.get_energy_vs_time(progress=None, **kwargs)
+
+        folder = Path(directory) / subdirectory
+        folder.mkdir(parents=True, exist_ok=True)
+
+        if save_numpy:
+            np.savez_compressed(folder / "results.npz", **results)
+        if save_hdf:
+            self.save_as_hdf5(folder / "results.h5", **results)
+
+        if save_image:
+            TrXASDataset.plot_EXAFS(folder / "plot.pdf", results)
+
+        if save_origin:
+            o_folder = folder / "origin"
+            o_folder.mkdir(parents=True, exist_ok=True)
+            TrXASDataset.save_as_origin_format(
+                o_folder / "exafs.txt", diff, x_axis, t_axis
             )
+
+            pass
+
+    def save_as_hdf5(self, fname, **kwargs):
+        with h5py.File(fname, "w") as f:
+            for key, value in kwargs.items():
+                f.create_dataset(key, data=value)
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -303,7 +319,7 @@ class TrXASDatasetManager:
                 continue
             if dset is not None:
                 results = dset.get_energy_vs_time(**kwargs)
-                data_list.append(results["avg"])
+                data_list.append(results["diff"])
                 if results["kinetics"]:
                     for key in results["kinetics"].keys():
                         if key not in kinetics_dict.keys():
@@ -314,11 +330,19 @@ class TrXASDatasetManager:
         good_dset = create_trxas_dataset(self.flist[good_idx])
         good_results = good_dset.get_energy_vs_time(**kwargs)
 
-        good_results["avg"] = safe_mean(data_list)
+        results["diff"] = safe_mean(data_list)
         for key in kinetics_dict.keys():
             tmp = safe_mean(kinetics_dict[key], compute_kinetics_errorbar=True)
             good_results["kinetics"][key]["profile"] = tmp
 
+        good_results.update(
+            {
+                "flist": self.flist,
+                "label": self.label,
+                "analysis_type": "normalized-GS",
+                "analysis_kwargs": kwargs,
+            }
+        )
         return good_results
 
 
@@ -454,11 +478,11 @@ class TrXASDataset:
             if self.xas_data == None:
                 self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
-            return self.compile_results(self.xas_data[:, channel, :], t_axis)
+            return self.compile_results(None, self.xas_data[:, channel, :], t_axis)
 
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
-            return self.compile_results(self.xas_data_norm, t_axis)
+            return self.compile_results(None, self.xas_data_norm, t_axis)
 
         elif target == "normalized-GS":
             if self.dset_type == "LASERD":
@@ -498,7 +522,7 @@ class TrXASDataset:
         return norm_data.astype(np.float32)
 
     @staticmethod
-    def plot_and_save(save_name, diff, energy_axis, t_axis, title=None):
+    def plot_EXAFS(save_name, diff, energy_axis, t_axis, title=None):
         # plt.style.use('science')
         plt.rcParams["text.usetex"] = False
         t_axis = t_axis * 1e6  # convert to microseconds
@@ -524,16 +548,20 @@ class TrXASDataset:
         plt.close(fig)
 
     @staticmethod
-    def save_as_origin_format(save_name, diff, energy_axis, t_axis, title=None):
-        shape = diff.shape
+    def save_as_origin_format(origin_folder, results):
+        avg = results["diff"]
+        shape = avg.shape
         data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
-        data_full[1:, 1:] = diff
-        data_full[1:, 0] = energy_axis
-        data_full[0, 1:] = t_axis
+        data_full[1:, 1:] = avg
+        data_full[1:, 0] = results["x_axis"]["value"]
+        data_full[0, 1:] = results["t_axis"]
         data_full = data_full.astype(object)
         # add header
-        data_full[0, 0] = "Energy(keV)/Time(s)"
-        np.savetxt(save_name, data_full, fmt="%s")
+        if results["dset_type"] == "EXAFS":
+            data_full[0, 0] = "Energy(keV)/Time(s)"
+        else:
+            data_full[0, 0] = "Delay(s)/Time(s)"
+        np.savetxt(origin_folder / "diff.txt", data_full, fmt="%s")
 
     def subtract_groundstate(
         self,
@@ -558,9 +586,8 @@ class TrXASDataset:
         data = data.reshape(self.num_rows, -1, num_bunches)
 
         preavg_orbit_idx = sync_index // num_bunches
-        preavg_slice = slice(
-            max(0, preavg_orbit_idx - pre_avg_orbitals), preavg_orbit_idx
-        )
+        preavg_slice = slice(preavg_orbit_idx - pre_avg_orbitals, preavg_orbit_idx)
+        assert preavg_slice.start >= 0, "ground state start < 0"
         # average along orbitals, num_energys * bunches
         preavg = np.mean(data[:, preavg_slice], axis=(1,))
 
@@ -570,10 +597,11 @@ class TrXASDataset:
             diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
         else:
             raise ValueError("Unknown do_perbunch value %s method")
+        data = data.reshape(self.num_rows, -1)
         diff = diff.reshape(self.num_rows, -1)
-        return diff, sync_index
+        return data, diff, sync_index
 
-    def compile_results(self, avg, t_axis, kinetics=None):
+    def compile_results(self, data, diff, t_axis, kinetics=None):
         if self.dset_type == "EXAFS":
             x_axis = {"value": self.energy, "label": "Energy", "unit": "keV"}
         elif self.dset_type == "LASERD":
@@ -581,7 +609,8 @@ class TrXASDataset:
         # y_axis = {"value": t_axis, "label": "Time", "unit": "s"}
 
         results = {
-            "avg": avg,
+            "data": data,
+            "diff": diff,
             "t_axis": t_axis,
             "x_axis": x_axis,
             "kinetics": kinetics,
@@ -592,18 +621,19 @@ class TrXASDataset:
         }
         return results
 
-    def apply_binning(self, diff, t_axis_raw, sync_index, **binning_kwargs):
+    def apply_binning(self, data, diff, t_axis_raw, sync_index, **binning_kwargs):
         size = diff.shape[1]
         binning_mat, nobin_laserd_idx = prepare_binning_matrix(
             size, sync_index, **binning_kwargs
         )
         # diff is always 2d
-        avg = (diff @ binning_mat)[:, 1:]
+        b_data = (data @ binning_mat)[:, 1:]
+        b_diff = (diff @ binning_mat)[:, 1:]
         if t_axis_raw.ndim == 1:
             t_axis = (t_axis_raw @ binning_mat)[1:]
         else:
             t_axis = (t_axis_raw @ binning_mat)[:, 1:]
-        return avg, t_axis, nobin_laserd_idx
+        return b_data, b_diff, t_axis, nobin_laserd_idx
 
     def extract_single_kinetics(
         self, avg, t_axis, center_energy, delta_energy, label, enabled=True
@@ -635,13 +665,13 @@ class TrXASDataset:
         kinetics_kwargs,
     ):
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
-        diff, sync_index = self.subtract_groundstate(**norm_kwargs)
+        data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
-        avg, t_axis, _ = self.apply_binning(
-            diff, t_axis_raw, sync_index, **binning_kwargs
+        b_data, b_diff, t_axis, _ = self.apply_binning(
+            data, diff, t_axis_raw, sync_index, **binning_kwargs
         )
-        kinetics = self.extract_kenetics(avg, t_axis, kinetics_kwargs)
-        return self.compile_results(avg, t_axis, kinetics=kinetics)
+        kinetics = self.extract_kenetics(b_diff, t_axis, kinetics_kwargs)
+        return self.compile_results(b_data, b_diff, t_axis, kinetics=kinetics)
 
     def process_laserd(
         self,
@@ -649,13 +679,13 @@ class TrXASDataset:
         binning_kwargs,
     ):
         assert self.dset_type == "LASERD", "Not a LASERD scan"
-        diff, sync_index = self.subtract_groundstate(**norm_kwargs)
+        data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         # append a non-delayed time axis to the begining for display
         laserd = np.insert(self.laserd, 0, 0)
         t_mat = t_mat - laserd[:, np.newaxis]
-        avg, t_mat2, nobin_idx = self.apply_binning(
-            diff, t_mat, sync_index, **binning_kwargs
+        b_data, b_diff, t_mat2, nobin_idx = self.apply_binning(
+            data, diff, t_mat, sync_index, **binning_kwargs
         )
         # separate the time axis from the rest of the matrix
         t_axis = t_mat2[0]
@@ -664,12 +694,12 @@ class TrXASDataset:
         # assemble kinetics
         sval = []
         tval = []
-        for n in range(avg.shape[1]):
+        for n in range(b_diff.shape[1]):
             if n in nobin_idx:
-                sval.extend(avg[:, n].tolist())
+                sval.extend(b_diff[:, n].tolist())
                 tval.extend(t_mat2[:, n].tolist())
             else:
-                sval.append(np.mean(avg[:, n]))
+                sval.append(np.mean(b_diff[:, n]))
                 tval.append(np.mean(t_mat2[:, n]))
 
         kinetics = np.stack((tval, sval))
@@ -678,7 +708,9 @@ class TrXASDataset:
             "profile": kinetics,
             "long_label": "Laser Delay",
         }
-        return self.compile_results(avg, t_axis, kinetics={"laserd": kinetics})
+        return self.compile_results(
+            b_data, b_diff, t_axis, kinetics={"laserd": kinetics}
+        )
 
 
 if __name__ == "__main__":
