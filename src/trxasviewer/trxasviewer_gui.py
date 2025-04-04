@@ -569,8 +569,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         ):
             return False
 
-        for target, kwargs in enumerate(self.get_kinetics_kwargs()):
-            target += 1
+        for label, kwargs in self.get_kinetics_kwargs().items():
+            target = int(label[-1])
             pos, size = self.compute_ROI_geometry(
                 kwargs["center_energy"], kwargs["delta_energy"]
             )
@@ -614,7 +614,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             return
 
         if mode == "value-roi":
-            kwargs = self.get_kinetics_kwargs()[target - 1]  # target is 1-based
+            kwargs = self.get_kinetics_kwargs()[f"ROI{target}"]
             pos, size = self.compute_ROI_geometry(
                 kwargs["center_energy"], kwargs["delta_energy"]
             )
@@ -774,9 +774,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         return norm_kwargs
 
     def get_kinetics_kwargs(self):
-        roi_list = []
+        roi_kwargs = {}
         for n in range(1, 5):
-            kwargs = {
+            label = f"ROI{n}"
+            roi_kwargs[label] = {
                 "center_energy": getattr(
                     self, f"doubleSpinBox_kinetics_ecenter{n}"
                 ).value(),
@@ -784,10 +785,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                     self, f"doubleSpinBox_kinetics_edelta{n}"
                 ).value(),
                 "enabled": getattr(self, f"checkBox_kinetics_roi{n}").isChecked(),
-                "label": f"ROI{n}",
+                "label": label,
             }
-            roi_list.append(kwargs)
-        return tuple(roi_list)
+        return roi_kwargs
 
     def get_binning_kwargs(self):
         current_tab_index = self.tabWidget_binning.currentIndex()

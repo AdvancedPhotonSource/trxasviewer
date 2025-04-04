@@ -291,12 +291,6 @@ class TrXASDatasetManager:
 
     def save_as_hdf5(self, fname, results_raw):
         results = results_raw.copy()
-        # convert list to dict
-        kinetics_kwargs = results["analysis_kwargs"].pop("kinetics_kwargs")
-        kwargs = {}
-        for item in kinetics_kwargs:
-            kwargs[item["label"]] = item
-        results["analysis_kwargs"]["kinetics_kwargs"] = kwargs
 
         def save_recursively(group, data):
             for key, value in data.items():
@@ -674,20 +668,21 @@ class TrXASDataset:
         e0, e1 = center_energy - delta_energy, center_energy + delta_energy
         slected = (self.energy >= e0) & (self.energy <= e1)
         kinetics_profile = np.stack([t_axis, avg[slected].mean(axis=0)])
-        result = {
+        single_result = {
             "profile": kinetics_profile,
             "long_label": f"{label}: {center_energy:.3f}±{delta_energy:.3f} keV",
         }
-        return {label: result}
+        return single_result
 
-    def extract_kenetics(self, avg, t_axis, kwargs_list):
+    def extract_kenetics(self, avg, t_axis, kwargs_all):
         results = {}
-        if not kwargs_list:
+        if not kwargs_all:
             return results
-        for kwargs in kwargs_list:
+        for label, kwargs in kwargs_all.items():
             temp = self.extract_single_kinetics(avg, t_axis, **kwargs)
             if temp:
-                results.update(temp)
+                results[label] = temp
+        print(results)
         return results
 
     def process_energy(
