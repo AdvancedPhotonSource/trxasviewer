@@ -287,25 +287,9 @@ class TrXASDatasetManager:
             TrXASDataset.save_as_origin_format(o_folder, results)
 
         if save_hdf:
-            self.save_as_hdf5(folder / "results.hdf", results)
-
-    def save_as_hdf5(self, fname, results_raw):
-        results = results_raw.copy()
-
-        def save_recursively(group, data):
-            for key, value in data.items():
-                if isinstance(value, dict):
-                    subgroup = group.create_group(key)
-                    save_recursively(subgroup, value)
-                else:
-                    if isinstance(value, str):
-                        string_dt = h5py.string_dtype(encoding="utf-8")
-                        group.create_dataset(key, data=value, dtype=string_dt)
-                    else:
-                        group.create_dataset(key, data=value)
-
-        with h5py.File(fname, "w") as f:
-            save_recursively(f, results)
+            TrXASDataset.save_as_hdf5(folder / "results.hdf", results)
+        # save settings in human readable format
+        TrXASDataset.save_as_json(folder / "settings.json", results)
 
     def get_energy_vs_time(self, progress=None, **kwargs):
         if len(self.flist) == 0:
@@ -587,6 +571,34 @@ class TrXASDataset:
                 comments="",  # remove '#' so header is raw and easy to parse
             )
 
+    @staticmethod
+    def save_as_json(fname, results):
+        with open(fname, "w") as f:
+            json.dump(results["analysis_kwargs"], f, indent=4)
+
+    @staticmethod
+    def save_as_hdf5(fname, results_raw):
+        results = results_raw.copy()
+
+        def save_recursively(group, data):
+            for key, value in data.items():
+                if isinstance(value, dict):
+                    subgroup = group.create_group(key)
+                    save_recursively(subgroup, value)
+                else:
+                    if isinstance(value, str):
+                        string_dt = h5py.string_dtype(encoding="utf-8")
+                        group.create_dataset(key, data=value, dtype=string_dt)
+                    else:
+                        compression = None
+                        if isinstance(value, np.ndarray):
+                            value = np.ascontiguousarray(value)
+                            compression = "gzip" if value.size > 4096 else None
+                        group.create_dataset(key, data=value, compression=compression)
+
+        with h5py.File(fname, "w") as f:
+            save_recursively(f, results)
+
     def subtract_groundstate(
         self,
         sync_type="time",
@@ -682,7 +694,6 @@ class TrXASDataset:
             temp = self.extract_single_kinetics(avg, t_axis, **kwargs)
             if temp:
                 results[label] = temp
-        print(results)
         return results
 
     def process_energy(
