@@ -24,10 +24,11 @@ def get_scan_type(fname):
     fname = Path(fname)
     if fname.is_dir():
         return "directory"
-    elif is_recently_modified(fname):
-        return "writing"
+
     if len(str(fname.name)) < 10:
         return "invalid"
+    elif is_recently_modified(fname):
+        return "writing"
     
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
