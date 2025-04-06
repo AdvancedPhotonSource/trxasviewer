@@ -21,10 +21,13 @@ def get_scan_type(fname):
     - If the file has less than 12 lines, returns "invalid".
     - Otherwise, or on exception, returns "invalid".
     """
-    if Path(fname).is_dir():
+    fname = Path(fname)
+    if fname.is_dir():
         return "directory"
     elif is_recently_modified(fname):
         return "writing"
+    if len(str(fname.name)) < 10:
+        return "invalid"
     
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
