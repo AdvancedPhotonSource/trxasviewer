@@ -249,8 +249,8 @@ class TrXASDatasetManager:
         good_dset = create_trxas_dataset(self.flist[good_idx])
         good_results = good_dset.get_energy_vs_time(**kwargs)
 
-        results["data"] = safe_mean(data_list)
-        results["diff"] = safe_mean(diff_list)
+        good_results["data"] = safe_mean(data_list)
+        good_results["diff"] = safe_mean(diff_list)
         for key in kinetics_dict.keys():
             tmp = safe_mean(kinetics_dict[key], compute_kinetics_errorbar=True)
             good_results["kinetics"][key]["profile"] = tmp
