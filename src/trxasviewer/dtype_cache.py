@@ -118,7 +118,7 @@ class DataTypeCache:
         for idx in range(idx_min, idx_max + 1):
             if idx in file_indexes:
                 full_path = Path(self.folder) / f"{prefix}{idx:05d}"
-                file_paths.append(full_path)
+                file_paths.append(str(full_path))
         return file_paths
     
     @staticmethod 
