@@ -2,17 +2,17 @@ import re
 import time
 from functools import lru_cache
 from pathlib import Path
-import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import json
 import os
+import shutil
 import h5py
-import scienceplots
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
 )
+from .plot import plot_results
 from . import __version__
 
 
@@ -205,9 +205,15 @@ class TrXASDatasetManager:
         folder.mkdir(parents=True, exist_ok=True)
         if save_numpy:
             np.savez_compressed(folder / "results.npz", **results)
+            # copy plot scripts to the result folder for users to edit
+            package_path = Path(__file__).parent
+            shutil.copy(package_path / "plot.py", folder / "load_and_plot.py")
 
-        # if save_image:
-        #     TrXASDataset.plot_EXAFS(folder / "plot.pdf", results)
+        if save_image:
+            img_folder = folder / "images"
+            img_folder.mkdir(parents=True, exist_ok=True)
+            TrXASDataset.plot_results(results, img_folder)
+
         if save_origin:
             o_folder = folder / "origin"
             o_folder.mkdir(parents=True, exist_ok=True)
@@ -443,30 +449,8 @@ class TrXASDataset:
         return norm_data.astype(np.float32)
 
     @staticmethod
-    def plot_EXAFS(save_name, diff, energy_axis, t_axis, title=None):
-        # plt.style.use('science')
-        plt.rcParams["text.usetex"] = False
-        t_axis = t_axis * 1e6  # convert to microseconds
-        extent = (energy_axis[0], energy_axis[-1], t_axis[0], t_axis[-1])
-        data = np.flipud(diff.T)
-        fig_width = 4.8
-        fig_height = fig_width / 1.618033988749
-        vmin, vmax = np.percentile(data, [0.5, 99.5])
-        vmin = min(vmin, -vmax)
-        vmax = -1 * vmin
-
-        fig, ax = plt.subplots(1, 1, figsize=(fig_width, fig_height))
-        im = ax.imshow(
-            data, aspect="auto", extent=extent, cmap="bwr", vmin=vmin, vmax=vmax
-        )
-        # ax.set_aspect(1/aspect)
-        ax.set_xlabel("Energy (keV)")
-        ax.set_ylabel("Time (μs)")
-        ax.set_title(title)
-        plt.tight_layout()
-        plt.colorbar(im, ax=ax)
-        plt.savefig(save_name, dpi=600)
-        plt.close(fig)
+    def plot_results(results, save_name):
+        plot_results(results, folder=save_name)
 
     @staticmethod
     def save_as_origin_format(origin_folder, results):
