@@ -15,7 +15,7 @@ def is_valid_entry(entry: Path) -> bool:
     """Return True if the file should be considered in the cache."""
     if not entry.is_file():
         return False
-    if entry.name.startswith('.'):
+    if entry.name.startswith("."):
         return False
     if entry.name == ".cache":
         return False
@@ -23,29 +23,33 @@ def is_valid_entry(entry: Path) -> bool:
 
 
 class DataTypeCache:
-    def __init__(self, folder, min_version="0.3.0", flag_usecache=True):
+    def __init__(
+        self, folder, min_version="0.3.0", flag_savecache=True, reset_cache=False
+    ):
         self.folder = Path(folder)
         self.min_version = min_version
         self.cache_path = self.folder / CACHE_PATH
         self.cache_name = self.cache_path / "cache.json"
         self.time_now = time.strftime("%Y-%m-%d %H:%M:%S")
-        self.db = self.initialize_cache()
+        self.db = self.initialize_cache(reset_cache)
         self.build_cache()
-        if flag_usecache:
+        if flag_savecache:
             atexit.register(self.save_dtype_cache)
 
-    def initialize_cache(self):
+    def initialize_cache(self, reset_cache=False):
         # either from file or create a empty template
         self.cache_path.mkdir(parents=True, exist_ok=True)
-
         db = {
             "version": __version__,
             "datetime": self.time_now,
             "prefix_db": {},
             "scan_type": {},
         }
+        if reset_cache:
+            logger.warning("Cache reset requested. Rebuilding dtype cache...")
+            return db
 
-        if self.cache_name.is_file():
+        if self.cache_name.is_file() and not reset_cache:
             try:
                 prev_db = json.loads(self.cache_name.read_text())
                 curr_version = prev_db.get("version", "0.2.0")
@@ -54,10 +58,12 @@ class DataTypeCache:
                     prev_db["datetime"] = self.time_now
                     db = prev_db
             except Exception:
-                logger.warning(f"{self.cache_name} is corrupted. Rebuilding cache...")
+                logger.warning(
+                    f"{self.cache_name} is corrupted. Rebuilding dtype cache..."
+                )
 
         return db
-    
+
     def build_cache(self):
         for entry in sorted(self.folder.iterdir(), key=lambda x: x.name):
             if is_valid_entry(entry):
@@ -80,7 +86,7 @@ class DataTypeCache:
                     self.db["prefix_db"][prefix] = {"exafs": [], "laserd": []}
                 self.db["prefix_db"][prefix][scan_type].append(index)
         return scan_type
-    
+
     def get_record(self, entry):
         return self.append_record(entry)
 
@@ -91,7 +97,7 @@ class DataTypeCache:
     def get_file_indexes(self, current_prefix, scan_type):
         file_indexes = self.db["prefix_db"][current_prefix][scan_type]
         return file_indexes
-    
+
     def get_index_range(self, current_prefix, scan_type):
         file_indexes = self.get_file_indexes(current_prefix, scan_type)
         if len(file_indexes) == 0:
@@ -111,7 +117,7 @@ class DataTypeCache:
     def get_valid_filepaths(self):
         ans = [k for k, v in self.db["scan_type"].items() if v in ("exafs", "laserd")]
         return ans
-    
+
     def get_valid_filepaths_with_condition(self, prefix, scan_type, idx_min, idx_max):
         file_paths = []
         file_indexes = self.get_file_indexes(prefix, scan_type)
@@ -120,7 +126,7 @@ class DataTypeCache:
                 full_path = Path(self.folder) / f"{prefix}{idx:05d}"
                 file_paths.append(str(full_path))
         return file_paths
-    
-    @staticmethod 
+
+    @staticmethod
     def get_scan_type(filepath):
         return get_scan_type(filepath)
