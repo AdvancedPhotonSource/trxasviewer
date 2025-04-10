@@ -24,6 +24,9 @@ def create_argparser():
         "--disable-autoload", "-d", action="store_true", 
         help="Disable automatically load previous settings.", default=False,
     )
+    parser.add_argument(
+        "--reset-cache", action="store_true", help="Invalidate previous cache.", default=False,
+    )
 
     return parser
 
@@ -36,7 +39,8 @@ def main():
     # Run the GUI
     print(args)
     sys.exit(main_gui(rawfolder=args.rawfolder, syncbunch=args.syncbunch, 
-                      autoload=(not args.disable_autoload)))
+                      autoload=(not args.disable_autoload),
+                      reset_cache=args.reset_cache))
 
 
 if __name__ == "__main__":
