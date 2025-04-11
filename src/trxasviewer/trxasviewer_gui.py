@@ -207,7 +207,8 @@ class CacheWorker(QThread):
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
-    def __init__(self, rawfolder=None, syncbunch=None, autoload=False):
+    def __init__(self, rawfolder=None, syncbunch=None, autoload=False,
+                 reset_cache=False):
         super(TrXASViewer, self).__init__()
         self.setupUi(self)
         self.image = None
@@ -217,6 +218,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.dtype_db = None
         self.kinetics_roi = {}
         self.is_processing = False
+        self.reset_cache = reset_cache
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
         self.setup_imageview()
@@ -892,7 +894,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             folder_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
-            self.dtype_db = DataTypeCache(folder_path)
+            self.dtype_db = DataTypeCache(folder_path, reset_cache=self.reset_cache)
+            self.reset_cache = False    # only apply once
             self.proxy_model.update_cache_db(self.dtype_db)
 
             self.comboBox_fileindex_prefix.clear()
@@ -953,9 +956,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         event.accept()  # Allow closing
 
 
-def main_gui(rawfolder=None, syncbunch=None, autoload=True):
+def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False):
     app = QApplication(sys.argv)
-    window = TrXASViewer(rawfolder=rawfolder, syncbunch=syncbunch, autoload=autoload)
+    window = TrXASViewer(rawfolder=rawfolder, syncbunch=syncbunch, 
+                         autoload=autoload, reset_cache=reset_cache)
     window.show()
     sys.exit(app.exec())
 

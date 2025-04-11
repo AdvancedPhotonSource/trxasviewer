@@ -18,14 +18,20 @@ def create_argparser():
         "--rawfolder", "-r", type=str, help="Path to the raw data folder.", default=None
     )
     parser.add_argument(
-       "--syncbunch", "-s", type=int, help="Sync bunch index number.", default=None 
+        "--syncbunch", "-s", type=int, help="Sync bunch index number.", default=None
     )
     parser.add_argument(
-        "--disable-autoload", "-d", action="store_true", 
-        help="Disable automatically load previous settings.", default=False,
+        "--disable-autoload",
+        "-d",
+        action="store_true",
+        help="Disable automatically load previous settings.",
+        default=False,
     )
     parser.add_argument(
-        "--reset-cache", action="store_true", help="Invalidate previous cache.", default=False,
+        "--reset-dtype-cache",
+        action="store_true",
+        help="Invalidate previous cache.",
+        default=False,
     )
 
     return parser
@@ -38,9 +44,14 @@ def main():
 
     # Run the GUI
     print(args)
-    sys.exit(main_gui(rawfolder=args.rawfolder, syncbunch=args.syncbunch, 
-                      autoload=(not args.disable_autoload),
-                      reset_cache=args.reset_cache))
+    sys.exit(
+        main_gui(
+            rawfolder=args.rawfolder,
+            syncbunch=args.syncbunch,
+            autoload=(not args.disable_autoload),
+            reset_cache=args.reset_dtype_cache,
+        )
+    )
 
 
 if __name__ == "__main__":
