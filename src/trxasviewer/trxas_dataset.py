@@ -150,6 +150,9 @@ def get_multiples(size, pos, unit_len):
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):
+    if any(item is None for item in data_list):
+        return None
+
     num_dsets = len(data_list)
     if num_dsets == 0:
         return None
@@ -405,11 +408,13 @@ class TrXASDataset:
             if self.xas_data == None:
                 self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
-            return self.compile_results(None, self.xas_data[:, channel, :], t_axis)
+            return self.compile_results(
+                "raw", None, self.xas_data[:, channel, :], t_axis
+            )
 
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
-            return self.compile_results(None, self.xas_data_norm, t_axis)
+            return self.compile_results("normalized", None, self.xas_data_norm, t_axis)
 
         elif target == "normalized-GS":
             if self.dset_type == "LASERD":
@@ -548,7 +553,7 @@ class TrXASDataset:
         diff = diff.reshape(self.num_rows, -1)
         return data, diff, sync_index
 
-    def compile_results(self, data, diff, t_axis, kinetics=None):
+    def compile_results(self, target, data, diff, t_axis, kinetics=None):
         if self.dset_type == "EXAFS":
             x_axis = {"value": self.energy, "label": "Energy", "unit": "keV"}
         elif self.dset_type == "LASERD":
@@ -556,6 +561,7 @@ class TrXASDataset:
         # y_axis = {"value": t_axis, "label": "Time", "unit": "s"}
 
         results = {
+            "target": target,
             "data": data,
             "diff": diff,
             "t_axis": t_axis,
@@ -620,7 +626,9 @@ class TrXASDataset:
             data, diff, t_axis_raw, sync_index, **binning_kwargs
         )
         kinetics = self.extract_kenetics(b_diff, t_axis, kinetics_kwargs)
-        return self.compile_results(b_data, b_diff, t_axis, kinetics=kinetics)
+        return self.compile_results(
+            "normalized-GS", b_data, b_diff, t_axis, kinetics=kinetics
+        )
 
     def process_laserd(
         self,
@@ -658,7 +666,7 @@ class TrXASDataset:
             "long_label": "Laser Delay",
         }
         return self.compile_results(
-            b_data, b_diff, t_axis, kinetics={"laserd": kinetics}
+            "normalized-GS", b_data, b_diff, t_axis, kinetics={"laserd": kinetics}
         )
 
 
