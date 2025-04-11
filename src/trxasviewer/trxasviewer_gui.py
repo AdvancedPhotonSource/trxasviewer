@@ -256,6 +256,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.update_sync_timing_parameters
         )
         self.radioButton_sync_time.toggled.connect(self.update_sync_timing_parameters)
+        self.pushButton_select_savefname.setDisabled(True)
 
         for n in range(5):
 
@@ -814,6 +815,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def plot_results(self):
         results = self.avg_worker.get_results()
         if results is not None:
+            if results["target"] == "normalized-GS":
+                self.pushButton_select_savefname.setEnabled(True)
+            else:
+                self.pushButton_select_savefname.setEnabled(False)
             self.results = results
             self.update_sync_timing_parameters()
             data = self.results["diff"].T
