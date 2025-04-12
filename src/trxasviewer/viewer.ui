@@ -325,7 +325,7 @@
                <number>2</number>
               </property>
               <item row="0" column="3">
-               <widget class="QSpinBox" name="spinBox_orbitals_number">
+               <widget class="QSpinBox" name="spinBox_groundstate_number">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -344,7 +344,7 @@
                </widget>
               </item>
               <item row="0" column="2">
-               <widget class="QLabel" name="label_6">
+               <widget class="QLabel" name="label_groundstate_num">
                 <property name="text">
                  <string>Number of orbitals </string>
                 </property>
@@ -354,12 +354,12 @@
                <widget class="QComboBox" name="comboBox_groundstate_method">
                 <item>
                  <property name="text">
-                  <string>per_bunch</string>
+                  <string>orbital-average</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>avg_bunch</string>
+                  <string>bunch-average</string>
                  </property>
                 </item>
                </widget>
@@ -1371,20 +1371,20 @@
      <x>0</x>
      <y>0</y>
      <width>1758</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ImageView</class>
+   <class>PlotWidget</class>
    <extends>QWidget</extends>
    <header>pyqtgraph</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>PlotWidget</class>
+   <class>ImageView</class>
    <extends>QWidget</extends>
    <header>pyqtgraph</header>
    <container>1</container>

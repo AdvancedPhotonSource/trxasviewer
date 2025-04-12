@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.8.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -218,20 +218,20 @@ class Ui_MainWindow(object):
         self.gridLayout_9 = QGridLayout(self.groupBox_8)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
         self.gridLayout_9.setContentsMargins(2, 2, 2, 2)
-        self.spinBox_orbitals_number = QSpinBox(self.groupBox_8)
-        self.spinBox_orbitals_number.setObjectName(u"spinBox_orbitals_number")
-        sizePolicy4.setHeightForWidth(self.spinBox_orbitals_number.sizePolicy().hasHeightForWidth())
-        self.spinBox_orbitals_number.setSizePolicy(sizePolicy4)
-        self.spinBox_orbitals_number.setMinimum(1)
-        self.spinBox_orbitals_number.setMaximum(999999)
-        self.spinBox_orbitals_number.setValue(5)
+        self.spinBox_groundstate_number = QSpinBox(self.groupBox_8)
+        self.spinBox_groundstate_number.setObjectName(u"spinBox_groundstate_number")
+        sizePolicy4.setHeightForWidth(self.spinBox_groundstate_number.sizePolicy().hasHeightForWidth())
+        self.spinBox_groundstate_number.setSizePolicy(sizePolicy4)
+        self.spinBox_groundstate_number.setMinimum(1)
+        self.spinBox_groundstate_number.setMaximum(999999)
+        self.spinBox_groundstate_number.setValue(5)
 
-        self.gridLayout_9.addWidget(self.spinBox_orbitals_number, 0, 3, 1, 1)
+        self.gridLayout_9.addWidget(self.spinBox_groundstate_number, 0, 3, 1, 1)
 
-        self.label_6 = QLabel(self.groupBox_8)
-        self.label_6.setObjectName(u"label_6")
+        self.label_groundstate_num = QLabel(self.groupBox_8)
+        self.label_groundstate_num.setObjectName(u"label_groundstate_num")
 
-        self.gridLayout_9.addWidget(self.label_6, 0, 2, 1, 1)
+        self.gridLayout_9.addWidget(self.label_groundstate_num, 0, 2, 1, 1)
 
         self.comboBox_groundstate_method = QComboBox(self.groupBox_8)
         self.comboBox_groundstate_method.addItem("")
@@ -826,7 +826,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1758, 23))
+        self.menubar.setGeometry(QRect(0, 0, 1758, 24))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -864,9 +864,9 @@ class Ui_MainWindow(object):
         self.radioButton_sync_time.setText(QCoreApplication.translate("MainWindow", u"Time", None))
         self.doubleSpinBox_sync_time_us.setSuffix(QCoreApplication.translate("MainWindow", u" \u03bcs", None))
         self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Ground State Normalization and Binning", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Number of orbitals ", None))
-        self.comboBox_groundstate_method.setItemText(0, QCoreApplication.translate("MainWindow", u"per_bunch", None))
-        self.comboBox_groundstate_method.setItemText(1, QCoreApplication.translate("MainWindow", u"avg_bunch", None))
+        self.label_groundstate_num.setText(QCoreApplication.translate("MainWindow", u"Number of orbitals ", None))
+        self.comboBox_groundstate_method.setItemText(0, QCoreApplication.translate("MainWindow", u"orbital-average", None))
+        self.comboBox_groundstate_method.setItemText(1, QCoreApplication.translate("MainWindow", u"bunch-average", None))
 
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Method", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Number of bunches", None))
