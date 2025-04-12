@@ -198,6 +198,6 @@ def format_time(input_time):
     for scale, unit in units:
         if abs_time < scale * 1000:
             value = input_time / scale
-            return f"{value:.0f} {unit}"
+            return f"{value:.3f} {unit}"
 
     return f"{input_time:.3f} s"
