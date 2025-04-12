@@ -104,51 +104,6 @@ def process_header(header_line):
     return dset_type, shape, labels, labels_mask, payload_mask
 
 
-def fix_incomplete_dataset(payload_mask, shape, xas_data):
-    """
-    Fix incomplete dataset by removing the incomplete part. It's used when the
-    dataset is not complete, i.e., the number of bunches in the last orbital
-    is less than the number of bunches in the previous orbital. This function
-    will remove the incomplete part and return the fixed dataset and the new
-    shape.
-
-    Parameters
-    ----------
-    payload_mask : np.ndarray
-        The mask of the payload.
-    shape : tuple
-        The shape of the dataset when it's a complete dataset.
-    xas_data : np.ndarray
-        The dataset to be fixed, the incomplete part is filled with np.nan.
-
-    Returns
-    -------
-    xas_data : np.ndarray
-        The fixed dataset.
-    new_shape : tuple
-        The new shape of the dataset.
-    """
-    total_bunches = np.sum(payload_mask)
-    mask = np.zeros((shape[0], shape[1], shape[2]), dtype=bool)
-    effective_orbital = total_bunches // (shape[0] * shape[2])
-    new_shape = (shape[0], effective_orbital, shape[2])
-    mask[:, 0:effective_orbital] = True
-    xas_data = xas_data[:, mask.reshape(-1)]
-    return xas_data, new_shape
-
-
-def get_multiples(size, pos, unit_len):
-    """
-    Get the start and end positions of the multiples of unit_len that contain
-    the position pos.
-    """
-    assert 0 < pos < size, f"Sync Bunch [{pos}] is not valid."
-    start = pos - pos // unit_len * unit_len
-    end = pos + (size - pos) // unit_len * unit_len
-    pos = pos - start
-    return pos, slice(start, end)
-
-
 def safe_mean(data_list, compute_kinetics_errorbar=False):
     if any(item is None for item in data_list):
         return None
@@ -331,7 +286,6 @@ class TrXASDataset:
             "delta_t_s",
             "xas_data_norm",
         ]
-
         if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
         else:
@@ -383,17 +337,19 @@ class TrXASDataset:
             self.laserd = self.get("laserd") * 1e-9  # convert to seconds
             self.energy = 0.0
 
-        xas_part = data[:, ~labels_mask]
-        # fill the missing data with NaN, create a whole dataset
-        xas_full = np.full((self.num_rows, np.prod(shape)), np.nan)
-        xas_full[:, payload_mask] = xas_part
-        if ignore_incomplete and np.prod(shape) != np.sum(payload_mask):
-            # fix the incomplete dataset and remove all nan items
-            xas_full, shape = fix_incomplete_dataset(payload_mask, shape, xas_full)
+        # xas_part is [num_energy, channel, total_bunches]
+        xas_part = data[:, ~labels_mask].reshape(self.num_rows, shape[0], -1)
 
+        # remove the last bunch because it may be incomplete
+        xas_part = xas_part[:, :, :-1]  # (141, 3, 8668)
+        assert xas_part.shape[2] <= np.prod(shape[1:])
+        # in cases, after removing the last bunch, the number of bunches
+        # is a multiple of num_bunches. So we need to trim the shape
+        shape[2] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
         self.shape = shape
+
         self.delta_t_s = 1 / P0 / self.shape[2]
-        self.xas_data = xas_full.reshape(self.num_rows, self.shape[0], -1)
+        self.xas_data = xas_part
         self.xas_data_norm = self.normalize()
 
     def get_energy_vs_time(
@@ -434,23 +390,25 @@ class TrXASDataset:
         return (orbital, bunch)
 
     def normalize(self, repeat_rate=0):
-        acquire_time = self.get("Seconds")
+        # acquire_time = self.get("Seconds")
         xas_data = np.copy(self.xas_data)
+        # if repeat_rate > 0:
+        #     offset = xas_data / (repeat_rate * acquire_time)
+        #     xas_data = -np.log(1.0 - offset)
 
-        if repeat_rate > 0:
-            offset = xas_data / (repeat_rate * acquire_time)
-            xas_data = -np.log(1.0 - offset)
+        shape_4d = (self.num_rows, self.shape[0], self.shape[1], self.shape[2])
+        shape_3d = (self.num_rows, self.shape[0], self.shape[1] * self.shape[2])
 
-        xas_data = xas_data.reshape(
-            self.num_rows, *self.shape
-        )  # (rows, channel, orbital, bunch)
-        ortial_mean_ch0 = np.nanmean(xas_data[:, 0], axis=1)  # rows x bunch
-        xas_data[:, 1:] /= ortial_mean_ch0[
-            :, np.newaxis, np.newaxis, :
-        ]  # normalize other channels
-        norm_data = xas_data.reshape(self.num_rows, self.shape[0], -1)
-        # average over channels 1 and 2
-        norm_data = np.mean(norm_data[:, 1:3], axis=(1,))
+        xas_3d = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
+        xas_3d[:, :, 0 : xas_data.shape[2]] = xas_data
+        xas_4d = xas_3d.reshape(shape_4d)
+        orbital_mean_ch0 = np.nanmean(xas_4d[:, 0], axis=1)  # rows x bunch
+
+        # it's (num_rows, total_bunches)
+        norm_data = np.mean(xas_data[:, 1:3], axis=(1,))
+        cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
+        norm_data /= orbital_mean_ch0[:, cycle_indices]
+
         return norm_data.astype(np.float32)
 
     @staticmethod
@@ -519,38 +477,35 @@ class TrXASDataset:
         self,
         sync_type="time",
         sync_value=1820,
-        pre_avg_orbitals=5,
-        do_perbunch="per_bunch",
+        gs_method="per_bunch",
+        gs_value=5,
     ):
-        # average over the channels 1 and channel 2
-        data = self.xas_data_norm  # num_energys * (orbitals * bunches)
-        num_orbitals, num_bunches = self.shape[1:3]
+        data = self.xas_data_norm  # (num_energys, total_bunches)
+        num_bunches = self.shape[2]
 
         if sync_type == "time":
             sync_index = int(sync_value / self.delta_t_s)
         else:
             sync_index = sync_value
 
-        sync_index, slice_pre = get_multiples(
-            num_bunches * num_orbitals, sync_index, num_bunches
-        )
-        data = data[:, slice_pre]  # num_energys * -1
-        data = data.reshape(self.num_rows, -1, num_bunches)
+        if gs_method == "orbital-average":
+            avg_slice = slice(sync_index - gs_value * num_bunches, sync_index)
+            assert avg_slice.start >= 0, "ground state start < 0"
+            avg_data = data[:, avg_slice].reshape(-1, gs_value, num_bunches)
+            avg_data = np.mean(avg_data, axis=1)  # num_energys * num_bunches
+            offset = (-1 * sync_index) % num_bunches
+            cycle_indices = (np.arange(data.shape[1]) + offset) % num_bunches
+            assert cycle_indices[sync_index] == 0, "sync_index not aligned"
+            diff = data - avg_data[:, cycle_indices]
 
-        preavg_orbit_idx = sync_index // num_bunches
-        preavg_slice = slice(preavg_orbit_idx - pre_avg_orbitals, preavg_orbit_idx)
-        assert preavg_slice.start >= 0, "ground state start < 0"
-        # average along orbitals, num_energys * bunches
-        preavg = np.mean(data[:, preavg_slice], axis=(1,))
-
-        if do_perbunch == "per_bunch":
-            diff = data - preavg[:, np.newaxis, :]
-        elif do_perbunch == "avg_bunch":
-            diff = data - np.mean(preavg, axis=1)[:, np.newaxis, np.newaxis]
+        elif gs_method == "bunch-average":
+            avg_slice = slice(sync_index - gs_value, sync_index)
+            assert avg_slice.start >= 0, "ground state start < 0"
+            avg_data = np.mean(data[:, avg_slice], axis=1)
+            diff = data - avg_data.reshape(-1, 1)
         else:
-            raise ValueError("Unknown do_perbunch value %s method")
-        data = data.reshape(self.num_rows, -1)
-        diff = diff.reshape(self.num_rows, -1)
+            raise ValueError(f"Unknown gs_method: {gs_method}")
+
         return data, diff, sync_index
 
     def compile_results(self, target, data, diff, t_axis, kinetics=None):
