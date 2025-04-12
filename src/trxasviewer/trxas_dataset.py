@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import h5py
+import traceback
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
@@ -237,11 +238,10 @@ def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(
-            fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache
-        )
+        return TrXASDataset(fname,  load_cache=load_cache)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
+        traceback.print_exc()
         return None
 
 
@@ -345,7 +345,7 @@ class TrXASDataset:
         assert xas_part.shape[2] <= np.prod(shape[1:])
         # in cases, after removing the last bunch, the number of bunches
         # is a multiple of num_bunches. So we need to trim the shape
-        shape[2] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
+        # shape[1] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
         self.shape = shape
 
         self.delta_t_s = 1 / P0 / self.shape[2]
@@ -406,8 +406,8 @@ class TrXASDataset:
 
         # it's (num_rows, total_bunches)
         norm_data = np.mean(xas_data[:, 1:3], axis=(1,))
-        cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
-        norm_data /= orbital_mean_ch0[:, cycle_indices]
+        # cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
+        # norm_data /= orbital_mean_ch0[:, cycle_indices]
 
         return norm_data.astype(np.float32)
 
@@ -502,6 +502,7 @@ class TrXASDataset:
             avg_slice = slice(sync_index - gs_value, sync_index)
             assert avg_slice.start >= 0, "ground state start < 0"
             avg_data = np.mean(data[:, avg_slice], axis=1)
+            # print(data.shape, avg_data.shape, data[:, avg_slice].shape)
             diff = data - avg_data.reshape(-1, 1)
         else:
             raise ValueError(f"Unknown gs_method: {gs_method}")

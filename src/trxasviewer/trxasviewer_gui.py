@@ -426,7 +426,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def show_status(self, msg, level=logging.INFO, timeout=5000):
         logger.error(level, msg)
         self.statusBar().showMessage(msg, timeout)
-        show_error_dialog(self, "Error", msg)
+        # show_error_dialog(self, "Error", msg)
 
     def update_kinetics_signal(self):
         for n in range(1, 5):
