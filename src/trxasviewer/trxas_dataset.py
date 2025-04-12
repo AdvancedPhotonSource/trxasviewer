@@ -97,7 +97,7 @@ def process_header(header_line):
     c_max, o_max, b_max = record.max(axis=0)
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = (c_max + 1, o_max + 1, b_max + 1)
+    shape = [c_max + 1, o_max + 1, b_max + 1]
     index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
     payload_mask = np.zeros(np.prod(shape), dtype=bool)
     payload_mask[index] = True
