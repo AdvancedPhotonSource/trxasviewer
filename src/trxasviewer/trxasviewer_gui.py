@@ -257,6 +257,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         )
         self.radioButton_sync_time.toggled.connect(self.update_sync_timing_parameters)
         self.pushButton_select_savefname.setDisabled(True)
+        self.comboBox_groundstate_method.currentIndexChanged.connect(self.update_groundstate_label)
 
         for n in range(5):
 
@@ -401,6 +402,13 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             of "Bin Bunches" defined below.
             """
         )
+    
+    def update_groundstate_label(self):
+        text = self.comboBox_groundstate_method.currentText() 
+        if text == "orbital-average":
+            self.label_groundstate_num.setText("Number of orbitals:")
+        elif text == "bunch-average":
+            self.label_groundstate_num.setText("Number of bunches:")
 
     def reload_rawfolder(self):
         # on certain linux machine, it failed to show newly generated files
@@ -771,8 +779,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         norm_kwargs = {
             "sync_type": sync_type,
             "sync_value": sync_value,
-            "do_perbunch": self.comboBox_groundstate_method.currentText(),
-            "pre_avg_orbitals": self.spinBox_orbitals_number.value(),
+            "gs_method": self.comboBox_groundstate_method.currentText(),
+            "gs_value": self.spinBox_groundstate_number.value(),
         }
         return norm_kwargs
 
