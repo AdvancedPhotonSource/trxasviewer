@@ -40,7 +40,7 @@ from .trxas_dataset import (
     create_trxas_cache_from_flist,
 )
 from .utilities import format_time
-from .widgets import VlockedRectROI, SaveOptionsDialog
+from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
 from .dtype_cache import DataTypeCache
 import logging
 from . import __version__
@@ -207,8 +207,9 @@ class CacheWorker(QThread):
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
-    def __init__(self, rawfolder=None, syncbunch=None, autoload=False,
-                 reset_cache=False):
+    def __init__(
+        self, rawfolder=None, syncbunch=None, autoload=False, reset_cache=False
+    ):
         super(TrXASViewer, self).__init__()
         self.setupUi(self)
         self.image = None
@@ -257,7 +258,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         )
         self.radioButton_sync_time.toggled.connect(self.update_sync_timing_parameters)
         self.pushButton_select_savefname.setDisabled(True)
-        self.comboBox_groundstate_method.currentIndexChanged.connect(self.update_groundstate_label)
+        self.comboBox_groundstate_method.currentIndexChanged.connect(
+            self.update_groundstate_label
+        )
 
         for n in range(5):
 
@@ -402,9 +405,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             of "Bin Bunches" defined below.
             """
         )
-    
+
     def update_groundstate_label(self):
-        text = self.comboBox_groundstate_method.currentText() 
+        text = self.comboBox_groundstate_method.currentText()
         if text == "orbital-average":
             self.label_groundstate_num.setText("Number of orbitals:")
         elif text == "bunch-average":
@@ -421,8 +424,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.proxy_model.invalidate()
 
     def show_status(self, msg, level=logging.INFO, timeout=5000):
-        logger.log(level, msg)
+        logger.error(level, msg)
         self.statusBar().showMessage(msg, timeout)
+        show_error_dialog(self, "Error", msg)
 
     def update_kinetics_signal(self):
         for n in range(1, 5):
@@ -475,8 +479,6 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.process_selection(None, None)
         elif self.radioButton_selection_by_index.isChecked():
             self.process_range()
-        else:
-            self.show_message("No selection method selected", logging.ERROR)
 
     def process_selection(self, selected, deselected):
         if not self.radioButton_selection_by_mouse.isChecked():
@@ -908,7 +910,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if folder_path:
             self.lineEdit_rawfolder.setText(folder_path)
             self.dtype_db = DataTypeCache(folder_path, reset_cache=self.reset_cache)
-            self.reset_cache = False    # only apply once
+            self.reset_cache = False  # only apply once
             self.proxy_model.update_cache_db(self.dtype_db)
 
             self.comboBox_fileindex_prefix.clear()
@@ -971,8 +973,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
 def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False):
     app = QApplication(sys.argv)
-    window = TrXASViewer(rawfolder=rawfolder, syncbunch=syncbunch, 
-                         autoload=autoload, reset_cache=reset_cache)
+    window = TrXASViewer(
+        rawfolder=rawfolder,
+        syncbunch=syncbunch,
+        autoload=autoload,
+        reset_cache=reset_cache,
+    )
     window.show()
     sys.exit(app.exec())
 

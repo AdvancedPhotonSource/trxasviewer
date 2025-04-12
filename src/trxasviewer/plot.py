@@ -242,11 +242,11 @@ def plot_kinetics(save_name, data_list):
                 data[1],
                 yerr=data[2],
                 fmt=marker + "-",
-                capsize=3,
+                capsize=1,
                 label=label,
                 color=color,
                 markerfacecolor="none",
-                markersize=3,
+                markersize=1,
             )
         else:
             ax.plot(data[0], data[1], marker + "-", label=label, color=color)

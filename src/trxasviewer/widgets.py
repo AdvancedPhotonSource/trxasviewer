@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QCheckBox,
     QFileDialog,
+    QMessageBox,
 )
 from PySide6.QtCore import Slot, QPointF
 import pyqtgraph as pg
@@ -211,3 +212,12 @@ class VlockedRectROI(pg.RectROI):
         if modified_size.x() < self.MIN_WIDTH:
             modified_size.setX(self.MIN_WIDTH)
         super().setSize(modified_size, update=update, finish=finish)
+
+
+def show_error_dialog(parent, title="Error", message="Something went wrong."):
+    msg_box = QMessageBox(parent)
+    msg_box.setIcon(QMessageBox.Critical)
+    msg_box.setWindowTitle(title)
+    msg_box.setText(message)
+    msg_box.setStandardButtons(QMessageBox.Ok)
+    msg_box.exec()
