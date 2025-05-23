@@ -1346,15 +1346,29 @@
          <string>Kinetics</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_7">
-         <item row="0" column="0" colspan="2">
-          <widget class="PlotWidget" name="pg_hdl_kinetics" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>2</horstretch>
-             <verstretch>1</verstretch>
-            </sizepolicy>
+         <item row="0" column="0">
+          <widget class="QSplitter" name="splitter_3">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
-           <layout class="QGridLayout" name="gridLayout_17"/>
+           <widget class="PlotWidget" name="pg_hdl_kinetics" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>2</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_17"/>
+           </widget>
+           <widget class="PlotWidget" name="pg_hdl_kinetics_err" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>1</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_20"/>
+           </widget>
           </widget>
          </item>
         </layout>
@@ -1371,7 +1385,7 @@
      <x>0</x>
      <y>0</y>
      <width>1758</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>

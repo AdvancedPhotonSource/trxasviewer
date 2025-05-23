@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.2
+## Created by: Qt User Interface Compiler version 6.8.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -803,7 +803,10 @@ class Ui_MainWindow(object):
         self.groupBox_11.setSizePolicy(sizePolicy18)
         self.gridLayout_7 = QGridLayout(self.groupBox_11)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.pg_hdl_kinetics = PlotWidget(self.groupBox_11)
+        self.splitter_3 = QSplitter(self.groupBox_11)
+        self.splitter_3.setObjectName(u"splitter_3")
+        self.splitter_3.setOrientation(Qt.Orientation.Horizontal)
+        self.pg_hdl_kinetics = PlotWidget(self.splitter_3)
         self.pg_hdl_kinetics.setObjectName(u"pg_hdl_kinetics")
         sizePolicy19 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy19.setHorizontalStretch(2)
@@ -812,8 +815,19 @@ class Ui_MainWindow(object):
         self.pg_hdl_kinetics.setSizePolicy(sizePolicy19)
         self.gridLayout_17 = QGridLayout(self.pg_hdl_kinetics)
         self.gridLayout_17.setObjectName(u"gridLayout_17")
+        self.splitter_3.addWidget(self.pg_hdl_kinetics)
+        self.pg_hdl_kinetics_err = PlotWidget(self.splitter_3)
+        self.pg_hdl_kinetics_err.setObjectName(u"pg_hdl_kinetics_err")
+        sizePolicy20 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy20.setHorizontalStretch(1)
+        sizePolicy20.setVerticalStretch(1)
+        sizePolicy20.setHeightForWidth(self.pg_hdl_kinetics_err.sizePolicy().hasHeightForWidth())
+        self.pg_hdl_kinetics_err.setSizePolicy(sizePolicy20)
+        self.gridLayout_20 = QGridLayout(self.pg_hdl_kinetics_err)
+        self.gridLayout_20.setObjectName(u"gridLayout_20")
+        self.splitter_3.addWidget(self.pg_hdl_kinetics_err)
 
-        self.gridLayout_7.addWidget(self.pg_hdl_kinetics, 0, 0, 1, 2)
+        self.gridLayout_7.addWidget(self.splitter_3, 0, 0, 1, 1)
 
         self.splitter.addWidget(self.groupBox_11)
         self.splitter_2.addWidget(self.splitter)
@@ -826,7 +840,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1758, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1758, 23))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
