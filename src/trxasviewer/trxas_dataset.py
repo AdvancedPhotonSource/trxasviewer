@@ -106,6 +106,9 @@ def process_header(header_line):
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):
+    """
+    Compute the mean of a list of datasets, handling None values and computing error bars if needed.
+    """
     if any(item is None for item in data_list):
         return None
 
@@ -126,14 +129,25 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
         data_full[i, :valid_rows, :valid_cols] = d
 
     data_avg = np.nanmean(data_full, axis=0)
-    if num_dsets > 1 and compute_kinetics_errorbar:
-        assert data_avg.ndim == 2
+    if not compute_kinetics_errorbar:
+        return data_avg
+    else:
+        if num_dsets < 2:
+            return data_avg, None
         # get the kinetics profile row and compute the error bar
         # using the standard error of the mean as the error bar
-        error = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
-        data_avg = np.vstack((data_avg[0], data_avg[1], error))
+        errorbar = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
+        data_avg = np.vstack((data_avg[0], data_avg[1], errorbar))
 
-    return data_avg
+        # compute errorbar as function of num_dsets
+        data_err_num = []
+        for n in range(2, num_dsets):
+            # compute the normalized error bar and get the mean value
+            error_t = np.nanstd(data_full[:n, 1], axis=0) / np.sqrt(n)
+            norm_error = error_t / np.abs(np.nanmean(data_full[:n, 1], axis=0))
+            data_err_num.append((n, np.median(norm_error)))
+        data_err_num = np.array(data_err_num)
+        return data_avg, data_err_num
 
 
 class TrXASDatasetManager:
@@ -217,8 +231,13 @@ class TrXASDatasetManager:
         good_results["data"] = safe_mean(data_list)
         good_results["diff"] = safe_mean(diff_list)
         for key in kinetics_dict.keys():
-            tmp = safe_mean(kinetics_dict[key], compute_kinetics_errorbar=True)
-            good_results["kinetics"][key]["profile"] = tmp
+            profile, err_profile = safe_mean(
+                kinetics_dict[key], compute_kinetics_errorbar=True
+            )
+            good_results["kinetics"][key]["profile"] = {
+                "main": profile,
+                "error": err_profile,
+            }
 
         good_results.update(
             {
@@ -238,7 +257,7 @@ def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname,  load_cache=load_cache)
+        return TrXASDataset(fname, load_cache=load_cache)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()

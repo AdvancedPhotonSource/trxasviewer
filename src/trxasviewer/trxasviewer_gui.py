@@ -48,6 +48,7 @@ from . import __version__
 CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
 CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
 PGCOLORS = ("r", "b", "k", "m", "g", "m", "y")
+PGSYMBOLS = ("o", "s", "t", "d", "+", "*", "x", "p", "h")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -871,10 +872,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         """Plots the kinetics data."""
         self.pg_hdl_kinetics.clear()
         self.pg_hdl_kinetics.addLegend()
+        self.pg_hdl_kinetics_err.clear()
+        self.pg_hdl_kinetics_err.addLegend()
         if not self.results["kinetics"]:
             return
         for idx, (key, value) in enumerate(self.results["kinetics"].items()):
-            data = value["profile"]
+            data = value["profile"]["main"]
             pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
             x, y = data[0], data[1]
             # curve + Scatter + error (if present)
@@ -896,9 +899,21 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.pg_hdl_kinetics.addItem(
                     pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
                 )
+            err_profile = value["profile"]["error"]
+            if err_profile is not None:
+                self.pg_hdl_kinetics_err.plot(
+                    err_profile[:, 0],
+                    err_profile[:, 1],
+                    pen=pen,
+                    symbol=PGSYMBOLS[idx % len(PGSYMBOLS)],
+                    symbolPen=pen,
+                    name=key,
+                )
 
         self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
         self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
+        self.pg_hdl_kinetics_err.setLabel("left", "Normalized Uncertainty")
+        self.pg_hdl_kinetics_err.setLabel("bottom", "Number of scans")
 
     def update_progress_bar(self, value):
         """Updates the progress bar."""
