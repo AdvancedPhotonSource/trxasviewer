@@ -87,7 +87,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         super().closeEvent(event)
 
 
-def main():
+def main_modeling_gui(args, **kwargs):
     app = QApplication(sys.argv)
     window = TrXASModeler()
     window.show()
@@ -95,4 +95,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_modeling_gui()

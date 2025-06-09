@@ -13,6 +13,7 @@ except PackageNotFoundError:
     __version__ = "0.1.0"  # Fallback if package is not installed
 
 from .trxasviewer_gui import main_gui
+from .trxas_modeling import main_modeling_gui
 from .trxas_dataset import TrXASDataset
 
-__all__ = ["main_gui", "TrXASDataset"]
+__all__ = ["main_gui", "TrXASDataset", "main_modeling_gui"]
