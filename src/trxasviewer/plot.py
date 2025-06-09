@@ -235,12 +235,12 @@ def plot_kinetics(save_name, data_list):
         label = val["long_label"]
         marker = next(markers)
         color = next(colors)
-        t_axis, t_label = convert_time_array_human_readable(data[0], "Time")
-        if data.shape[0] == 3:
+        t_axis, t_label = convert_time_array_human_readable(data["main"][0], "Time")
+        if data["main"].shape[0] == 3:
             ax.errorbar(
                 t_axis,
-                data[1],
-                yerr=data[2],
+                data["main"][1],
+                yerr=data["main"][2],
                 fmt=marker + "-",
                 capsize=1,
                 label=label,
@@ -249,7 +249,7 @@ def plot_kinetics(save_name, data_list):
                 markersize=1,
             )
         else:
-            ax.plot(data[0], data[1], marker + "-", label=label, color=color)
+            ax.plot(data["main"][0], data["main"][1], marker + "-", label=label, color=color)
 
     ax.set_xlabel(t_label)
     ax.set_ylabel("Intensity (a.u.)")

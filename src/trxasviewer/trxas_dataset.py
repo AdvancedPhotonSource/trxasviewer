@@ -459,7 +459,7 @@ class TrXASDataset:
         for key, value in results["kinetics"].items():
             np.savetxt(
                 origin_folder / f"kinetics_{key}.txt",
-                value["profile"].T,
+                value["profile"]["main"].T,
                 fmt="%.7e",
                 delimiter=",",
                 header="Delay(s),Intensity,Error",
