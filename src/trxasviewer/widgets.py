@@ -1,18 +1,20 @@
 import os
+from datetime import datetime
+
+import pyqtgraph as pg
+from PySide6.QtCore import QAbstractTableModel, QPointF, Qt, Slot, QModelIndex
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QPushButton,
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
-    QHBoxLayout,
-    QCheckBox,
-    QFileDialog,
     QMessageBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Slot, QPointF
-import pyqtgraph as pg
 
 
 class SaveOptionsDialog(QDialog):
@@ -221,3 +223,44 @@ def show_error_dialog(parent, title="Error", message="Something went wrong."):
     msg_box.setText(message)
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec()
+
+
+class TrXASResultTableModel(QAbstractTableModel):
+    def __init__(self):
+        super().__init__()
+        self._data = []  # list of dicts or tuples
+
+    def rowCount(self, parent=None):
+        return len(self._data)
+
+    def columnCount(self, parent=None):
+        return 2  # label and created time
+
+    def add_data(self, data_dict):
+        # Allow passing either a single dict or a list of dicts
+        if isinstance(data_dict, dict):
+            data_dict = [data_dict]
+        elif not isinstance(data_dict, list):
+            raise TypeError("Expected a dict or list of dicts")
+
+        start_row = len(self._data)
+        end_row = start_row + len(data_dict) - 1
+
+        self.beginInsertRows(QModelIndex(), start_row, end_row)
+        self._data.extend(data_dict)
+        self.endInsertRows()
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            res_dset = self._data[index.row()]
+            col = index.column()
+            if col == 0:
+                return res_dset["label"]
+            elif col == 1:
+                return res_dset["created"]
+        return None
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return ["Label", "Created"][section]

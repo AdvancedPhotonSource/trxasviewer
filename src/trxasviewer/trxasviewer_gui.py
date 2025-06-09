@@ -42,6 +42,7 @@ from .trxas_dataset import (
 from .utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
 from .dtype_cache import DataTypeCache
+from .trxas_modeling import TrXASModeler
 import logging
 from . import __version__
 
@@ -221,6 +222,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.kinetics_roi = {}
         self.is_processing = False
         self.reset_cache = reset_cache
+        self.modeler = None
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
         self.setup_imageview()
@@ -262,6 +264,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.comboBox_groundstate_method.currentIndexChanged.connect(
             self.update_groundstate_label
         )
+        self.pushButton_model.clicked.connect(self.send_result_to_modeler)
 
         for n in range(5):
 
@@ -297,6 +300,25 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.timer.setInterval(1000)  # 1000 ms = 1 second
         self.timer.timeout.connect(self.refresh_filesystem)
         self.timer.start()
+
+    def send_result_to_modeler(self):
+        # Create the modeler window only if it doesn't exist
+        if self.modeler is None:
+            self.modeler = TrXASModeler()
+            # Connect destroyed signal to reset the reference when the window is closed
+            self.modeler.closed.connect(self.on_modeler_closed)
+            self.modeler.show()
+        else:
+            self.modeler.raise_()
+            self.modeler.activateWindow()
+
+        # Send results if available
+        results = self.avg_worker.get_results()
+        if results is not None:
+            self.modeler.model.add_data(results)
+
+    def on_modeler_closed(self):
+        self.modeler = None
 
     def save_load_settings(self, mode="save"):
         keys = [
