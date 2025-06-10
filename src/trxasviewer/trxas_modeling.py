@@ -8,7 +8,11 @@ from pathlib import Path
 import traceback
 from multiprocessing import Process
 from .generated_modeling_ui import Ui_MainWindow
-from .trxas_graph import generate_graph_bytes
+from .trxas_graph import (
+    draw_decay_graph_with_top_nodes,
+    find_initial_states,
+    verify_decay_paths,
+)
 from PySide6.QtCore import (
     QDir,
     QSortFilterProxyModel,
@@ -22,6 +26,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtWidgets import (
+    QSizePolicy,
     QComboBox,
     QDoubleSpinBox,
     QLineEdit,
@@ -47,6 +52,7 @@ from .widgets import (
     SaveOptionsDialog,
     show_error_dialog,
     TrXASResultTableModel,
+    ParameterTableModel,
 )
 
 from PySide6.QtGui import QPixmap
@@ -130,6 +136,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
         self.spinBox_nstates.valueChanged.connect(self.change_model)
+        self.fit_parameter_model = None
 
     def closeEvent(self, event):
         self.closed.emit()  # Let the main window know we closed
@@ -186,14 +193,63 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
         adj_matrix = np.zeros((max_idx + 1, max_idx + 1))
         adj_matrix[0:max_idx, 0:max_idx] = state_mat[0:max_idx, 0:max_idx]
+        # append ground state connections
         adj_matrix[-1][0:max_idx] = state_mat[-1][0:max_idx]
-        graph_bytes = generate_graph_bytes(adj_matrix)
+
+        self.build_parameter(adj_matrix)
+
+        # visualize the graph
+        graph_bytes = draw_decay_graph_with_top_nodes(adj_matrix, output="bytes")
         # Convert image bytes to QPixmap
         pixmap = QPixmap()
         pixmap.loadFromData(QByteArray(graph_bytes), "PNG")
         # QLabel to display image
         self.label_graph.setPixmap(pixmap)
         self.label_graph.setScaledContents(True)
+        # This will scale the pixmap to fit the label size
+        # Set size policy to maintain aspect ratio
+        self.label_graph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def build_parameter(self, adj_matrix):
+        print(adj_matrix)
+        adj_matrix[-1, -1] = False
+        initial_states = find_initial_states(adj_matrix)
+        initial_states_idx = [int(s[1:]) for s in initial_states]
+        print("initial states", initial_states)
+
+        num_params = np.sum(adj_matrix).astype(np.int32)
+        print("num_params", num_params)
+        idx_matrix = np.zeros_like(adj_matrix, dtype=np.int32) - 1
+        index = np.arange(num_params)
+        idx_matrix[np.where(adj_matrix == True)] = index
+        constraints = []
+
+        def create_dynamic_eq_constraint(indices):
+            return {"type": "eq", "fun": lambda x: np.sum(x[indices])}
+
+        for n in range(adj_matrix.shape[1]):
+            column = idx_matrix[:, n]
+            values = column[column >= 0]
+            if len(values) >= 1:
+                cs = create_dynamic_eq_constraint(values)
+                constraints.append(cs)
+                print("constraint", values, cs)
+
+        data = []
+        vh = np.where(adj_matrix == True)
+        for i in range(vh[0].shape[0]):
+            i, j = vh[0][i] + 1, vh[1][i] + 1
+            if i == adj_matrix.shape[0]:
+                i = "g"
+            data.append([f"t_{j}{i}", "ps", 0.0, 100, 50])
+
+        headers = ["Name", "Unit", "Min", "Max", "Fit Value"]
+        # Data structure: [name, unit, min, max, fit_value]
+
+        self.fit_parameter_model = ParameterTableModel(data, headers)
+        self.tableView_parameters.setModel(self.fit_parameter_model)
+        header = self.tableView_parameters.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
 
     def load_dset(self):
         # f, _ = QFileDialog.getOpenFileName(
