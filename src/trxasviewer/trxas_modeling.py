@@ -136,7 +136,8 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
         self.spinBox_nstates.valueChanged.connect(self.change_model)
-        self.fit_parameter_model = None
+        self.fit_param_model = None
+        self.fit_param = None
 
     def closeEvent(self, event):
         self.closed.emit()  # Let the main window know we closed
@@ -211,17 +212,18 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.label_graph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def build_parameter(self, adj_matrix):
-        print(adj_matrix)
+        num_states = adj_matrix.shape[0]
         adj_matrix[-1, -1] = False
         initial_states = find_initial_states(adj_matrix)
-        initial_states_idx = [int(s[1:]) for s in initial_states]
-        print("initial states", initial_states)
+        initial_value = np.zeros(num_states)
+        initial_states_idx = [int(s[1:]) - 1 for s in initial_states]
+        initial_value[initial_states_idx] = 1.0
 
         num_params = np.sum(adj_matrix).astype(np.int32)
-        print("num_params", num_params)
         idx_matrix = np.zeros_like(adj_matrix, dtype=np.int32) - 1
         index = np.arange(num_params)
-        idx_matrix[np.where(adj_matrix == True)] = index
+        nz_coord = np.nonzero(adj_matrix == True)
+        idx_matrix[nz_coord] = index
         constraints = []
 
         def create_dynamic_eq_constraint(indices):
@@ -233,21 +235,23 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             if len(values) >= 1:
                 cs = create_dynamic_eq_constraint(values)
                 constraints.append(cs)
-                print("constraint", values, cs)
+            if len(values) == 1:
+                raise ValueError(f"No parent states found for state S{n+1}")
 
-        data = []
-        vh = np.where(adj_matrix == True)
-        for i in range(vh[0].shape[0]):
-            i, j = vh[0][i] + 1, vh[1][i] + 1
+        self.fit_param = []
+        for i in range(nz_coord[0].shape[0]):
+            i, j = nz_coord[0][i] + 1, nz_coord[1][i] + 1
             if i == adj_matrix.shape[0]:
                 i = "g"
-            data.append([f"t_{j}{i}", "ps", 0.0, 100, 50])
+            if i == j:
+                self.fit_param.append([f"t_{j}{i}", "us", -10, 0.0, -5])
+            else:
+                self.fit_param.append([f"t_{j}{i}", "us", 0, 10.0, 5])
 
         headers = ["Name", "Unit", "Min", "Max", "Fit Value"]
         # Data structure: [name, unit, min, max, fit_value]
-
-        self.fit_parameter_model = ParameterTableModel(data, headers)
-        self.tableView_parameters.setModel(self.fit_parameter_model)
+        self.fit_param_model = ParameterTableModel(self.fit_param, headers)
+        self.tableView_parameters.setModel(self.fit_param_model)
         header = self.tableView_parameters.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
 
