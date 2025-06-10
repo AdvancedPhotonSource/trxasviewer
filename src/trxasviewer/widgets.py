@@ -243,16 +243,11 @@ class TrXASResultTableModel(QAbstractTableModel):
 
     def add_data(self, data_dict):
         # Allow passing either a single dict or a list of dicts
-        if isinstance(data_dict, dict):
-            data_dict = [data_dict]
-        elif not isinstance(data_dict, list):
-            raise TypeError("Expected a dict or list of dicts")
-
         start_row = len(self._data)
-        end_row = start_row + len(data_dict) - 1
+        end_row = start_row + 1 - 1
 
         self.beginInsertRows(QModelIndex(), start_row, end_row)
-        self._data.extend(data_dict)
+        self._data.append(data_dict)
         self.endInsertRows()
 
     def data(self, index, role):
@@ -260,9 +255,9 @@ class TrXASResultTableModel(QAbstractTableModel):
             res_dset = self._data[index.row()]
             col = index.column()
             if col == 0:
-                return res_dset["label"]
+                return res_dset.data["label"]
             elif col == 1:
-                return res_dset["created"]
+                return res_dset.data["created"]
         return None
 
     def headerData(self, section, orientation, role):

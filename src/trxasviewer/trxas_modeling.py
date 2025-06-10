@@ -79,40 +79,40 @@ pg.setConfigOptions(imageAxisOrder="row-major")
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMainWindow
+from .trxas_result import TrXASResult
 
 
-def convert_npz_to_dict(npz_filename):
+def load_trxas_result(npz_filename):
     npz_file = np.load(npz_filename, allow_pickle=True)
     raw = dict(npz_file)
-    return {
+    data = {
         k: (v.item() if isinstance(v, np.ndarray) and v.shape == () else v)
         for k, v in raw.items()
     }
+    return TrXASResult(data)
 
 
 def init_plots(graph_widget):
-    img_hdl = []
-    for _ in range(3):
+    img_hdl = {}
+    labels = [
+        "diff",
+        "svd",
+        "residual",
+        "svd_spectrum",
+        "concentration",
+        "energy_response",
+    ]
+    for n in range(3):
         view = graph_widget.addViewBox(lockAspect=True)
         img = pg.ImageItem()
         view.addItem(img)
-        img_hdl.append(img)
+        img_hdl[labels[n]] = img
 
     graph_widget.nextRow()
     # Second row: 3 plot widgets
-    for _ in range(3):
+    for n in range(3):
         plot = graph_widget.addPlot()
-        img_hdl.append(plot)
-
-    # Example: set image and line plot
-    dummy_img = np.random.rand(100, 100)
-    for img in img_hdl[0:3]:
-        img.setImage(dummy_img)
-
-    for plot in img_hdl[3:]:
-        x = np.linspace(0, 10, 100)
-        y = np.sin(x)
-        plot.plot(x, y)
+        img_hdl[labels[n + 3]] = plot
     return img_hdl
 
 
@@ -141,23 +141,31 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         super().closeEvent(event)
 
     def change_model(self):
+        """
+        Updates the state checkboxes based on the selected model and number of states.
+        """
         MAX_STATES = 6  # including ground state
         num_states = self.spinBox_nstates.value()
         model = self.comboBox_model.currentText()
         state_mat = self.gen_state_mat(num_states, model)
+
         for n in range(1, MAX_STATES + 1):
             for m in range(1, min(n + 1, MAX_STATES)):
                 widget = getattr(self, f"checkBox_m{n}{m}")
-                if n > num_states and n != MAX_STATES:
-                    widget.setChecked(False)
-                    widget.setEnabled(False)
+
+                # Determine the state of the widget
+                is_enabled = n <= num_states or n == MAX_STATES
+                is_checked = (n == m)
+
+                # Update widget based on the model
+                if model in ("parallel", "sequential") and n != m:
+                    flag = state_mat[n - 1, m - 1]
+                    widget.setChecked(flag)
+                    widget.setEnabled(is_enabled and flag)
                 else:
-                    if model in ("parallel", "sequential"):
-                        flag = state_mat[n - 1, m - 1]
-                        widget.setChecked(flag)
-                        widget.setEnabled(flag)
-                    else:
-                        widget.setEnabled(True)
+                    # widget.setEnabled(is_enabled and not is_checked)
+                    widget.setChecked(is_checked)
+
         self.draw_graph()
 
     def gen_state_mat(self, num_states, model="parallel"):
@@ -261,8 +269,19 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         # )
         f = "/Users/mqichu/Documents/trxas_data/kinetics_results/result_setup-full-00242-00258/results.npz"
         if f:
-            data = convert_npz_to_dict(f)
-            self.model.add_data(data)
+            dset = load_trxas_result(f)
+            self.model.add_data(dset)
+            self.curr_dset = dset
+            self.update_plot()
+
+    def update_plot(self):
+        self.img_hdl["diff"].setImage(self.curr_dset.diff)
+        self.img_hdl["diff"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
+
+        pen = pg.mkPen(color="blue", width=5)
+        self.img_hdl["svd_spectrum"].plot(self.curr_dset.get_svd_spectrum(), pen=pen,
+                                          symbol="o")
+
 
     def plot_data(self, index):
         pass
