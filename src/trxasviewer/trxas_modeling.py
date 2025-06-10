@@ -1,66 +1,63 @@
+import json
+import logging
 import os
 import sys
 import time
-import numpy as np
-import json
-import pyqtgraph as pg
-from pathlib import Path
 import traceback
 from multiprocessing import Process
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pyqtgraph as pg
+from PySide6.QtCore import (
+    QBuffer,
+    QByteArray,
+    QDir,
+    QIODevice,
+    QObject,
+    QSortFilterProxyModel,
+    Qt,
+    QThread,
+    QTimer,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFileSystemModel,
+    QHeaderView,
+    QLineEdit,
+    QMainWindow,
+    QRadioButton,
+    QSizePolicy,
+    QSpinBox,
+    QTabWidget,
+)
+
+from . import __version__
+from .dtype_cache import DataTypeCache
 from .generated_modeling_ui import Ui_MainWindow
+from .trxas_dataset import TrXASDatasetManager, create_trxas_cache_from_flist
 from .trxas_graph import (
     draw_decay_graph_with_top_nodes,
     find_initial_states,
     verify_decay_paths,
 )
-from PySide6.QtCore import (
-    QDir,
-    QSortFilterProxyModel,
-    Qt,
-    Signal,
-    Slot,
-    QObject,
-    QThread,
-    QTimer,
-    QByteArray,
-)
-
-from PySide6.QtWidgets import (
-    QSizePolicy,
-    QComboBox,
-    QDoubleSpinBox,
-    QLineEdit,
-    QRadioButton,
-    QSpinBox,
-    QCheckBox,
-    QTabWidget,
-    QDialog,
-    QApplication,
-    QFileDialog,
-    QFileSystemModel,
-    QMainWindow,
-    QHeaderView,
-)
-
-from .trxas_dataset import (
-    TrXASDatasetManager,
-    create_trxas_cache_from_flist,
-)
 from .utilities import format_time
 from .widgets import (
-    VlockedRectROI,
-    SaveOptionsDialog,
-    show_error_dialog,
-    TrXASResultTableModel,
     ParameterTableModel,
+    SaveOptionsDialog,
+    TrXASResultTableModel,
+    VlockedRectROI,
+    show_error_dialog,
 )
-
-from PySide6.QtGui import QPixmap
-from PySide6.QtCore import QBuffer, QByteArray, QIODevice
-
-from .dtype_cache import DataTypeCache
-import logging
-from . import __version__
 
 CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
 CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -238,22 +235,25 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             if len(values) == 1:
                 raise ValueError(f"No parent states found for state S{n+1}")
 
-        self.fit_param = []
+        data = []
         for i in range(nz_coord[0].shape[0]):
             i, j = nz_coord[0][i] + 1, nz_coord[1][i] + 1
             if i == adj_matrix.shape[0]:
                 i = "g"
             if i == j:
-                self.fit_param.append([f"t_{j}{i}", "us", -10, 0.0, -5])
+                data.append([f"t_{j}{i}", "us", -10, 0.0, -5])
             else:
-                self.fit_param.append([f"t_{j}{i}", "us", 0, 10.0, 5])
+                data.append([f"t_{j}{i}", "us", 0, 10.0, 5])
 
         headers = ["Name", "Unit", "Min", "Max", "Fit Value"]
-        # Data structure: [name, unit, min, max, fit_value]
-        self.fit_param_model = ParameterTableModel(self.fit_param, headers)
+        self.fit_param = pd.DataFrame(data, columns=headers)
+        self.fit_param_model = ParameterTableModel(self.fit_param)
         self.tableView_parameters.setModel(self.fit_param_model)
         header = self.tableView_parameters.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
+        self.tableView_parameters.setAlternatingRowColors(True)
+        bounds = list(zip(self.fit_param["Min"].values, self.fit_param["Max"].values))
+        return bounds, constraints, initial_value
 
     def load_dset(self):
         # f, _ = QFileDialog.getOpenFileName(
