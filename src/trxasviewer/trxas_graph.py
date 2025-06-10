@@ -3,6 +3,30 @@ from collections import deque, defaultdict
 from graphviz import Digraph
 
 
+def _get_initial_state_indices(adj_matrix):
+    """
+    Helper function to find the indices of all initial states.
+
+    An initial state is one with no incoming transitions from other states.
+
+    Parameters:
+    - adj_matrix: 2D list representing adjacency (1 at [i][j] means j → i)
+
+    Returns:
+    - A list of integer indices for the initial states.
+    """
+    num_states = len(adj_matrix)
+    initial_indices = []
+    for i in range(num_states):
+        # Sum the values in the row `i` to count incoming edges from other states.
+        # We exclude the diagonal element `adj_matrix[i][i]`, which represents a self-loop.
+        num_parents = sum(adj_matrix[i][j] for j in range(num_states) if i != j)
+
+        if num_parents == 0:
+            initial_indices.append(i)
+    return initial_indices
+
+
 def find_initial_states(adj_matrix):
     """
     Finds all states with no incoming transitions (parents).
@@ -17,21 +41,45 @@ def find_initial_states(adj_matrix):
     if num_states == 0:
         return []
 
-    ground_index = num_states - 1
-    state_names = [f"S{i + 1}" for i in range(ground_index)] + ["GS"]
+    state_names = [f"S{i + 1}" for i in range(num_states)]
 
-    # Calculate the number of incoming edges (parents) for each state.
-    # A state `i` is an initial state if it has no parents.
-    initial_states = []
-    for i in range(num_states):
-        # Sum the values in the row `i` to count incoming edges.
-        # We exclude the diagonal element `adj_matrix[i][i]`, which represents a self-loop.
-        num_parents = sum(adj_matrix[i][j] for j in range(num_states) if i != j)
+    # Use the helper function to get the indices of initial states
+    initial_indices = _get_initial_state_indices(adj_matrix)
 
-        if num_parents == 0:
-            initial_states.append(state_names[i])
+    # Map indices to state names
+    return [state_names[i] for i in initial_indices]
 
-    return initial_states
+
+def create_initial_state_array(adj_matrix):
+    """
+    Creates an array indicating the initial states of a system.
+
+    This function identifies states with no incoming transitions from other states
+    and represents them with a 1 in an output array. All other states are
+    represented with a 0.
+
+    Parameters:
+    - adj_matrix: A 2D list (square matrix) where adj_matrix[i][j] = 1
+                  signifies a transition from state j to state i.
+
+    Returns:
+    - A list of integers (e.g., [1, 0, 0, 1]) where a 1 at index `i`
+      indicates that state `i` is an initial state.
+    """
+    num_states = len(adj_matrix)
+    if num_states == 0:
+        return []
+
+    initial_array = [0] * num_states
+
+    # Use the helper function to get the indices of initial states
+    initial_indices = _get_initial_state_indices(adj_matrix)
+
+    # Set the value to 1 for each initial state index
+    for i in initial_indices:
+        initial_array[i] = 1
+
+    return initial_array
 
 
 def verify_decay_paths(adj_matrix):
@@ -202,7 +250,7 @@ def draw_decay_graph_with_top_nodes(
     for from_node, to_nodes in edges.items():
         for to_node in to_nodes:
             from_index = from_node.replace("S", "")
-            to_index = to_node.replace("S", "").replace("G", "g")
+            to_index = to_node.replace("S", "").replace("G", "0")
             text_label = f"t_{from_index}{to_index}"
 
             # Use HTML-like labels to create a colored box
