@@ -39,7 +39,9 @@ dependencies = [
     "matplotlib",
     "scienceplots",
     "scipy",
-    "h5py"
+    "h5py",
+    "pandas",
+    "graphviz"  # install graphviz binary first
 ]
 
 [project.scripts]
