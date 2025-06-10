@@ -1,4 +1,37 @@
+import sys
+from collections import deque, defaultdict
 from graphviz import Digraph
+
+
+def find_initial_states(adj_matrix):
+    """
+    Finds all states with no incoming transitions (parents).
+
+    Parameters:
+    - adj_matrix: 2D list representing adjacency (1 at [i][j] means j → i)
+
+    Returns:
+    - A list of names for the initial states (e.g., ['S1', 'S4']).
+    """
+    num_states = len(adj_matrix)
+    if num_states == 0:
+        return []
+
+    ground_index = num_states - 1
+    state_names = [f"S{i + 1}" for i in range(ground_index)] + ["GS"]
+
+    # Calculate the number of incoming edges (parents) for each state.
+    # A state `i` is an initial state if it has no parents.
+    initial_states = []
+    for i in range(num_states):
+        # Sum the values in the row `i` to count incoming edges.
+        # We exclude the diagonal element `adj_matrix[i][i]`, which represents a self-loop.
+        num_parents = sum(adj_matrix[i][j] for j in range(num_states) if i != j)
+
+        if num_parents == 0:
+            initial_states.append(state_names[i])
+
+    return initial_states
 
 
 def verify_decay_paths(adj_matrix):
@@ -32,7 +65,7 @@ def verify_decay_paths(adj_matrix):
                 return True
             if node not in visited:
                 visited.add(node)
-                stack.extend(graph[node])
+                stack.extend(graph.get(node, []))
         return False
 
     # Check all excited states
@@ -53,16 +86,20 @@ def draw_decay_graph_with_top_nodes(
     adjacent_matrix, filename="decay_with_top_nodes", output="bytes"
 ):
     """
-    Visualize decay graph where:
-    - S0 and all nodes with no parents are forced to the top level.
-    - Remaining nodes are placed based on energy-like depth from top.
+    Visualize decay graph with automated labeling.
+    - Initial states are colored green and labeled with c0_i.
+    - Ground state is colored blue.
+    - Transient states are colored red.
+    - Edges are labeled with decay time t_ij inside a purple box.
 
     Parameters:
     - adjacent_matrix: 2D list defining transitions (1 at [i][j] means j → i)
     - filename: output image name (without extension)
     """
-    if not verify_decay_paths(adjacent_matrix):
-        print("not valid adjacent matrix")
+    try:
+        verify_decay_paths(adjacent_matrix)
+    except ValueError as e:
+        print(f"Error: {e}")
         return
 
     dot = Digraph(format="png")
@@ -72,21 +109,11 @@ def draw_decay_graph_with_top_nodes(
     ground_index = num_states - 1
     state_names = [f"S{i + 1}" for i in range(ground_index)] + ["GS"]
 
-    # Identify parentless nodes (no incoming edges)
-    incoming = [0] * num_states
-    for to_idx, row in enumerate(adjacent_matrix):
-        for from_idx, value in enumerate(row):
-            if value == 1 and from_idx != to_idx:
-                incoming[to_idx] += 1
-
-    top_nodes = {state_names[0]}  # always include S0
-    for idx, val in enumerate(incoming):
-        if val == 0:
-            top_nodes.add(state_names[idx])
+    # Use our new function to find the parentless ("top") nodes
+    top_node_names = find_initial_states(adjacent_matrix)
+    top_nodes = set(top_node_names)
 
     # Compute depth levels using a simple propagation (BFS-like)
-    from collections import deque, defaultdict
-
     levels = defaultdict(lambda: None)
     queue = deque()
 
@@ -112,89 +139,107 @@ def draw_decay_graph_with_top_nodes(
                 levels[neighbor] = current_level + 1
                 queue.append(neighbor)
 
-    # Normalize levels
+    # Add any nodes missed by BFS (e.g., disconnected components) and assign a default level
+    for state in state_names:
+        if state not in levels:
+            levels[state] = max(levels.values() or [-1]) + 1
+
+    # Normalize levels to be contiguous
     unique_levels = sorted(set(levels.values()))
     level_map = {lvl: i for i, lvl in enumerate(unique_levels)}
     for k in levels:
         levels[k] = level_map[levels[k]]
 
-    max_level = max(levels.values())
+    max_level = max(levels.values()) if levels else -1
 
-    # Create dummy level nodes for alignment
+    # Create invisible nodes and edges for level alignment.
     for lvl in range(max_level + 1):
         dot.node(f"level_{lvl}", label="", shape="point", width="0")
 
-    # Add real nodes and invisible aligners
-    for state, lvl in levels.items():
-        dot.node(state, shape="rectangle")
-        dot.edge(f"level_{lvl}", state, style="invis")
+    if max_level > 0:
+        for lvl in range(max_level):
+            dot.edge(f"level_{lvl}", f"level_{lvl+1}", style="invis")
 
-    # Group nodes by level
+    # Group nodes by level for horizontal alignment
     for lvl in range(max_level + 1):
         with dot.subgraph() as s:
             s.attr(rank="same")
             s.node(f"level_{lvl}")
             for state, slvl in levels.items():
                 if slvl == lvl:
-                    s.node(state)
+                    node_label = state
+                    # If the state is an initial state, color it green and add c0 label
+                    if state in top_nodes:
+                        state_index = state.replace("S", "")
+                        node_label = f"{state}\nc0_{state_index}"
+                        s.node(
+                            state,
+                            label=node_label,
+                            shape="rectangle",
+                            style="filled",
+                            fillcolor="lightgreen",
+                        )
+                    # If the state is the ground state, color it blue
+                    elif state == "GS":
+                        s.node(
+                            state,
+                            label=node_label,
+                            shape="rectangle",
+                            style="filled",
+                            fillcolor="lightblue",
+                        )
+                    # Otherwise, it's a transient state, so color it red
+                    else:
+                        s.node(
+                            state,
+                            label=node_label,
+                            shape="rectangle",
+                            style="filled",
+                            fillcolor="lightcoral",
+                        )
 
-    # Draw actual transitions
-    for to_idx, row in enumerate(adjacent_matrix):
-        for from_idx, value in enumerate(row):
-            if value == 1 and from_idx != to_idx:
-                from_state = state_names[from_idx]
-                to_state = state_names[to_idx]
-                dot.edge(from_state, to_state)
+    # Draw actual transitions with automated, boxed labels
+    for from_node, to_nodes in edges.items():
+        for to_node in to_nodes:
+            from_index = from_node.replace("S", "")
+            to_index = to_node.replace("S", "").replace("G", "g")
+            text_label = f"t_{from_index}{to_index}"
+
+            # Use HTML-like labels to create a colored box
+            html_label = f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD BGCOLOR="plum">{text_label}</TD></TR></TABLE>>'
+            dot.edge(from_node, to_node, label=html_label)
 
     # Render the graph to bytes or file
     if output == "bytes":
         return dot.pipe(format="png")
     elif output == "file":
-        dot.render(filename, view=False)
+        dot.render(filename, view=True, cleanup=True)
         return filename + ".png"
 
 
-def generate_graph_bytes(adj_matrix):
-    """
-    Generate Graphviz PNG image bytes from adjacency matrix.
-    """
-    return draw_decay_graph_with_top_nodes(adj_matrix)
-
-
 if __name__ == "__main__":
+    # Example matrix: S1 is an initial state.
+    # S1 -> S2, S1 -> S3, S1 -> S4
+    # S2 -> GS, S3 -> GS, S4 -> GS
     adjacent_matrix = [
-        [1, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0],
-        [1, 1, 1, 0, 0],
-        [0, 1, 0, 1, 0],
-        [0, 0, 1, 1, 0],
+        [1.0, 0.0, 0.0, 0.0, 0.0],  # S1 has no parents
+        [1.0, 1.0, 0.0, 0.0, 0.0],  # S2 has parent S1
+        [1.0, 0.0, 1.0, 0.0, 0.0],  # S3 has parent S1
+        [1.0, 0.0, 0.0, 1.0, 0.0],  # S4 has parent S1
+        [0.0, 1.0, 1.0, 1.0, 0.0],  # GS has parents S2, S3, S4
     ]
 
-    adjacent_matrix = [
-        [1, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0],
-        [1, 1, 1, 0, 0],
-        [0, 1, 0, 1, 0],
-        [1, 0, 1, 1, 0],
-    ]
+    # --- Find the initial states ---
+    initials = find_initial_states(adjacent_matrix)
+    print(f"The initial states are: {initials}")
 
-    # adjacent_matrix = [
-    #     [1, 0, 0, 0, 0],
-    #     [0, 1, 0, 0, 0],
-    #     [0, 0, 1, 0, 0],
-    #     [0, 0, 0, 1, 0],
-    #     [1, 1, 1, 1, 0],
-    # ]
-    adjacent_matrix = [
-        [1.0, 0.0, 0.0, 0.0, 0.0],
-        [1.0, 1.0, 0.0, 0.0, 0.0],
-        [1.0, 0.0, 1.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0, 1.0, 0.0],
-        [0.0, 1.0, 1.0, 1.0, 0.0],
-    ]
-
-    # Generate new layout with top nodes enforced
-    # Generate new layout with top nodes enforced
+    # --- Generate the graph visualization ---
     output_file_top_nodes = draw_decay_graph_with_top_nodes(
-        adjacent_matrix, output="file"
+        adjacent_matrix, filename="decay_graph_demo", output="file"
     )
+    print(f"Graph saved to: {output_file_top_nodes}")
+
+    import numpy as np
+
+    nz_idx = np.nonzero(adjacent_matrix)
+    print(nz_idx)
