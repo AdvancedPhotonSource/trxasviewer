@@ -68,7 +68,33 @@
            <property name="bottomMargin">
             <number>1</number>
            </property>
-           <item row="1" column="0" colspan="4">
+           <item row="0" column="0" colspan="2">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Number of States</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QComboBox" name="comboBox_model">
+             <item>
+              <property name="text">
+               <string>parallel</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>sequential</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>advanced</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="5">
             <widget class="QGroupBox" name="groupBox_5">
              <property name="title">
               <string>State-Matrix</string>
@@ -86,17 +112,13 @@
               <property name="bottomMargin">
                <number>1</number>
               </property>
-              <item row="2" column="1">
-               <widget class="QPushButton" name="pushButton_3">
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
               <item row="0" column="0" colspan="3">
                <layout class="QGridLayout" name="gridLayout_5">
-                <item row="4" column="2">
-                 <widget class="QCheckBox" name="checkBox_m52">
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="checkBox_m43">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -110,12 +132,12 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m25</string>
+                   <string>m34</string>
                   </property>
                  </widget>
                 </item>
-                <item row="4" column="1">
-                 <widget class="QCheckBox" name="checkBox_m51">
+                <item row="2" column="1">
+                 <widget class="QCheckBox" name="checkBox_m31">
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -129,12 +151,12 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m15</string>
+                   <string>m13</string>
                   </property>
                  </widget>
                 </item>
-                <item row="3" column="2">
-                 <widget class="QCheckBox" name="checkBox_m42">
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="checkBox_m11">
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -148,12 +170,18 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m24</string>
+                   <string>m11</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
-                <item row="4" column="4">
-                 <widget class="QCheckBox" name="checkBox_m54">
+                <item row="5" column="4">
+                 <widget class="QCheckBox" name="checkBox_m64">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -167,7 +195,7 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m45</string>
+                   <string>m40</string>
                   </property>
                  </widget>
                 </item>
@@ -188,37 +216,8 @@
                   <property name="text">
                    <string>m33</string>
                   </property>
-                 </widget>
-                </item>
-                <item row="0" column="0">
-                 <widget class="QLabel" name="label_2">
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>State1</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="4" column="3">
-                 <widget class="QCheckBox" name="checkBox_m53">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m35</string>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -252,6 +251,9 @@
                   <property name="text">
                    <string>m22</string>
                   </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
                  </widget>
                 </item>
                 <item row="2" column="2">
@@ -273,8 +275,8 @@
                   </property>
                  </widget>
                 </item>
-                <item row="2" column="1">
-                 <widget class="QCheckBox" name="checkBox_m31">
+                <item row="5" column="1">
+                 <widget class="QCheckBox" name="checkBox_m61">
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -288,7 +290,39 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m13</string>
+                   <string>m10</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="4">
+                 <widget class="QCheckBox" name="checkBox_m44">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m44</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_7">
+                  <property name="text">
+                   <string>GS</string>
                   </property>
                  </widget>
                 </item>
@@ -302,6 +336,129 @@
                   </property>
                   <property name="text">
                    <string>State4</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="checkBox_m53">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m35</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QCheckBox" name="checkBox_m41">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m14</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="4">
+                 <widget class="QCheckBox" name="checkBox_m54">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m45</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_2">
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>State1</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="5">
+                 <widget class="QCheckBox" name="checkBox_m55">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m55</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="checkBox_m63">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m30</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -324,95 +481,6 @@
                   </property>
                  </widget>
                 </item>
-                <item row="0" column="1">
-                 <widget class="QCheckBox" name="checkBox_m11">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m11</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="0">
-                 <widget class="QLabel" name="label_4">
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>State3</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="3">
-                 <widget class="QCheckBox" name="checkBox_m43">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m34</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="1">
-                 <widget class="QCheckBox" name="checkBox_m41">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m14</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="4">
-                 <widget class="QCheckBox" name="checkBox_m44">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m44</string>
-                  </property>
-                 </widget>
-                </item>
                 <item row="4" column="0">
                  <widget class="QLabel" name="label_6">
                   <property name="font">
@@ -426,8 +494,11 @@
                   </property>
                  </widget>
                 </item>
-                <item row="4" column="5">
-                 <widget class="QCheckBox" name="checkBox_m55">
+                <item row="4" column="2">
+                 <widget class="QCheckBox" name="checkBox_m52">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -441,18 +512,12 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m55</string>
+                   <string>m25</string>
                   </property>
                  </widget>
                 </item>
-                <item row="5" column="1">
-                 <widget class="QCheckBox" name="checkBox_m61">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_4">
                   <property name="font">
                    <font>
                     <family>DejaVu Sans</family>
@@ -460,14 +525,7 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m1g</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="5" column="0">
-                 <widget class="QLabel" name="label_7">
-                  <property name="text">
-                   <string>GS</string>
+                   <string>State3</string>
                   </property>
                  </widget>
                 </item>
@@ -486,12 +544,18 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m2g</string>
+                   <string>m20</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
-                <item row="5" column="3">
-                 <widget class="QCheckBox" name="checkBox_m63">
+                <item row="4" column="1">
+                 <widget class="QCheckBox" name="checkBox_m51">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -505,31 +569,15 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m3g</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="5" column="4">
-                 <widget class="QCheckBox" name="checkBox_m64">
-                  <property name="maximumSize">
-                   <size>
-                    <width>80</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>DejaVu Sans</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="text">
-                   <string>m4g</string>
+                   <string>m15</string>
                   </property>
                  </widget>
                 </item>
                 <item row="5" column="5">
                  <widget class="QCheckBox" name="checkBox_m65">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>80</width>
@@ -543,30 +591,76 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>m5g</string>
+                   <string>m50</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QCheckBox" name="checkBox_m42">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>DejaVu Sans</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>m24</string>
                   </property>
                  </widget>
                 </item>
                </layout>
               </item>
-              <item row="2" column="0">
-               <widget class="QPushButton" name="pushButton_2">
-                <property name="text">
-                 <string>Save</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QPushButton" name="pushButton_updatemodel">
-                <property name="text">
-                 <string>Update</string>
+             </layout>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="5">
+            <widget class="QGroupBox" name="groupBox_6">
+             <property name="title">
+              <string>Parameters</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_7">
+              <property name="leftMargin">
+               <number>1</number>
+              </property>
+              <property name="topMargin">
+               <number>1</number>
+              </property>
+              <property name="rightMargin">
+               <number>1</number>
+              </property>
+              <property name="bottomMargin">
+               <number>1</number>
+              </property>
+              <item row="1" column="0">
+               <widget class="QTableView" name="tableView_parameters">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>300</height>
+                 </size>
                 </property>
                </widget>
               </item>
              </layout>
             </widget>
            </item>
-           <item row="2" column="0" colspan="4">
+           <item row="0" column="4">
+            <widget class="QPushButton" name="pushButton_updatemodel">
+             <property name="text">
+              <string>Update</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="5">
             <widget class="QGroupBox" name="groupBox_3">
              <property name="title">
               <string>Graph</string>
@@ -600,56 +694,6 @@
              </layout>
             </widget>
            </item>
-           <item row="3" column="0" colspan="4">
-            <widget class="QGroupBox" name="groupBox_6">
-             <property name="title">
-              <string>Parameters</string>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_7">
-              <property name="leftMargin">
-               <number>1</number>
-              </property>
-              <property name="topMargin">
-               <number>1</number>
-              </property>
-              <property name="rightMargin">
-               <number>1</number>
-              </property>
-              <property name="bottomMargin">
-               <number>1</number>
-              </property>
-              <item row="1" column="0">
-               <widget class="QTableView" name="tableView_parameters">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>300</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QComboBox" name="comboBox_model">
-             <item>
-              <property name="text">
-               <string>parallel</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>sequential</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>advanced</string>
-              </property>
-             </item>
-            </widget>
-           </item>
            <item row="0" column="2">
             <widget class="QSpinBox" name="spinBox_nstates">
              <property name="minimum">
@@ -663,10 +707,17 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QLabel" name="label">
+           <item row="4" column="4">
+            <widget class="QPushButton" name="pushButton_fit">
              <property name="text">
-              <string>Number of States</string>
+              <string>Fit</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" colspan="2">
+            <widget class="QPushButton" name="pushButton_save">
+             <property name="text">
+              <string>Save</string>
              </property>
             </widget>
            </item>
@@ -713,7 +764,7 @@
      <x>0</x>
      <y>0</y>
      <width>1230</width>
-     <height>33</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
