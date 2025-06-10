@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>962</width>
-    <height>1042</height>
+    <width>1230</width>
+    <height>1052</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Orientation::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGroupBox" name="groupBox">
@@ -676,6 +676,12 @@
        </layout>
       </widget>
       <widget class="QGroupBox" name="groupBox_4">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
          <width>600</width>
@@ -706,8 +712,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>962</width>
-     <height>24</height>
+     <width>1230</width>
+     <height>33</height>
     </rect>
    </property>
   </widget>
