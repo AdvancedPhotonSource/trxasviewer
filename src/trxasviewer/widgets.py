@@ -324,8 +324,12 @@ class ParameterTableModel(QAbstractTableModel):
         row = index.row()
         col = index.column()
 
+        if col == 1:  # Unit column
+            if value not in ["ps", "ns", "µs", "us", "ms", "s"]:
+                return False
+
         # Get the original dtype of the column
-        original_dtype = self._data.dtypes[col]
+        original_dtype = self._data.dtypes.iloc[col]
 
         try:
             # Attempt to cast the new value to the original type
