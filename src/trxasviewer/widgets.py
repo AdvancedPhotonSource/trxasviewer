@@ -1,6 +1,7 @@
 import os
 import sys
 from datetime import datetime
+import pandas as pd
 
 import pyqtgraph as pg
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, Qt, Slot
@@ -272,23 +273,21 @@ class TrXASResultTableModel(QAbstractTableModel):
 
 class ParameterTableModel(QAbstractTableModel):
     """
-    Custom table model to manage parameter data.
-
+    Custom table model to manage parameter data from a pandas DataFrame.
     This model handles different data types for display and editing.
     """
 
-    def __init__(self, data=None, headers=None, parent=None):
+    def __init__(self, data=None, parent=None):
         super().__init__(parent)
-        self._data = data or []
-        self._headers = headers or []
+        self._data = data if data is not None else pd.DataFrame()
 
     def rowCount(self, parent=QModelIndex()):
         """Returns the number of rows in the model."""
-        return len(self._data)
+        return self._data.shape[0]
 
     def columnCount(self, parent=QModelIndex()):
         """Returns the number of columns in the model."""
-        return len(self._headers)
+        return self._data.shape[1]
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
         """Returns the header data for the given section."""
@@ -296,27 +295,24 @@ class ParameterTableModel(QAbstractTableModel):
             role == Qt.ItemDataRole.DisplayRole
             and orientation == Qt.Orientation.Horizontal
         ):
-            return self._headers[section]
+            return str(self._data.columns[section])
         return None
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         """
         Returns the data for a given index and role.
-
-        Handles displaying strings and floats.
+        Handles displaying data from the DataFrame.
         """
         if not index.isValid():
             return None
 
         row = index.row()
         col = index.column()
-        value = self._data[row][col]
+        value = self._data.iloc[row, col]
 
-        # Role for displaying data in the view
         if role == Qt.ItemDataRole.DisplayRole:
             return str(value)
 
-        # Role for data to be edited
         if role == Qt.ItemDataRole.EditRole:
             return value
 
@@ -325,8 +321,7 @@ class ParameterTableModel(QAbstractTableModel):
     def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
         """
         Sets the data for a given index and role.
-
-        Handles updating the model when a user edits a float value.
+        Handles updating the underlying DataFrame.
         """
         if not index.isValid() or role != Qt.ItemDataRole.EditRole:
             return False
@@ -334,24 +329,25 @@ class ParameterTableModel(QAbstractTableModel):
         row = index.row()
         col = index.column()
 
-        # Handle edits for all columns.
-        # The first two columns ("Name", "Unit") will be stored as strings.
-        # The subsequent columns will be converted to floats.
+        # Get the original dtype of the column
+        original_dtype = self._data.dtypes[col]
+
         try:
-            if col > 1:  # min, max, fit_value are float columns
-                self._data[row][col] = float(value)
-            else:  # name, unit are string columns
-                self._data[row][col] = str(value)
+            # Attempt to cast the new value to the original type
+            # This helps maintain data integrity in the DataFrame (e.g., floats remain floats)
+            if pd.api.types.is_numeric_dtype(original_dtype):
+                value = float(value)
+
+            self._data.iloc[row, col] = value
             self.dataChanged.emit(index, index, [role])
             return True
         except (ValueError, TypeError):
-            # If conversion fails for float columns, don't update the data
+            # If conversion fails, don't update the data
             return False
 
     def flags(self, index):
         """
         Returns the item flags for a given index.
-
         This determines if an item is selectable, editable, etc.
         """
         if not index.isValid():
