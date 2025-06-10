@@ -18,7 +18,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QGroupBox, QHeaderView, QLabel, QMainWindow,
     QMenuBar, QPushButton, QSizePolicy, QSpinBox,
-    QStatusBar, QTableView, QWidget)
+    QSplitter, QStatusBar, QTableView, QVBoxLayout,
+    QWidget)
 
 from pyqtgraph import GraphicsLayoutWidget
 
@@ -26,17 +27,20 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1219, 980)
+        MainWindow.resize(1347, 1052)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_6 = QGridLayout(self.centralwidget)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
-
-        self.gridLayout_6.addWidget(self.pushButton, 2, 0, 1, 2)
-
-        self.groupBox = QGroupBox(self.centralwidget)
+        self.splitter = QSplitter(self.centralwidget)
+        self.splitter.setObjectName(u"splitter")
+        self.splitter.setOrientation(Qt.Orientation.Horizontal)
+        self.widget = QWidget(self.splitter)
+        self.widget.setObjectName(u"widget")
+        self.verticalLayout = QVBoxLayout(self.widget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.groupBox = QGroupBox(self.widget)
         self.groupBox.setObjectName(u"groupBox")
         self.gridLayout = QGridLayout(self.groupBox)
         self.gridLayout.setObjectName(u"gridLayout")
@@ -52,24 +56,13 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.tableView, 0, 0, 1, 1)
 
 
-        self.gridLayout_6.addWidget(self.groupBox, 0, 0, 1, 1)
+        self.verticalLayout.addWidget(self.groupBox)
 
-        self.groupBox_2 = QGroupBox(self.centralwidget)
+        self.groupBox_2 = QGroupBox(self.widget)
         self.groupBox_2.setObjectName(u"groupBox_2")
         self.gridLayout_2 = QGridLayout(self.groupBox_2)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.gridLayout_2.setContentsMargins(1, -1, 1, 1)
-        self.label_graph = QLabel(self.groupBox_2)
-        self.label_graph.setObjectName(u"label_graph")
-        self.label_graph.setMinimumSize(QSize(200, 200))
-
-        self.gridLayout_2.addWidget(self.label_graph, 3, 0, 1, 4)
-
-        self.label = QLabel(self.groupBox_2)
-        self.label.setObjectName(u"label")
-
-        self.gridLayout_2.addWidget(self.label, 0, 0, 1, 1)
-
+        self.gridLayout_2.setContentsMargins(1, 1, 1, 1)
         self.spinBox_nstates = QSpinBox(self.groupBox_2)
         self.spinBox_nstates.setObjectName(u"spinBox_nstates")
         self.spinBox_nstates.setMinimum(1)
@@ -78,52 +71,11 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.spinBox_nstates, 0, 1, 1, 1)
 
-        self.label_9 = QLabel(self.groupBox_2)
-        self.label_9.setObjectName(u"label_9")
-
-        self.gridLayout_2.addWidget(self.label_9, 2, 0, 1, 1)
-
-        self.label_8 = QLabel(self.groupBox_2)
-        self.label_8.setObjectName(u"label_8")
-
-        self.gridLayout_2.addWidget(self.label_8, 0, 2, 1, 1)
-
-        self.groupBox_6 = QGroupBox(self.groupBox_2)
-        self.groupBox_6.setObjectName(u"groupBox_6")
-        self.gridLayout_7 = QGridLayout(self.groupBox_6)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.gridLayout_7.setContentsMargins(1, 1, 1, 1)
-        self.tableView_parameters = QTableView(self.groupBox_6)
-        self.tableView_parameters.setObjectName(u"tableView_parameters")
-
-        self.gridLayout_7.addWidget(self.tableView_parameters, 0, 0, 1, 1)
-
-
-        self.gridLayout_2.addWidget(self.groupBox_6, 4, 0, 1, 4)
-
-        self.comboBox_model = QComboBox(self.groupBox_2)
-        self.comboBox_model.addItem("")
-        self.comboBox_model.addItem("")
-        self.comboBox_model.addItem("")
-        self.comboBox_model.setObjectName(u"comboBox_model")
-
-        self.gridLayout_2.addWidget(self.comboBox_model, 0, 3, 1, 1)
-
         self.groupBox_5 = QGroupBox(self.groupBox_2)
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.gridLayout_3 = QGridLayout(self.groupBox_5)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.gridLayout_3.setContentsMargins(1, 1, 1, 1)
-        self.pushButton_2 = QPushButton(self.groupBox_5)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-
-        self.gridLayout_3.addWidget(self.pushButton_2, 2, 0, 1, 1)
-
-        self.pushButton_updatemodel = QPushButton(self.groupBox_5)
-        self.pushButton_updatemodel.setObjectName(u"pushButton_updatemodel")
-
-        self.gridLayout_3.addWidget(self.pushButton_updatemodel, 2, 3, 1, 1)
-
         self.pushButton_3 = QPushButton(self.groupBox_5)
         self.pushButton_3.setObjectName(u"pushButton_3")
 
@@ -312,26 +264,65 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addLayout(self.gridLayout_5, 0, 0, 1, 3)
 
+        self.pushButton_2 = QPushButton(self.groupBox_5)
+        self.pushButton_2.setObjectName(u"pushButton_2")
+
+        self.gridLayout_3.addWidget(self.pushButton_2, 2, 0, 1, 1)
+
+        self.pushButton_updatemodel = QPushButton(self.groupBox_5)
+        self.pushButton_updatemodel.setObjectName(u"pushButton_updatemodel")
+
+        self.gridLayout_3.addWidget(self.pushButton_updatemodel, 2, 2, 1, 1)
+
 
         self.gridLayout_2.addWidget(self.groupBox_5, 1, 0, 1, 4)
 
-        self.groupBox_7 = QGroupBox(self.groupBox_2)
-        self.groupBox_7.setObjectName(u"groupBox_7")
-        self.gridLayout_8 = QGridLayout(self.groupBox_7)
+        self.label = QLabel(self.groupBox_2)
+        self.label.setObjectName(u"label")
+
+        self.gridLayout_2.addWidget(self.label, 0, 0, 1, 1)
+
+        self.groupBox_3 = QGroupBox(self.groupBox_2)
+        self.groupBox_3.setObjectName(u"groupBox_3")
+        self.gridLayout_8 = QGridLayout(self.groupBox_3)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
-        self.gridLayout_8.setContentsMargins(1, 1, 1, 1)
-        self.tableView_parameters_2 = QTableView(self.groupBox_7)
-        self.tableView_parameters_2.setObjectName(u"tableView_parameters_2")
+        self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.label_graph = QLabel(self.groupBox_3)
+        self.label_graph.setObjectName(u"label_graph")
+        self.label_graph.setMinimumSize(QSize(200, 200))
 
-        self.gridLayout_8.addWidget(self.tableView_parameters_2, 0, 0, 1, 1)
-
-
-        self.gridLayout_2.addWidget(self.groupBox_7, 5, 0, 1, 4)
+        self.gridLayout_8.addWidget(self.label_graph, 0, 0, 1, 1)
 
 
-        self.gridLayout_6.addWidget(self.groupBox_2, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.groupBox_3, 2, 0, 1, 4)
 
-        self.groupBox_4 = QGroupBox(self.centralwidget)
+        self.comboBox_model = QComboBox(self.groupBox_2)
+        self.comboBox_model.addItem("")
+        self.comboBox_model.addItem("")
+        self.comboBox_model.addItem("")
+        self.comboBox_model.setObjectName(u"comboBox_model")
+
+        self.gridLayout_2.addWidget(self.comboBox_model, 0, 2, 1, 1)
+
+        self.groupBox_6 = QGroupBox(self.groupBox_2)
+        self.groupBox_6.setObjectName(u"groupBox_6")
+        self.gridLayout_7 = QGridLayout(self.groupBox_6)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.gridLayout_7.setContentsMargins(1, 1, 1, 1)
+        self.tableView_parameters = QTableView(self.groupBox_6)
+        self.tableView_parameters.setObjectName(u"tableView_parameters")
+        self.tableView_parameters.setMinimumSize(QSize(0, 300))
+
+        self.gridLayout_7.addWidget(self.tableView_parameters, 1, 0, 1, 1)
+
+
+        self.gridLayout_2.addWidget(self.groupBox_6, 3, 0, 1, 4)
+
+
+        self.verticalLayout.addWidget(self.groupBox_2)
+
+        self.splitter.addWidget(self.widget)
+        self.groupBox_4 = QGroupBox(self.splitter)
         self.groupBox_4.setObjectName(u"groupBox_4")
         self.groupBox_4.setMinimumSize(QSize(600, 0))
         self.gridLayout_4 = QGridLayout(self.groupBox_4)
@@ -344,13 +335,14 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.display, 0, 0, 1, 1)
 
+        self.splitter.addWidget(self.groupBox_4)
 
-        self.gridLayout_6.addWidget(self.groupBox_4, 0, 1, 2, 1)
+        self.gridLayout_6.addWidget(self.splitter, 0, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1219, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1347, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -363,50 +355,47 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Kinetics-Modeling", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics Datasets", None))
         self.pushButton_load.setText(QCoreApplication.translate("MainWindow", u"Load Results", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Model", None))
-        self.label_graph.setText("")
+        self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"State-Matrix", None))
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.checkBox_m52.setText(QCoreApplication.translate("MainWindow", u"m25", None))
+        self.checkBox_m51.setText(QCoreApplication.translate("MainWindow", u"m15", None))
+        self.checkBox_m42.setText(QCoreApplication.translate("MainWindow", u"m24", None))
+        self.checkBox_m54.setText(QCoreApplication.translate("MainWindow", u"m45", None))
+        self.checkBox_m33.setText(QCoreApplication.translate("MainWindow", u"m33", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"State1", None))
+        self.checkBox_m53.setText(QCoreApplication.translate("MainWindow", u"m35", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"State2", None))
+        self.checkBox_m22.setText(QCoreApplication.translate("MainWindow", u"m22", None))
+        self.checkBox_m32.setText(QCoreApplication.translate("MainWindow", u"m23", None))
+        self.checkBox_m31.setText(QCoreApplication.translate("MainWindow", u"m13", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"State4", None))
+        self.checkBox_m21.setText(QCoreApplication.translate("MainWindow", u"m12", None))
+        self.checkBox_m11.setText(QCoreApplication.translate("MainWindow", u"m11", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"State3", None))
+        self.checkBox_m43.setText(QCoreApplication.translate("MainWindow", u"m34", None))
+        self.checkBox_m41.setText(QCoreApplication.translate("MainWindow", u"m14", None))
+        self.checkBox_m44.setText(QCoreApplication.translate("MainWindow", u"m44", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"State5", None))
+        self.checkBox_m55.setText(QCoreApplication.translate("MainWindow", u"m55", None))
+        self.checkBox_m61.setText(QCoreApplication.translate("MainWindow", u"m1g", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"GS", None))
+        self.checkBox_m62.setText(QCoreApplication.translate("MainWindow", u"m2g", None))
+        self.checkBox_m63.setText(QCoreApplication.translate("MainWindow", u"m3g", None))
+        self.checkBox_m64.setText(QCoreApplication.translate("MainWindow", u"m4g", None))
+        self.checkBox_m65.setText(QCoreApplication.translate("MainWindow", u"m5g", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.pushButton_updatemodel.setText(QCoreApplication.translate("MainWindow", u"Update", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Number of States", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Model Graph", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Preset", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
+        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Graph", None))
+        self.label_graph.setText("")
         self.comboBox_model.setItemText(0, QCoreApplication.translate("MainWindow", u"parallel", None))
         self.comboBox_model.setItemText(1, QCoreApplication.translate("MainWindow", u"sequential", None))
         self.comboBox_model.setItemText(2, QCoreApplication.translate("MainWindow", u"advanced", None))
 
-        self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"State-Matrix", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Save", None))
-        self.pushButton_updatemodel.setText(QCoreApplication.translate("MainWindow", u"Update", None))
-        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
-        self.checkBox_m52.setText(QCoreApplication.translate("MainWindow", u"m52", None))
-        self.checkBox_m51.setText(QCoreApplication.translate("MainWindow", u"m51", None))
-        self.checkBox_m42.setText(QCoreApplication.translate("MainWindow", u"m42", None))
-        self.checkBox_m54.setText(QCoreApplication.translate("MainWindow", u"m54", None))
-        self.checkBox_m33.setText(QCoreApplication.translate("MainWindow", u"m33", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"State1", None))
-        self.checkBox_m53.setText(QCoreApplication.translate("MainWindow", u"m53", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"State2", None))
-        self.checkBox_m22.setText(QCoreApplication.translate("MainWindow", u"m22", None))
-        self.checkBox_m32.setText(QCoreApplication.translate("MainWindow", u"m32", None))
-        self.checkBox_m31.setText(QCoreApplication.translate("MainWindow", u"m31", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"State4", None))
-        self.checkBox_m21.setText(QCoreApplication.translate("MainWindow", u"m21", None))
-        self.checkBox_m11.setText(QCoreApplication.translate("MainWindow", u"m11", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"State3", None))
-        self.checkBox_m43.setText(QCoreApplication.translate("MainWindow", u"m43", None))
-        self.checkBox_m41.setText(QCoreApplication.translate("MainWindow", u"m41", None))
-        self.checkBox_m44.setText(QCoreApplication.translate("MainWindow", u"m44", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"State5", None))
-        self.checkBox_m55.setText(QCoreApplication.translate("MainWindow", u"m55", None))
-        self.checkBox_m61.setText(QCoreApplication.translate("MainWindow", u"mg1", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"GS", None))
-        self.checkBox_m62.setText(QCoreApplication.translate("MainWindow", u"mg2", None))
-        self.checkBox_m63.setText(QCoreApplication.translate("MainWindow", u"mg3", None))
-        self.checkBox_m64.setText(QCoreApplication.translate("MainWindow", u"mg4", None))
-        self.checkBox_m65.setText(QCoreApplication.translate("MainWindow", u"mg5", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
     # retranslateUi
 
