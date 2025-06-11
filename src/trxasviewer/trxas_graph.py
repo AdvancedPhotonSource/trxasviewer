@@ -218,11 +218,11 @@ def draw_decay_graph_with_top_nodes(
                     node_label = state
                     # If the state is an initial state, color it green and add c0 label
                     if state in top_nodes:
-                        state_index = state.replace("S", "")
-                        node_label = f"{state}\nc0_{state_index}"
+                        # state_index = state.replace("S", "")
+                        # node_label = f"{state}\nc0_{state_index}"
                         s.node(
                             state,
-                            label=node_label,
+                            # label=node_label,
                             shape="rectangle",
                             style="filled",
                             fillcolor="lightgreen",
