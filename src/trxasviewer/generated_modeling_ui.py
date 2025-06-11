@@ -291,7 +291,7 @@ class Ui_MainWindow(object):
         self.gridLayout_7.setContentsMargins(1, 1, 1, 1)
         self.tableView_parameters = QTableView(self.groupBox_6)
         self.tableView_parameters.setObjectName(u"tableView_parameters")
-        self.tableView_parameters.setMinimumSize(QSize(0, 300))
+        self.tableView_parameters.setMinimumSize(QSize(0, 150))
 
         self.gridLayout_7.addWidget(self.tableView_parameters, 1, 0, 1, 1)
 
@@ -310,7 +310,7 @@ class Ui_MainWindow(object):
         self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
         self.label_graph = QLabel(self.groupBox_3)
         self.label_graph.setObjectName(u"label_graph")
-        self.label_graph.setMinimumSize(QSize(200, 200))
+        self.label_graph.setMinimumSize(QSize(400, 150))
 
         self.gridLayout_8.addWidget(self.label_graph, 0, 0, 1, 1)
 
@@ -364,7 +364,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1230, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1230, 33))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
