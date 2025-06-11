@@ -304,6 +304,8 @@ class ParameterTableModel(QAbstractTableModel):
         row = index.row()
         col = index.column()
         value = self._data.iloc[row, col]
+        if col == 4:
+            value = f"{value:.2f}"
 
         if role == Qt.ItemDataRole.DisplayRole:
             return str(value)
