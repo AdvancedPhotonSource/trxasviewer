@@ -6,6 +6,8 @@ import time
 import traceback
 from multiprocessing import Process
 from pathlib import Path
+from .fitting import global_fit_kinetic_model, run_parallel_optimizations
+#     num_runs, t_eval, experimental_data, adj_matrix, bounds, tol=1e-6, method="L-BFGS-B"
 
 import numpy as np
 import pandas as pd
@@ -63,6 +65,7 @@ CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
 CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
 PGCOLORS = ("r", "b", "k", "m", "g", "m", "y")
 PGSYMBOLS = ("o", "s", "t", "d", "+", "*", "x", "p", "h")
+MAX_STATES = 6  # including ground state
 
 logging.basicConfig(
     level=logging.INFO,
@@ -93,26 +96,40 @@ def load_trxas_result(npz_filename):
 
 
 def init_plots(graph_widget):
+    """
+    Initializes a 2x3 grid of plots in a GraphicsLayoutWidget,
+    with consistent column widths and labels for all plots/images.
+    """
+    import pyqtgraph as pg
+
     img_hdl = {}
     labels = [
         "diff",
-        "svd",
+        "fit",
         "residual",
         "svd_spectrum",
         "concentration",
-        "energy_response",
+        "spectra",
     ]
-    for n in range(3):
-        view = graph_widget.addViewBox(lockAspect=True)
+
+    # First Row: PlotItems with ImageItems inside
+    for i in range(3):
+        plot = graph_widget.addPlot()
+        plot.setTitle(labels[i].capitalize())
+        plot.getViewBox().setAspectLocked(False)
+        plot.hideAxis("left")
+        plot.hideAxis("bottom")
         img = pg.ImageItem()
-        view.addItem(img)
-        img_hdl[labels[n]] = img
+        plot.addItem(img)
+        img_hdl[labels[i]] = img
 
     graph_widget.nextRow()
-    # Second row: 3 plot widgets
-    for n in range(3):
-        plot = graph_widget.addPlot()
-        img_hdl[labels[n + 3]] = plot
+
+    # Second Row: PlotItems with axis/labels
+    for i in range(3):
+        plot = graph_widget.addPlot(title=labels[i + 3].capitalize())
+        img_hdl[labels[i + 3]] = plot
+
     return img_hdl
 
 
@@ -132,9 +149,11 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.pushButton_load.clicked.connect(self.load_dset)
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
+        self.pushButton_fit.clicked.connect(self.fit_data)
         self.spinBox_nstates.valueChanged.connect(self.change_model)
         self.fit_param_model = None
         self.fit_param = None
+        self.curr_dset = None
 
     def closeEvent(self, event):
         self.closed.emit()  # Let the main window know we closed
@@ -144,35 +163,37 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         """
         Updates the state checkboxes based on the selected model and number of states.
         """
-        MAX_STATES = 6  # including ground state
         num_states = self.spinBox_nstates.value()
         model = self.comboBox_model.currentText()
         state_mat = self.gen_state_mat(num_states, model)
 
-        for n in range(1, MAX_STATES + 1):
-            for m in range(1, min(n + 1, MAX_STATES)):
-                widget = getattr(self, f"checkBox_m{n}{m}")
+        for n in range(MAX_STATES):
+            for m in range(MAX_STATES):
+                widget = getattr(self, f"checkBox_m{n + 1}{m + 1}", None)
+                if not widget:
+                    continue
 
                 # Determine the state of the widget
-                is_enabled = n <= num_states or n == MAX_STATES
-                is_checked = (n == m)
+                is_enabled = n < num_states or n == MAX_STATES - 1
 
                 # Update widget based on the model
-                if model in ("parallel", "sequential") and n != m:
-                    flag = state_mat[n - 1, m - 1]
+                if model in ("parallel", "sequential"):
+                    flag = state_mat[n, m]
                     widget.setChecked(flag)
                     widget.setEnabled(is_enabled and flag)
-                else:
-                    # widget.setEnabled(is_enabled and not is_checked)
-                    widget.setChecked(is_checked)
+                else:  # advanced model
+                    if is_enabled and m < num_states:
+                        widget.setEnabled(True)
+                    else:
+                        widget.setEnabled(False)
 
         self.draw_graph()
 
     def gen_state_mat(self, num_states, model="parallel"):
-        state = np.zeros((6, 5), dtype=bool)
+        state = np.zeros((MAX_STATES, MAX_STATES), dtype=bool)
         if model == "parallel":
             state[np.diag_indices(num_states)] = True
-            state[-1, :] = True
+            state[-1, 0:num_states] = True
         elif model == "sequential":
             for n in range(num_states):
                 for m in range(max(0, n - 1), n + 1):
@@ -182,30 +203,32 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         return state
 
     def get_state_mat(self):
-        state = np.zeros((6, 5), dtype=bool)
-        for n in range(1, 7):
-            for m in range(1, min(n + 1, 6)):
-                widget = getattr(self, f"checkBox_m{n}{m}")
-                state[n - 1, m - 1] = widget.isChecked()
-        return state
+        state = np.zeros((MAX_STATES, MAX_STATES), dtype=bool)
+        for n in range(MAX_STATES):
+            for m in range(n + 1):
+                widget = getattr(self, f"checkBox_m{n+1}{m+1}", None)
+                if widget:
+                    state[n, m] = widget.isChecked()
 
-    def draw_graph(self):
-        state_mat = self.get_state_mat()
-        pos_idx = np.where(np.sum(state_mat[0:-1], axis=1) > 0)[0]
+        # simplify the matrix by removing unused states
+        pos_idx = np.where(np.sum(state[0:-1, 0:-1], axis=1) > 0)[0]
         if len(pos_idx) == 0:
-            return
+            return None
         else:
             max_idx = np.max(pos_idx) + 1
 
         adj_matrix = np.zeros((max_idx + 1, max_idx + 1))
-        adj_matrix[0:max_idx, 0:max_idx] = state_mat[0:max_idx, 0:max_idx]
+        adj_matrix[0:max_idx, 0:max_idx] = state[0:max_idx, 0:max_idx]
         # append ground state connections
-        adj_matrix[-1][0:max_idx] = state_mat[-1][0:max_idx]
+        adj_matrix[-1][0:max_idx] = state[-1][0:max_idx]
+        return adj_matrix
 
+    def draw_graph(self):
+        adj_matrix = self.get_state_mat()
         self.build_parameter(adj_matrix)
-
         # visualize the graph
         graph_bytes = draw_decay_graph_with_top_nodes(adj_matrix, output="bytes")
+
         # Convert image bytes to QPixmap
         pixmap = QPixmap()
         pixmap.loadFromData(QByteArray(graph_bytes), "PNG")
@@ -216,43 +239,21 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         # Set size policy to maintain aspect ratio
         self.label_graph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    def build_parameter(self, adj_matrix):
-        num_states = adj_matrix.shape[0]
-        adj_matrix[-1, -1] = False
-        initial_states = find_initial_states(adj_matrix)
-        initial_value = np.zeros(num_states)
-        initial_states_idx = [int(s[1:]) - 1 for s in initial_states]
-        initial_value[initial_states_idx] = 1.0
-
-        num_params = np.sum(adj_matrix).astype(np.int32)
-        idx_matrix = np.zeros_like(adj_matrix, dtype=np.int32) - 1
-        index = np.arange(num_params)
-        nz_coord = np.nonzero(adj_matrix == True)
-        idx_matrix[nz_coord] = index
-        constraints = []
-
-        def create_dynamic_eq_constraint(indices):
-            return {"type": "eq", "fun": lambda x: np.sum(x[indices])}
-
-        for n in range(adj_matrix.shape[1]):
-            column = idx_matrix[:, n]
-            values = column[column >= 0]
-            if len(values) >= 1:
-                cs = create_dynamic_eq_constraint(values)
-                constraints.append(cs)
-            if len(values) == 1:
-                raise ValueError(f"No parent states found for state S{n+1}")
+    def build_parameter(self, adj_mat):
+        num_states = adj_mat.shape[0]
+        adj_mat[-1, -1] = False
+        rel_mat = np.copy(adj_mat)
+        rel_mat[np.diag_indices(num_states)] = 0
+        nz_coord = np.nonzero(rel_mat)
 
         data = []
         for i in range(nz_coord[0].shape[0]):
             i, j = nz_coord[0][i] + 1, nz_coord[1][i] + 1
-            if i == adj_matrix.shape[0]:
-                i = "g"
-            if i == j:
-                data.append([f"t_{j}{i}", "us", -10, 0.0, -5])
-            else:
-                data.append([f"t_{j}{i}", "us", 0, 10.0, 5])
+            if i == num_states:
+                i = "0"
+            data.append([f"t_{j}{i}", "µs", 0.01, 100.0, np.nan])
 
+        # display fitting parameters
         headers = ["Name", "Unit", "Min", "Max", "Fit Value"]
         self.fit_param = pd.DataFrame(data, columns=headers)
         self.fit_param_model = ParameterTableModel(self.fit_param)
@@ -260,8 +261,34 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         header = self.tableView_parameters.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         self.tableView_parameters.setAlternatingRowColors(True)
+
+    def fit_data(self):
+        if self.fit_param is None or self.curr_dset is None:
+            return
         bounds = list(zip(self.fit_param["Min"].values, self.fit_param["Max"].values))
-        return bounds, constraints, initial_value
+        unit_to_scale = {
+            "ps": 1e-12,
+            "ns": 1e-9,
+            "us": 1e-6,
+            "µs": 1e-6,
+            "ms": 1e-3,
+            "s": 1.0,
+        }
+        scale = [unit_to_scale[unit] for unit in self.fit_param["Unit"]]
+        bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
+        adj_matrix = self.get_state_mat()
+        # opt_param, opt_concentrations, opt_spectra = global_fit_kinetic_model(
+        #     self.curr_dset.t_axis, self.curr_dset.diff, adj_matrix, bounds=bounds
+        # )
+        opt_param, opt_concentrations, opt_spectra = run_parallel_optimizations(
+            100, self.curr_dset.t_axis, self.curr_dset.diff, adj_matrix, bounds=bounds
+        )
+
+#     num_runs, t_eval, experimental_data, adj_matrix, bounds, tol=1e-6, method="L-BFGS-B"
+        self.fit_param["Fit Value"] = opt_param / scale
+        self.fit_param_model.layoutChanged.emit()
+        self.plot_fitting(opt_concentrations, opt_spectra)
+        return bounds
 
     def load_dset(self):
         # f, _ = QFileDialog.getOpenFileName(
@@ -279,12 +306,43 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.img_hdl["diff"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
 
         pen = pg.mkPen(color="blue", width=5)
-        self.img_hdl["svd_spectrum"].plot(self.curr_dset.get_svd_spectrum(), pen=pen,
-                                          symbol="o")
+        self.img_hdl["svd_spectrum"].plot(
+            self.curr_dset.get_svd_spectrum(), pen=pen, symbol="o"
+        )
+        self.img_hdl["svd_spectrum"].setLabel("bottom", "Component Index")
+        self.img_hdl["svd_spectrum"].setLabel("left", "SVD Magnitude")
 
+    def plot_fitting(self, concentration, spectra):
+        self.img_hdl["concentration"].clear()
+        self.img_hdl["concentration"].addLegend()
+        num_states = concentration.shape[1]
+        names = [f"state_{idx}" for idx in list(range(1, num_states)) + [0]]
+        for idx, line in enumerate(concentration.T):
+            color = PGCOLORS[idx % len(PGCOLORS)]  # Generate a
+            pen = pg.mkPen(color=color, width=5)
+            self.img_hdl["concentration"].plot(
+                self.curr_dset.t_axis, line, pen=pen, name=names[idx]
+            )
+        self.img_hdl["concentration"].setLabel("bottom", "Time")
+        self.img_hdl["concentration"].setLabel("left", "Concentration")
 
-    def plot_data(self, index):
-        pass
+        self.img_hdl["spectra"].clear()
+        self.img_hdl["spectra"].addLegend()
+        for idx, line in enumerate(spectra):
+            color = PGCOLORS[idx % len(PGCOLORS)]  # Generate a
+            pen = pg.mkPen(color=color, width=5)
+            self.img_hdl["spectra"].plot(line, pen=pen, name=names[idx])
+        self.img_hdl["spectra"].setLabel("bottom", "Energy Index")
+        self.img_hdl["spectra"].setLabel("left", "Absorption Coefficient")
+
+        res = concentration @ spectra
+        self.img_hdl["fit"].clear()
+        self.img_hdl["fit"].setImage(res)
+        self.img_hdl["fit"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
+        residual = self.curr_dset.diff - res
+        self.img_hdl["residual"].clear()
+        self.img_hdl["residual"].setImage(residual)
+        self.img_hdl["residual"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
 
 
 def main_modeling_gui(args, **kwargs):
