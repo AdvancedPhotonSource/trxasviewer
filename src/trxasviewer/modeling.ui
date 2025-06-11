@@ -645,7 +645,7 @@
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>300</height>
+                  <height>150</height>
                  </size>
                 </property>
                </widget>
@@ -682,8 +682,8 @@
                <widget class="QLabel" name="label_graph">
                 <property name="minimumSize">
                  <size>
-                  <width>200</width>
-                  <height>200</height>
+                  <width>400</width>
+                  <height>150</height>
                  </size>
                 </property>
                 <property name="text">
@@ -764,7 +764,7 @@
      <x>0</x>
      <y>0</y>
      <width>1230</width>
-     <height>24</height>
+     <height>33</height>
     </rect>
    </property>
   </widget>
