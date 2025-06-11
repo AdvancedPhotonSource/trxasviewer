@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.8.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -320,7 +320,7 @@ class Ui_MainWindow(object):
         self.spinBox_numb1 = QSpinBox(self.tab_5)
         self.spinBox_numb1.setObjectName(u"spinBox_numb1")
         self.spinBox_numb1.setMinimum(-1)
-        self.spinBox_numb1.setMaximum(9999)
+        self.spinBox_numb1.setMaximum(99999)
         self.spinBox_numb1.setValue(1)
 
         self.gridLayout_16.addWidget(self.spinBox_numb1, 4, 2, 1, 1)
@@ -328,7 +328,7 @@ class Ui_MainWindow(object):
         self.spinBox_numb0 = QSpinBox(self.tab_5)
         self.spinBox_numb0.setObjectName(u"spinBox_numb0")
         self.spinBox_numb0.setMinimum(0)
-        self.spinBox_numb0.setMaximum(9999)
+        self.spinBox_numb0.setMaximum(99999)
         self.spinBox_numb0.setValue(0)
 
         self.gridLayout_16.addWidget(self.spinBox_numb0, 4, 1, 1, 1)
@@ -336,7 +336,7 @@ class Ui_MainWindow(object):
         self.spinBox_anchor4 = QSpinBox(self.tab_5)
         self.spinBox_anchor4.setObjectName(u"spinBox_anchor4")
         self.spinBox_anchor4.setMinimum(1)
-        self.spinBox_anchor4.setMaximum(9999)
+        self.spinBox_anchor4.setMaximum(999999)
         self.spinBox_anchor4.setValue(1024)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor4, 3, 5, 1, 1)
@@ -344,7 +344,7 @@ class Ui_MainWindow(object):
         self.spinBox_numb3 = QSpinBox(self.tab_5)
         self.spinBox_numb3.setObjectName(u"spinBox_numb3")
         self.spinBox_numb3.setMinimum(-1)
-        self.spinBox_numb3.setMaximum(9999)
+        self.spinBox_numb3.setMaximum(99999)
         self.spinBox_numb3.setValue(16)
 
         self.gridLayout_16.addWidget(self.spinBox_numb3, 4, 4, 1, 1)
@@ -357,7 +357,7 @@ class Ui_MainWindow(object):
         self.spinBox_numb2 = QSpinBox(self.tab_5)
         self.spinBox_numb2.setObjectName(u"spinBox_numb2")
         self.spinBox_numb2.setMinimum(-1)
-        self.spinBox_numb2.setMaximum(9999)
+        self.spinBox_numb2.setMaximum(99999)
         self.spinBox_numb2.setValue(4)
         self.spinBox_numb2.setDisplayIntegerBase(10)
 
@@ -366,7 +366,7 @@ class Ui_MainWindow(object):
         self.spinBox_anchor1 = QSpinBox(self.tab_5)
         self.spinBox_anchor1.setObjectName(u"spinBox_anchor1")
         self.spinBox_anchor1.setMinimum(1)
-        self.spinBox_anchor1.setMaximum(9999)
+        self.spinBox_anchor1.setMaximum(999999)
         self.spinBox_anchor1.setValue(4)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor1, 3, 2, 1, 1)
@@ -374,7 +374,7 @@ class Ui_MainWindow(object):
         self.spinBox_anchor2 = QSpinBox(self.tab_5)
         self.spinBox_anchor2.setObjectName(u"spinBox_anchor2")
         self.spinBox_anchor2.setMinimum(1)
-        self.spinBox_anchor2.setMaximum(9999)
+        self.spinBox_anchor2.setMaximum(999999)
         self.spinBox_anchor2.setValue(32)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor2, 3, 3, 1, 1)
@@ -392,7 +392,7 @@ class Ui_MainWindow(object):
         self.spinBox_anchor3 = QSpinBox(self.tab_5)
         self.spinBox_anchor3.setObjectName(u"spinBox_anchor3")
         self.spinBox_anchor3.setMinimum(1)
-        self.spinBox_anchor3.setMaximum(9999)
+        self.spinBox_anchor3.setMaximum(999999)
         self.spinBox_anchor3.setValue(256)
 
         self.gridLayout_16.addWidget(self.spinBox_anchor3, 3, 4, 1, 1)
@@ -418,7 +418,7 @@ class Ui_MainWindow(object):
         self.spinBox_numb4 = QSpinBox(self.tab_5)
         self.spinBox_numb4.setObjectName(u"spinBox_numb4")
         self.spinBox_numb4.setMinimum(-1)
-        self.spinBox_numb4.setMaximum(9999)
+        self.spinBox_numb4.setMaximum(99999)
         self.spinBox_numb4.setValue(64)
 
         self.gridLayout_16.addWidget(self.spinBox_numb4, 4, 5, 1, 1)
