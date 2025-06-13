@@ -346,7 +346,7 @@ class TrXASDataset:
         data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
         self.num_rows = data.shape[0]
         self.labels = labels
-        self.meta_data = data[:, labels_mask]
+        self.meta_data = data[:, labels_mask[0 : data.shape[1]]]
         self.dset_type = dset_type
 
         if self.dset_type == "EXAFS":
@@ -357,7 +357,9 @@ class TrXASDataset:
             self.energy = 0.0
 
         # xas_part is [num_energy, channel, total_bunches]
-        xas_part = data[:, ~labels_mask].reshape(self.num_rows, shape[0], -1)
+        xas_part = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
+            self.num_rows, shape[0], -1
+        )
 
         # remove the last bunch because it may be incomplete
         xas_part = xas_part[:, :, :-1]  # (141, 3, 8668)
@@ -457,7 +459,7 @@ class TrXASDataset:
         for key, value in results["kinetics"].items():
             np.savetxt(
                 origin_folder / f"kinetics_{key}.txt",
-                value["profile"].T,
+                value["profile"]["main"].T,
                 fmt="%.7e",
                 delimiter=",",
                 header="Delay(s),Intensity,Error",
@@ -475,6 +477,8 @@ class TrXASDataset:
 
         def save_recursively(group, data):
             for key, value in data.items():
+                if value is None:
+                    continue
                 if isinstance(value, dict):
                     subgroup = group.create_group(key)
                     save_recursively(subgroup, value)
