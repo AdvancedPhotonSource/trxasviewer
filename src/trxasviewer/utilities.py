@@ -29,7 +29,7 @@ def get_scan_type(fname):
         return "invalid"
     elif is_recently_modified(fname):
         return "writing"
-    
+
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
@@ -61,7 +61,6 @@ def get_scan_type(fname):
 
     except Exception:  # Catch all exceptions
         return "invalid"
-
 
 
 def is_recently_modified(fname, threshold=45):
@@ -155,7 +154,7 @@ def prepare_binning_matrix(
             elif length == 0:  # length = 0 means do not bin lasered
                 flag_append_nobin = True
                 length = 1
-            end = min(size, start + anchors[n])
+            end = min(size, sync_index + anchors[n])
             if n == len(anchors) - 1:  # last level
                 end = size
             temp = np.arange(end - start) // length + idx_offset
