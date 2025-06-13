@@ -116,7 +116,7 @@ class SaveOptionsDialog(QDialog):
             "subdirectory": self.prefix_edit.text(),
             "save_image": self.cb_image.isChecked(),
             "save_numpy": self.cb_numpy.isChecked(),
-            "save_hdf": self.cb_origin.isChecked(),
+            "save_hdf": self.cb_hdf.isChecked(),
             "save_origin": self.cb_origin.isChecked(),
         }
 
