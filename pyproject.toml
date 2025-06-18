@@ -20,8 +20,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -35,13 +33,13 @@ keywords = ["X-ray absorption", "spectroscopy", "synchrotron", "visualization", 
 dependencies = [
     "numpy",
     "pyqtgraph",
-    "PySide6",
     "matplotlib",
     "scienceplots",
     "scipy",
     "h5py",
     "pandas",
-    "graphviz"  # install graphviz binary first
+    "graphviz",  # install graphviz binary first
+    "PySide6==6.8.3",
 ]
 
 [project.scripts]
