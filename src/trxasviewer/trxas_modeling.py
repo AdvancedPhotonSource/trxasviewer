@@ -3,11 +3,8 @@ import logging
 import os
 import sys
 import time
-import traceback
-from multiprocessing import Process
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from .fitting import global_fit_kinetic_model, run_parallel_optimizations
-#     num_runs, t_eval, experimental_data, adj_matrix, bounds, tol=1e-6, method="L-BFGS-B"
 
 import numpy as np
 import pandas as pd
@@ -44,14 +41,11 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__
-from .dtype_cache import DataTypeCache
+from .constants import TIME_SCALES
+from .fitting import run_single_optimization
 from .generated_modeling_ui import Ui_MainWindow
-from .trxas_dataset import TrXASDatasetManager, create_trxas_cache_from_flist
-from .trxas_graph import (
-    draw_decay_graph_with_top_nodes,
-    find_initial_states,
-    verify_decay_paths,
-)
+from .trxas_graph import draw_decay_graph_with_top_nodes
+from .trxas_result import TrXASResult
 from .utilities import format_time
 from .widgets import (
     ParameterTableModel,
@@ -79,10 +73,6 @@ pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 pg.setConfigOptions(antialias=True)
 pg.setConfigOptions(imageAxisOrder="row-major")
-
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QMainWindow
-from .trxas_result import TrXASResult
 
 
 def load_trxas_result(npz_filename):
@@ -133,6 +123,73 @@ def init_plots(graph_widget):
     return img_hdl
 
 
+class FitWorker(QObject):
+    finished = Signal(object, object, object)  # opt_param, concentrations, spectra
+    progress = Signal(int, int)  # completed, total
+    error = Signal(str)
+
+    def __init__(self, fit_param, curr_dset, get_state_mat, num_runs=100):
+        super().__init__()
+        self.fit_param = fit_param
+        self.curr_dset = curr_dset
+        self.get_state_mat = get_state_mat
+        self.num_runs = num_runs
+
+    @Slot()
+    def run(self):
+        try:
+            bounds = list(
+                zip(self.fit_param["Min"].values, self.fit_param["Max"].values)
+            )
+            scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
+            bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
+            adj_matrix = self.get_state_mat()
+
+            best_loss = np.inf
+            best_opt_params = None
+            best_final_concentrations = None
+            best_final_spectra = None
+
+            completed = 0
+
+            with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+                futures = {
+                    executor.submit(
+                        run_single_optimization,
+                        self.curr_dset.t_axis,
+                        self.curr_dset.diff,
+                        adj_matrix,
+                        bounds,
+                        1e-6,
+                        "L-BFGS-B",
+                        i,
+                    ): i
+                    for i in range(self.num_runs)
+                }
+
+                for future in as_completed(futures):
+                    run_id = futures[future]
+                    try:
+                        loss, opt_params, final_conc, final_spec, _, _ = future.result()
+                        if loss < best_loss:
+                            best_loss = loss
+                            best_opt_params = opt_params
+                            best_final_concentrations = final_conc
+                            best_final_spectra = final_spec
+                    except Exception as exc:
+                        logger.error(f"Run {run_id} failed: {exc}")
+                    finally:
+                        completed += 1
+                        self.progress.emit(completed, self.num_runs)
+
+            self.finished.emit(
+                best_opt_params, best_final_concentrations, best_final_spectra
+            )
+
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class TrXASModeler(QMainWindow, Ui_MainWindow):
     closed = Signal()
 
@@ -154,6 +211,9 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.fit_param_model = None
         self.fit_param = None
         self.curr_dset = None
+        self.progressBar_fit.setValue(0)
+        self.thread = None
+        self.is_fitting_running = False
 
     def closeEvent(self, event):
         self.closed.emit()  # Let the main window know we closed
@@ -227,7 +287,13 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         adj_matrix = self.get_state_mat()
         self.build_parameter(adj_matrix)
         # visualize the graph
-        graph_bytes = draw_decay_graph_with_top_nodes(adj_matrix, output="bytes")
+        flag, payload = draw_decay_graph_with_top_nodes(adj_matrix, output="bytes")
+        if not flag:
+            self.label_graph.clear()
+            show_error_dialog(self, title="Failed to generate graph", message=payload)
+            return
+        else:
+            graph_bytes = payload
 
         # Convert image bytes to QPixmap
         pixmap = QPixmap()
@@ -263,32 +329,37 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.tableView_parameters.setAlternatingRowColors(True)
 
     def fit_data(self):
-        if self.fit_param is None or self.curr_dset is None:
+        if self.fit_param is None or self.curr_dset is None or self.is_fitting_running:
             return
-        bounds = list(zip(self.fit_param["Min"].values, self.fit_param["Max"].values))
-        unit_to_scale = {
-            "ps": 1e-12,
-            "ns": 1e-9,
-            "us": 1e-6,
-            "µs": 1e-6,
-            "ms": 1e-3,
-            "s": 1.0,
-        }
-        scale = [unit_to_scale[unit] for unit in self.fit_param["Unit"]]
-        bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
-        adj_matrix = self.get_state_mat()
-        # opt_param, opt_concentrations, opt_spectra = global_fit_kinetic_model(
-        #     self.curr_dset.t_axis, self.curr_dset.diff, adj_matrix, bounds=bounds
-        # )
-        opt_param, opt_concentrations, opt_spectra = run_parallel_optimizations(
-            100, self.curr_dset.t_axis, self.curr_dset.diff, adj_matrix, bounds=bounds
-        )
 
-#     num_runs, t_eval, experimental_data, adj_matrix, bounds, tol=1e-6, method="L-BFGS-B"
+        self.is_fitting_running = True
+        self.pushButton_fit.setDisabled(True)
+        self.thread = QThread()
+        self.worker = FitWorker(self.fit_param, self.curr_dset, self.get_state_mat)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.on_fit_finished)
+        self.worker.progress.connect(self.on_fit_progress)
+        # self.worker.error.connect(self.on_fit_error)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.progressBar_fit.setMaximum(100)
+        self.progressBar_fit.setValue(0)
+        self.thread.start()
+
+    def on_fit_progress(self, done, total):
+        percent = int(100 * done / total)
+        self.progressBar_fit.setValue(percent)
+
+    def on_fit_finished(self, opt_param, opt_concentrations, opt_spectra):
+        self.pushButton_fit.setEnabled(True)
+        self.is_fitting_running = False
+        scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
         self.fit_param["Fit Value"] = opt_param / scale
         self.fit_param_model.layoutChanged.emit()
         self.plot_fitting(opt_concentrations, opt_spectra)
-        return bounds
 
     def load_dset(self):
         # f, _ = QFileDialog.getOpenFileName(
