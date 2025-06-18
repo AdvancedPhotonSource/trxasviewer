@@ -122,12 +122,11 @@ def verify_decay_paths(adj_matrix):
         if not can_reach_ground(i):
             unreachable_states.append(state_names[i])
 
-    if unreachable_states:
-        raise ValueError(
-            f"States with no decay path to ground state: {', '.join(unreachable_states)}"
-        )
-
-    return True
+    if not unreachable_states:
+        return True, None
+    else:
+        msg = f"States with no decay path to ground state: {', '.join(unreachable_states)}"
+        return False, msg
 
 
 def draw_decay_graph_with_top_nodes(
@@ -144,11 +143,9 @@ def draw_decay_graph_with_top_nodes(
     - adjacent_matrix: 2D list defining transitions (1 at [i][j] means j → i)
     - filename: output image name (without extension)
     """
-    try:
-        verify_decay_paths(adjacent_matrix)
-    except ValueError as e:
-        print(f"Error: {e}")
-        return
+    flag, msg = verify_decay_paths(adjacent_matrix)
+    if not flag:
+        return False, msg
 
     dot = Digraph(format="png")
     dot.attr(rankdir="TB", size="6,4!", dpi="150", ratio="fill")
@@ -259,10 +256,10 @@ def draw_decay_graph_with_top_nodes(
 
     # Render the graph to bytes or file
     if output == "bytes":
-        return dot.pipe(format="png")
+        return True, dot.pipe(format="png")
     elif output == "file":
         dot.render(filename, view=True, cleanup=True)
-        return filename + ".png"
+        return True, filename + ".png"
 
 
 if __name__ == "__main__":
@@ -282,7 +279,7 @@ if __name__ == "__main__":
     print(f"The initial states are: {initials}")
 
     # --- Generate the graph visualization ---
-    output_file_top_nodes = draw_decay_graph_with_top_nodes(
+    flag, output_file_top_nodes = draw_decay_graph_with_top_nodes(
         adjacent_matrix, filename="decay_graph_demo", output="file"
     )
     print(f"Graph saved to: {output_file_top_nodes}")
