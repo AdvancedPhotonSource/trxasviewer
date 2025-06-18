@@ -1,15 +1,17 @@
-import numpy as np
-from scipy.optimize import minimize
-from scipy.integrate import solve_ivp
-from .trxas_graph import create_initial_state_array  # Assuming this exists and works
-import matplotlib.pyplot as plt
+import logging
+import os
+import time
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import os
 
-# --- (Your existing functions: create_q_matrix, calculate_concentrations,
-#      calculate_residuals_and_spectra, objective_function, global_fit_kinetic_model) ---
-# Paste the functions here to make the module self-contained for testing and execution.
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
+from scipy.optimize import minimize
+
+from .trxas_graph import create_initial_state_array
+
+logger = logging.getLogger(__name__)  # Create a logger for this module
 
 
 def create_q_matrix(adj_matrix, params):
@@ -166,7 +168,7 @@ def objective_function(params, t_eval, experimental_data, adj_matrix):
     component_spectrum, sum_sq_residuals = calculate_residuals_and_spectra(
         experimental_data, concentrations
     )
-    # print(concentrations.shape, component_spectrum.shape, experimental_data.shape) # Mute this print for cleaner multiprocessing output
+    # logger.info(concentrations.shape, component_spectrum.shape, experimental_data.shape) # Mute this print for cleaner multiprocessing output
     return np.sqrt(sum_sq_residuals)
 
 
@@ -234,7 +236,7 @@ def global_fit_kinetic_model(
         np.square((final_concentrations @ final_spectra - experimental_data))
     )
 
-    # print(
+    # logger.info(
     #     f"Process {os.getpid()} finished. Final Loss: {final_loss:.4f}, Optimized Parameters: {np.round(opt_params, 3)}"
     # )
 
@@ -248,10 +250,10 @@ def run_single_optimization(
     Wrapper function to run global_fit_kinetic_model for multiprocessing.
     Includes random initial parameter generation within the worker process.
     """
-    print(f"Starting optimization run {run_id} on process {os.getpid()}...")
     # Generate random initial parameters within the worker process
     # This ensures each process gets a truly independent starting point
     # based on the provided bounds.
+    t0 = time.perf_counter()
     scale = np.max(t_eval)
     bounds_scaled = np.array(bounds) / scale
     rand = np.random.uniform(0, 1, bounds_scaled.shape[0])
@@ -269,8 +271,10 @@ def run_single_optimization(
             * scale,  # Pass scaled initial params to the function, as global_fit_kinetic_model expects unscaled
         )
     )
-    print(
-        f"Finished optimization run {run_id} on process {os.getpid()}. Loss: {loss:.4f}"
+
+    dt = time.perf_counter() - t0
+    logger.info(
+        f"Finished fitting run {run_id} on process {os.getpid()}. Loss: {loss:.8g}. Time: {dt:.2f} seconds"
     )
     return loss, opt_params, final_concentrations, final_spectra, res, run_id
 
@@ -350,13 +354,13 @@ def run_parallel_optimizations(
                     best_res = res
                     best_run_id = run_id
             except Exception as exc:
-                print(f"Run {run_id} generated an exception: {exc}")
+                logger.info(f"Run {run_id} generated an exception: {exc}")
 
-    print(f"\n--- Parallel Optimization Summary ---")
-    print(f"Total runs: {num_runs}")
-    print(f"Best run ID: {best_run_id}")
-    print(f"Overall Best Loss: {best_loss:.8e}")
-    print(f"Optimized Parameters from best run: {np.round(best_opt_params, 3)}")
+    logger.info(f"\n--- Parallel Optimization Summary ---")
+    logger.info(f"Total runs: {num_runs}")
+    logger.info(f"Best run ID: {best_run_id}")
+    logger.info(f"Overall Best Loss: {best_loss:.8e}")
+    logger.info(f"Optimized Parameters from best run: {np.round(best_opt_params, 3)}")
 
     return (
         best_opt_params,
@@ -423,7 +427,7 @@ class TestKineticModel(unittest.TestCase):
 
     def test_q_matrix_creation(self):
         """Tests that the create_q_matrix function assembles the matrix correctly."""
-        print("Running test: test_q_matrix_creation")
+        logger.info("Running test: test_q_matrix_creation")
         q_matrix = create_q_matrix(self.adj_matrix, self.true_params)
 
         expected_q_matrix = np.array(
@@ -435,11 +439,11 @@ class TestKineticModel(unittest.TestCase):
             np.allclose(q_matrix, expected_q_matrix),
             "Q-Matrix did not match expected values.",
         )
-        print("PASSED: test_q_matrix_creation")
+        logger.info("PASSED: test_q_matrix_creation")
 
     def test_global_fit_finds_correct_parameters(self):
         """Tests that the global fit can recover the true parameters from mock data."""
-        print("\nRunning test: test_global_fit_finds_correct_parameters")
+        logger.info("\nRunning test: test_global_fit_finds_correct_parameters")
         # For a single run, initial_params would typically be provided or generated.
         # Here we'll rely on the internal generation within global_fit_kinetic_model.
         # We need to ensure that the global_fit_kinetic_model can be called with the new signature
@@ -464,11 +468,11 @@ class TestKineticModel(unittest.TestCase):
             np.allclose(opt_params, self.true_params, rtol=0.2),
             f"Optimized parameters {np.round(opt_params, 3)} are not close to true values {self.true_params}.",
         )
-        print("PASSED: test_global_fit_finds_correct_parameters")
+        logger.info("PASSED: test_global_fit_finds_correct_parameters")
 
     def test_parallel_fit_finds_best_parameters(self):
         """Tests that the parallel fit can find the best parameters from multiple runs."""
-        print("\nRunning test: test_parallel_fit_finds_best_parameters")
+        logger.info("\nRunning test: test_parallel_fit_finds_best_parameters")
         num_parallel_runs = 5  # Number of parallel runs for the test
 
         best_loss, best_opt_params, _, _, best_res, best_run_id = (
@@ -497,7 +501,7 @@ class TestKineticModel(unittest.TestCase):
             type(minimize(lambda x: x[0] ** 2, [1]).fun),
             "Returned best_res is not a SciPy OptimizeResult object.",
         )
-        print(
+        logger.info(
             f"PASSED: test_parallel_fit_finds_best_parameters (Best run ID: {best_run_id}, Loss: {best_loss:.4f})"
         )
 
@@ -561,7 +565,7 @@ if __name__ == "__main__":
     # For A->B->C, there are two rates, so two sets of bounds.
     bounds_example = [(0.001, 1.0), (0.001, 1.0)]
 
-    # print("--- Starting parallel optimization ---")
+    # logger.info("--- Starting parallel optimization ---")
     # Run parallel optimization
     (
         best_loss_found,
@@ -580,12 +584,12 @@ if __name__ == "__main__":
         method="L-BFGS-B",
     )
 
-    print("\n--- Best Fit Results ---")
-    print(f"Best Loss: {best_loss_found:.6f}")
-    print(f"Best Parameters: {best_params_found}")
-    print(f"Best Run ID: {best_run_id}")
-    print("\n--- Comparison to True Parameters ---")
-    print(f"True Parameters: {true_params_for_mock}")
+    logger.info("\n--- Best Fit Results ---")
+    logger.info(f"Best Loss: {best_loss_found:.6f}")
+    logger.info(f"Best Parameters: {best_params_found}")
+    logger.info(f"Best Run ID: {best_run_id}")
+    logger.info("\n--- Comparison to True Parameters ---")
+    logger.info(f"True Parameters: {true_params_for_mock}")
 
     # Optional: Plotting the results from the best fit
     plt.figure(figsize=(12, 6))
@@ -626,5 +630,5 @@ if __name__ == "__main__":
     plt.show()
 
     # Run unit tests
-    print("\n--- Running Unit Tests ---")
+    logger.info("\n--- Running Unit Tests ---")
     unittest.main(argv=["first-arg-is-ignored"], exit=False)
