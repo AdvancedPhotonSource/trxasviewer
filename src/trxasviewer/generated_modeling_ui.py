@@ -17,8 +17,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QGroupBox, QHeaderView, QLabel, QMainWindow,
-    QMenuBar, QPushButton, QSizePolicy, QSpinBox,
-    QSplitter, QStatusBar, QTableView, QVBoxLayout,
+    QMenuBar, QProgressBar, QPushButton, QSizePolicy,
+    QSpinBox, QSplitter, QStatusBar, QTableView,
     QWidget)
 
 from pyqtgraph import GraphicsLayoutWidget
@@ -32,15 +32,13 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_6 = QGridLayout(self.centralwidget)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.splitter = QSplitter(self.centralwidget)
+        self.splitter_2 = QSplitter(self.centralwidget)
+        self.splitter_2.setObjectName(u"splitter_2")
+        self.splitter_2.setOrientation(Qt.Orientation.Horizontal)
+        self.splitter = QSplitter(self.splitter_2)
         self.splitter.setObjectName(u"splitter")
-        self.splitter.setOrientation(Qt.Orientation.Horizontal)
-        self.layoutWidget = QWidget(self.splitter)
-        self.layoutWidget.setObjectName(u"layoutWidget")
-        self.verticalLayout = QVBoxLayout(self.layoutWidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.groupBox = QGroupBox(self.layoutWidget)
+        self.splitter.setOrientation(Qt.Orientation.Vertical)
+        self.groupBox = QGroupBox(self.splitter)
         self.groupBox.setObjectName(u"groupBox")
         self.gridLayout = QGridLayout(self.groupBox)
         self.gridLayout.setObjectName(u"gridLayout")
@@ -55,29 +53,74 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.tableView, 0, 0, 1, 1)
 
-
-        self.verticalLayout.addWidget(self.groupBox)
-
-        self.groupBox_2 = QGroupBox(self.layoutWidget)
+        self.splitter.addWidget(self.groupBox)
+        self.groupBox_2 = QGroupBox(self.splitter)
         self.groupBox_2.setObjectName(u"groupBox_2")
         self.gridLayout_2 = QGridLayout(self.groupBox_2)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.gridLayout_2.setContentsMargins(1, 1, 1, 1)
-        self.label = QLabel(self.groupBox_2)
-        self.label.setObjectName(u"label")
+        self.gridLayout_2.setContentsMargins(2, 2, 2, 2)
+        self.groupBox_3 = QGroupBox(self.groupBox_2)
+        self.groupBox_3.setObjectName(u"groupBox_3")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
+        self.groupBox_3.setSizePolicy(sizePolicy)
+        self.gridLayout_8 = QGridLayout(self.groupBox_3)
+        self.gridLayout_8.setObjectName(u"gridLayout_8")
+        self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.label_graph = QLabel(self.groupBox_3)
+        self.label_graph.setObjectName(u"label_graph")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.label_graph.sizePolicy().hasHeightForWidth())
+        self.label_graph.setSizePolicy(sizePolicy1)
+        self.label_graph.setMinimumSize(QSize(400, 200))
 
-        self.gridLayout_2.addWidget(self.label, 0, 0, 1, 2)
+        self.gridLayout_8.addWidget(self.label_graph, 0, 0, 1, 1)
 
-        self.comboBox_model = QComboBox(self.groupBox_2)
-        self.comboBox_model.addItem("")
-        self.comboBox_model.addItem("")
-        self.comboBox_model.addItem("")
-        self.comboBox_model.setObjectName(u"comboBox_model")
 
-        self.gridLayout_2.addWidget(self.comboBox_model, 0, 3, 1, 1)
+        self.gridLayout_2.addWidget(self.groupBox_3, 1, 0, 1, 8)
+
+        self.pushButton_updatemodel = QPushButton(self.groupBox_2)
+        self.pushButton_updatemodel.setObjectName(u"pushButton_updatemodel")
+
+        self.gridLayout_2.addWidget(self.pushButton_updatemodel, 6, 1, 1, 1)
+
+        self.pushButton_fit = QPushButton(self.groupBox_2)
+        self.pushButton_fit.setObjectName(u"pushButton_fit")
+
+        self.gridLayout_2.addWidget(self.pushButton_fit, 6, 7, 1, 1)
+
+        self.pushButton_load_model = QPushButton(self.groupBox_2)
+        self.pushButton_load_model.setObjectName(u"pushButton_load_model")
+
+        self.gridLayout_2.addWidget(self.pushButton_load_model, 6, 5, 1, 1)
+
+        self.pushButton_save_model = QPushButton(self.groupBox_2)
+        self.pushButton_save_model.setObjectName(u"pushButton_save_model")
+
+        self.gridLayout_2.addWidget(self.pushButton_save_model, 6, 2, 1, 1)
+
+        self.groupBox_6 = QGroupBox(self.groupBox_2)
+        self.groupBox_6.setObjectName(u"groupBox_6")
+        self.gridLayout_7 = QGridLayout(self.groupBox_6)
+        self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.gridLayout_7.setContentsMargins(1, 1, 1, 1)
+        self.tableView_parameters = QTableView(self.groupBox_6)
+        self.tableView_parameters.setObjectName(u"tableView_parameters")
+        self.tableView_parameters.setMinimumSize(QSize(0, 150))
+
+        self.gridLayout_7.addWidget(self.tableView_parameters, 1, 0, 1, 1)
+
+
+        self.gridLayout_2.addWidget(self.groupBox_6, 4, 0, 1, 8)
 
         self.groupBox_5 = QGroupBox(self.groupBox_2)
         self.groupBox_5.setObjectName(u"groupBox_5")
+        sizePolicy1.setHeightForWidth(self.groupBox_5.sizePolicy().hasHeightForWidth())
+        self.groupBox_5.setSizePolicy(sizePolicy1)
         self.gridLayout_3 = QGridLayout(self.groupBox_5)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.gridLayout_3.setContentsMargins(1, 1, 1, 1)
@@ -86,6 +129,11 @@ class Ui_MainWindow(object):
         self.checkBox_m43 = QCheckBox(self.groupBox_5)
         self.checkBox_m43.setObjectName(u"checkBox_m43")
         self.checkBox_m43.setEnabled(False)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.checkBox_m43.sizePolicy().hasHeightForWidth())
+        self.checkBox_m43.setSizePolicy(sizePolicy2)
         self.checkBox_m43.setMaximumSize(QSize(80, 16777215))
         font = QFont()
         font.setFamilies([u"DejaVu Sans"])
@@ -96,6 +144,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m31 = QCheckBox(self.groupBox_5)
         self.checkBox_m31.setObjectName(u"checkBox_m31")
+        sizePolicy2.setHeightForWidth(self.checkBox_m31.sizePolicy().hasHeightForWidth())
+        self.checkBox_m31.setSizePolicy(sizePolicy2)
         self.checkBox_m31.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m31.setFont(font)
 
@@ -103,6 +153,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m11 = QCheckBox(self.groupBox_5)
         self.checkBox_m11.setObjectName(u"checkBox_m11")
+        sizePolicy2.setHeightForWidth(self.checkBox_m11.sizePolicy().hasHeightForWidth())
+        self.checkBox_m11.setSizePolicy(sizePolicy2)
         self.checkBox_m11.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m11.setFont(font)
         self.checkBox_m11.setChecked(True)
@@ -112,6 +164,8 @@ class Ui_MainWindow(object):
         self.checkBox_m64 = QCheckBox(self.groupBox_5)
         self.checkBox_m64.setObjectName(u"checkBox_m64")
         self.checkBox_m64.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m64.sizePolicy().hasHeightForWidth())
+        self.checkBox_m64.setSizePolicy(sizePolicy2)
         self.checkBox_m64.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m64.setFont(font)
 
@@ -119,6 +173,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m33 = QCheckBox(self.groupBox_5)
         self.checkBox_m33.setObjectName(u"checkBox_m33")
+        sizePolicy2.setHeightForWidth(self.checkBox_m33.sizePolicy().hasHeightForWidth())
+        self.checkBox_m33.setSizePolicy(sizePolicy2)
         self.checkBox_m33.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m33.setFont(font)
         self.checkBox_m33.setChecked(True)
@@ -133,6 +189,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m22 = QCheckBox(self.groupBox_5)
         self.checkBox_m22.setObjectName(u"checkBox_m22")
+        sizePolicy2.setHeightForWidth(self.checkBox_m22.sizePolicy().hasHeightForWidth())
+        self.checkBox_m22.setSizePolicy(sizePolicy2)
         self.checkBox_m22.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m22.setFont(font)
         self.checkBox_m22.setChecked(True)
@@ -141,6 +199,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m32 = QCheckBox(self.groupBox_5)
         self.checkBox_m32.setObjectName(u"checkBox_m32")
+        sizePolicy2.setHeightForWidth(self.checkBox_m32.sizePolicy().hasHeightForWidth())
+        self.checkBox_m32.setSizePolicy(sizePolicy2)
         self.checkBox_m32.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m32.setFont(font)
 
@@ -148,6 +208,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m61 = QCheckBox(self.groupBox_5)
         self.checkBox_m61.setObjectName(u"checkBox_m61")
+        sizePolicy2.setHeightForWidth(self.checkBox_m61.sizePolicy().hasHeightForWidth())
+        self.checkBox_m61.setSizePolicy(sizePolicy2)
         self.checkBox_m61.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m61.setFont(font)
         self.checkBox_m61.setChecked(True)
@@ -157,6 +219,8 @@ class Ui_MainWindow(object):
         self.checkBox_m44 = QCheckBox(self.groupBox_5)
         self.checkBox_m44.setObjectName(u"checkBox_m44")
         self.checkBox_m44.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m44.sizePolicy().hasHeightForWidth())
+        self.checkBox_m44.setSizePolicy(sizePolicy2)
         self.checkBox_m44.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m44.setFont(font)
 
@@ -176,6 +240,8 @@ class Ui_MainWindow(object):
         self.checkBox_m53 = QCheckBox(self.groupBox_5)
         self.checkBox_m53.setObjectName(u"checkBox_m53")
         self.checkBox_m53.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m53.sizePolicy().hasHeightForWidth())
+        self.checkBox_m53.setSizePolicy(sizePolicy2)
         self.checkBox_m53.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m53.setFont(font)
 
@@ -184,6 +250,8 @@ class Ui_MainWindow(object):
         self.checkBox_m41 = QCheckBox(self.groupBox_5)
         self.checkBox_m41.setObjectName(u"checkBox_m41")
         self.checkBox_m41.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m41.sizePolicy().hasHeightForWidth())
+        self.checkBox_m41.setSizePolicy(sizePolicy2)
         self.checkBox_m41.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m41.setFont(font)
 
@@ -192,6 +260,8 @@ class Ui_MainWindow(object):
         self.checkBox_m54 = QCheckBox(self.groupBox_5)
         self.checkBox_m54.setObjectName(u"checkBox_m54")
         self.checkBox_m54.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m54.sizePolicy().hasHeightForWidth())
+        self.checkBox_m54.setSizePolicy(sizePolicy2)
         self.checkBox_m54.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m54.setFont(font)
 
@@ -206,6 +276,8 @@ class Ui_MainWindow(object):
         self.checkBox_m55 = QCheckBox(self.groupBox_5)
         self.checkBox_m55.setObjectName(u"checkBox_m55")
         self.checkBox_m55.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m55.sizePolicy().hasHeightForWidth())
+        self.checkBox_m55.setSizePolicy(sizePolicy2)
         self.checkBox_m55.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m55.setFont(font)
 
@@ -213,6 +285,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m63 = QCheckBox(self.groupBox_5)
         self.checkBox_m63.setObjectName(u"checkBox_m63")
+        sizePolicy2.setHeightForWidth(self.checkBox_m63.sizePolicy().hasHeightForWidth())
+        self.checkBox_m63.setSizePolicy(sizePolicy2)
         self.checkBox_m63.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m63.setFont(font)
         self.checkBox_m63.setChecked(True)
@@ -221,6 +295,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m21 = QCheckBox(self.groupBox_5)
         self.checkBox_m21.setObjectName(u"checkBox_m21")
+        sizePolicy2.setHeightForWidth(self.checkBox_m21.sizePolicy().hasHeightForWidth())
+        self.checkBox_m21.setSizePolicy(sizePolicy2)
         self.checkBox_m21.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m21.setFont(font)
 
@@ -235,6 +311,8 @@ class Ui_MainWindow(object):
         self.checkBox_m52 = QCheckBox(self.groupBox_5)
         self.checkBox_m52.setObjectName(u"checkBox_m52")
         self.checkBox_m52.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m52.sizePolicy().hasHeightForWidth())
+        self.checkBox_m52.setSizePolicy(sizePolicy2)
         self.checkBox_m52.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m52.setFont(font)
 
@@ -248,6 +326,8 @@ class Ui_MainWindow(object):
 
         self.checkBox_m62 = QCheckBox(self.groupBox_5)
         self.checkBox_m62.setObjectName(u"checkBox_m62")
+        sizePolicy2.setHeightForWidth(self.checkBox_m62.sizePolicy().hasHeightForWidth())
+        self.checkBox_m62.setSizePolicy(sizePolicy2)
         self.checkBox_m62.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m62.setFont(font)
         self.checkBox_m62.setChecked(True)
@@ -257,6 +337,8 @@ class Ui_MainWindow(object):
         self.checkBox_m51 = QCheckBox(self.groupBox_5)
         self.checkBox_m51.setObjectName(u"checkBox_m51")
         self.checkBox_m51.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m51.sizePolicy().hasHeightForWidth())
+        self.checkBox_m51.setSizePolicy(sizePolicy2)
         self.checkBox_m51.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m51.setFont(font)
 
@@ -265,6 +347,8 @@ class Ui_MainWindow(object):
         self.checkBox_m65 = QCheckBox(self.groupBox_5)
         self.checkBox_m65.setObjectName(u"checkBox_m65")
         self.checkBox_m65.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m65.sizePolicy().hasHeightForWidth())
+        self.checkBox_m65.setSizePolicy(sizePolicy2)
         self.checkBox_m65.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m65.setFont(font)
 
@@ -273,79 +357,55 @@ class Ui_MainWindow(object):
         self.checkBox_m42 = QCheckBox(self.groupBox_5)
         self.checkBox_m42.setObjectName(u"checkBox_m42")
         self.checkBox_m42.setEnabled(False)
+        sizePolicy2.setHeightForWidth(self.checkBox_m42.sizePolicy().hasHeightForWidth())
+        self.checkBox_m42.setSizePolicy(sizePolicy2)
         self.checkBox_m42.setMaximumSize(QSize(80, 16777215))
         self.checkBox_m42.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m42, 3, 2, 1, 1)
 
 
-        self.gridLayout_3.addLayout(self.gridLayout_5, 0, 0, 1, 3)
+        self.gridLayout_3.addLayout(self.gridLayout_5, 1, 0, 1, 3)
 
+        self.label = QLabel(self.groupBox_5)
+        self.label.setObjectName(u"label")
 
-        self.gridLayout_2.addWidget(self.groupBox_5, 1, 0, 1, 5)
+        self.gridLayout_3.addWidget(self.label, 0, 0, 1, 1)
 
-        self.groupBox_6 = QGroupBox(self.groupBox_2)
-        self.groupBox_6.setObjectName(u"groupBox_6")
-        self.gridLayout_7 = QGridLayout(self.groupBox_6)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.gridLayout_7.setContentsMargins(1, 1, 1, 1)
-        self.tableView_parameters = QTableView(self.groupBox_6)
-        self.tableView_parameters.setObjectName(u"tableView_parameters")
-        self.tableView_parameters.setMinimumSize(QSize(0, 150))
-
-        self.gridLayout_7.addWidget(self.tableView_parameters, 1, 0, 1, 1)
-
-
-        self.gridLayout_2.addWidget(self.groupBox_6, 3, 0, 1, 5)
-
-        self.pushButton_updatemodel = QPushButton(self.groupBox_2)
-        self.pushButton_updatemodel.setObjectName(u"pushButton_updatemodel")
-
-        self.gridLayout_2.addWidget(self.pushButton_updatemodel, 0, 4, 1, 1)
-
-        self.groupBox_3 = QGroupBox(self.groupBox_2)
-        self.groupBox_3.setObjectName(u"groupBox_3")
-        self.gridLayout_8 = QGridLayout(self.groupBox_3)
-        self.gridLayout_8.setObjectName(u"gridLayout_8")
-        self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.label_graph = QLabel(self.groupBox_3)
-        self.label_graph.setObjectName(u"label_graph")
-        self.label_graph.setMinimumSize(QSize(400, 150))
-
-        self.gridLayout_8.addWidget(self.label_graph, 0, 0, 1, 1)
-
-
-        self.gridLayout_2.addWidget(self.groupBox_3, 2, 0, 1, 5)
-
-        self.spinBox_nstates = QSpinBox(self.groupBox_2)
+        self.spinBox_nstates = QSpinBox(self.groupBox_5)
         self.spinBox_nstates.setObjectName(u"spinBox_nstates")
         self.spinBox_nstates.setMinimum(1)
         self.spinBox_nstates.setMaximum(5)
         self.spinBox_nstates.setValue(3)
 
-        self.gridLayout_2.addWidget(self.spinBox_nstates, 0, 2, 1, 1)
+        self.gridLayout_3.addWidget(self.spinBox_nstates, 0, 1, 1, 1)
 
-        self.pushButton_fit = QPushButton(self.groupBox_2)
-        self.pushButton_fit.setObjectName(u"pushButton_fit")
+        self.comboBox_model = QComboBox(self.groupBox_5)
+        self.comboBox_model.addItem("")
+        self.comboBox_model.addItem("")
+        self.comboBox_model.addItem("")
+        self.comboBox_model.setObjectName(u"comboBox_model")
 
-        self.gridLayout_2.addWidget(self.pushButton_fit, 4, 4, 1, 1)
-
-        self.pushButton_save = QPushButton(self.groupBox_2)
-        self.pushButton_save.setObjectName(u"pushButton_save")
-
-        self.gridLayout_2.addWidget(self.pushButton_save, 4, 0, 1, 2)
+        self.gridLayout_3.addWidget(self.comboBox_model, 0, 2, 1, 1)
 
 
-        self.verticalLayout.addWidget(self.groupBox_2)
+        self.gridLayout_2.addWidget(self.groupBox_5, 0, 0, 1, 8)
 
-        self.splitter.addWidget(self.layoutWidget)
-        self.groupBox_4 = QGroupBox(self.splitter)
+        self.progressBar_fit = QProgressBar(self.groupBox_2)
+        self.progressBar_fit.setObjectName(u"progressBar_fit")
+        self.progressBar_fit.setValue(24)
+
+        self.gridLayout_2.addWidget(self.progressBar_fit, 6, 6, 1, 1)
+
+        self.splitter.addWidget(self.groupBox_2)
+        self.splitter_2.addWidget(self.splitter)
+        self.groupBox_4 = QGroupBox(self.splitter_2)
         self.groupBox_4.setObjectName(u"groupBox_4")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(1)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
-        self.groupBox_4.setSizePolicy(sizePolicy)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy3.setHorizontalStretch(1)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
+        self.groupBox_4.setSizePolicy(sizePolicy3)
         self.groupBox_4.setMinimumSize(QSize(600, 0))
         self.gridLayout_4 = QGridLayout(self.groupBox_4)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
@@ -357,14 +417,14 @@ class Ui_MainWindow(object):
 
         self.gridLayout_4.addWidget(self.display, 0, 0, 1, 1)
 
-        self.splitter.addWidget(self.groupBox_4)
+        self.splitter_2.addWidget(self.groupBox_4)
 
-        self.gridLayout_6.addWidget(self.splitter, 0, 0, 1, 1)
+        self.gridLayout_6.addWidget(self.splitter_2, 0, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1230, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1230, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -380,11 +440,13 @@ class Ui_MainWindow(object):
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics Datasets", None))
         self.pushButton_load.setText(QCoreApplication.translate("MainWindow", u"Load Results", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Model", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Number of States", None))
-        self.comboBox_model.setItemText(0, QCoreApplication.translate("MainWindow", u"parallel", None))
-        self.comboBox_model.setItemText(1, QCoreApplication.translate("MainWindow", u"sequential", None))
-        self.comboBox_model.setItemText(2, QCoreApplication.translate("MainWindow", u"advanced", None))
-
+        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Graph", None))
+        self.label_graph.setText("")
+        self.pushButton_updatemodel.setText(QCoreApplication.translate("MainWindow", u"Update", None))
+        self.pushButton_fit.setText(QCoreApplication.translate("MainWindow", u"Fit", None))
+        self.pushButton_load_model.setText(QCoreApplication.translate("MainWindow", u"Load", None))
+        self.pushButton_save_model.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"State-Matrix", None))
         self.checkBox_m43.setText(QCoreApplication.translate("MainWindow", u"m34", None))
         self.checkBox_m31.setText(QCoreApplication.translate("MainWindow", u"m13", None))
@@ -412,12 +474,11 @@ class Ui_MainWindow(object):
         self.checkBox_m51.setText(QCoreApplication.translate("MainWindow", u"m15", None))
         self.checkBox_m65.setText(QCoreApplication.translate("MainWindow", u"m50", None))
         self.checkBox_m42.setText(QCoreApplication.translate("MainWindow", u"m24", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
-        self.pushButton_updatemodel.setText(QCoreApplication.translate("MainWindow", u"Update", None))
-        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Graph", None))
-        self.label_graph.setText("")
-        self.pushButton_fit.setText(QCoreApplication.translate("MainWindow", u"Fit", None))
-        self.pushButton_save.setText(QCoreApplication.translate("MainWindow", u"Save", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Number of States", None))
+        self.comboBox_model.setItemText(0, QCoreApplication.translate("MainWindow", u"parallel", None))
+        self.comboBox_model.setItemText(1, QCoreApplication.translate("MainWindow", u"sequential", None))
+        self.comboBox_model.setItemText(2, QCoreApplication.translate("MainWindow", u"advanced", None))
+
         self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"GroupBox", None))
     # retranslateUi
 
