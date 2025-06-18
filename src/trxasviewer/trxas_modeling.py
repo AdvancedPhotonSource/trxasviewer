@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 from . import __version__
 from .constants import TIME_SCALES
 from .fitting import run_single_optimization
+from .pg_plot import plot_kinetics_profile, plot_kinetics_error
 from .generated_modeling_ui import Ui_MainWindow
 from .trxas_graph import draw_decay_graph_with_top_nodes
 from .trxas_result import TrXASResult
