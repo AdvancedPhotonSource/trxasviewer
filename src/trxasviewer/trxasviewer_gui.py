@@ -43,6 +43,7 @@ from .utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
 from .dtype_cache import DataTypeCache
 from .trxas_modeling import TrXASModeler
+from .pg_plot import plot_kinetics_profile, plot_kinetics_error
 import logging
 from . import __version__
 
@@ -892,53 +893,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
-        use_errorbar = self.checkBox_kinetics_errorbar.isChecked()
-        self.pg_hdl_kinetics.clear()
-        self.pg_hdl_kinetics.addLegend()
-        self.pg_hdl_kinetics_err.clear()
-        self.pg_hdl_kinetics_err.addLegend()
         if not self.results["kinetics"]:
             return
-        for idx, (key, value) in enumerate(self.results["kinetics"].items()):
-            data = value["profile"]["main"]
-            pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
-            x, y = data[0], data[1]
-            # curve + Scatter + error (if present)
-            self.pg_hdl_kinetics.plot(x, y, pen=pen)
-            scatter_plot = pg.ScatterPlotItem(
-                x=x,
-                y=y,
-                size=3,
-                pen=pen,
-                brush=None,
-                name=value["long_label"],
-            )
-            self.pg_hdl_kinetics.addItem(scatter_plot)
-
-            # Optional error bars
-            print(use_errorbar)
-            if use_errorbar and data.shape[0] == 3:
-                yerr = data[2]
-                beam = (x.max() - x.min()) / 200
-                self.pg_hdl_kinetics.addItem(
-                    pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
-                )
-
-            err_profile = value["profile"]["error"]
-            if err_profile is not None:
-                self.pg_hdl_kinetics_err.plot(
-                    err_profile[:, 0],
-                    err_profile[:, 1],
-                    pen=pen,
-                    symbol=PGSYMBOLS[idx % len(PGSYMBOLS)],
-                    symbolPen=pen,
-                    name=key,
-                )
-
-        self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
-        self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
-        self.pg_hdl_kinetics_err.setLabel("left", "Normalized Uncertainty")
-        self.pg_hdl_kinetics_err.setLabel("bottom", "Number of scans")
+        plot_kinetics_profile(self.results, self.pg_hdl_kinetics)
+        plot_kinetics_error(self.results, self.pg_hdl_kinetics_err)
 
     def update_progress_bar(self, value):
         """Updates the progress bar."""
