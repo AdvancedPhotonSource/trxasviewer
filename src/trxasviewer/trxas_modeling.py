@@ -3,8 +3,10 @@ import logging
 import os
 import sys
 import time
+import psutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+import random
 
 import numpy as np
 import pandas as pd
@@ -129,12 +131,24 @@ class FitWorker(QObject):
     progress = Signal(int, int)  # completed, total
     error = Signal(str)
 
-    def __init__(self, fit_param, curr_dset, get_state_mat, num_runs=100):
+    def __init__(
+        self,
+        fit_param,
+        curr_dset,
+        get_state_mat,
+        num_tries=100,
+        method="L-BFGS-B",
+        num_workers=4,
+        tolerance=1e-6,
+    ):
         super().__init__()
         self.fit_param = fit_param
         self.curr_dset = curr_dset
         self.get_state_mat = get_state_mat
-        self.num_runs = num_runs
+        self.num_tries = num_tries
+        self.num_workers = num_workers
+        self.method = method
+        self.tolerance = tolerance
 
     @Slot()
     def run(self):
@@ -150,38 +164,36 @@ class FitWorker(QObject):
             best_opt_params = None
             best_final_concentrations = None
             best_final_spectra = None
-
             completed = 0
 
-            with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-                futures = {
+            with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
+                futures = [
                     executor.submit(
                         run_single_optimization,
                         self.curr_dset.t_axis,
                         self.curr_dset.diff,
                         adj_matrix,
                         bounds,
-                        1e-6,
-                        "L-BFGS-B",
+                        self.tolerance,
+                        self.method,
                         i,
-                    ): i
-                    for i in range(self.num_runs)
-                }
+                    )
+                    for i in range(self.num_tries)
+                ]
 
-                for future in as_completed(futures):
-                    run_id = futures[future]
+                for completed, future in enumerate(as_completed(futures), start=1):
                     try:
-                        loss, opt_params, final_conc, final_spec, _, _ = future.result()
+                        loss, opt_params, final_conc, final_spec, res = future.result()
                         if loss < best_loss:
                             best_loss = loss
                             best_opt_params = opt_params
                             best_final_concentrations = final_conc
                             best_final_spectra = final_spec
                     except Exception as exc:
-                        logger.error(f"Run {run_id} failed: {exc}")
+                        logger.error(f"A run failed: {exc}")
                     finally:
                         completed += 1
-                        self.progress.emit(completed, self.num_runs)
+                        self.progress.emit(completed, self.num_tries)
 
             self.finished.emit(
                 best_opt_params, best_final_concentrations, best_final_spectra
@@ -333,10 +345,32 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         if self.fit_param is None or self.curr_dset is None or self.is_fitting_running:
             return
 
+        num_cores = psutil.cpu_count(logical=False)
+        if num_cores <= 0:
+            num_workers = num_cores
+        else:
+            num_workers = min(num_cores, self.spinBox_num_workers.value())
+
+        kwargs = {
+            "num_workers": num_workers,
+            "num_tries": self.spinBox_num_tries.value(),
+            "method": self.comboBox_opt_method.currentText(),
+            # "tolerance": self.doubleSpinBox_tolerance.value(),
+        }
+
+        logger.info(
+            f"start fitting with {num_workers} workers and {kwargs['num_tries']} total tries"
+        )
+
         self.is_fitting_running = True
         self.pushButton_fit.setDisabled(True)
+        self.progressBar_fit.setMaximum(100)
+        self.progressBar_fit.setValue(0)
+
         self.thread = QThread()
-        self.worker = FitWorker(self.fit_param, self.curr_dset, self.get_state_mat)
+        self.worker = FitWorker(
+            self.fit_param, self.curr_dset, self.get_state_mat, **kwargs
+        )
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_fit_finished)
@@ -345,13 +379,10 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
-
-        self.progressBar_fit.setMaximum(100)
-        self.progressBar_fit.setValue(0)
         self.thread.start()
 
     def on_fit_progress(self, done, total):
-        percent = int(100 * done / total)
+        percent = int(100 * done / max(1, total))
         self.progressBar_fit.setValue(percent)
 
     def on_fit_finished(self, opt_param, opt_concentrations, opt_spectra):
