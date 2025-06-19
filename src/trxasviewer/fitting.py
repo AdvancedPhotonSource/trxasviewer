@@ -274,9 +274,9 @@ def run_single_optimization(
 
     dt = time.perf_counter() - t0
     logger.info(
-        f"Finished fitting run {run_id} on process {os.getpid()}. Loss: {loss:.8g}. Time: {dt:.2f} seconds"
+        f"Finished fitting {run_id} with {method} in {dt:.2f} seconds. Loss: {loss:.8g}."
     )
-    return loss, opt_params, final_concentrations, final_spectra, res, run_id
+    return loss, opt_params, final_concentrations, final_spectra, res
 
 
 def run_parallel_optimizations(
