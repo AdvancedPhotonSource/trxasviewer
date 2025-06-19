@@ -351,10 +351,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             return
 
         num_cores = psutil.cpu_count(logical=False)
-        if num_cores <= 0:
-            num_workers = num_cores
-        else:
-            num_workers = min(num_cores, self.spinBox_num_workers.value())
+        num_workers = min(num_cores, self.spinBox_num_workers.value() or num_cores)
 
         kwargs = {
             "num_workers": num_workers,
