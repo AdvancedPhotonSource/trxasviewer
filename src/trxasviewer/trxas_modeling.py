@@ -152,6 +152,7 @@ class FitWorker(QObject):
 
     @Slot()
     def run(self):
+        OPT_METHODS = ["L-BFGS-B", "TNC", "SLSQP", "Powell", "trust-constr"]
         try:
             bounds = list(
                 zip(self.fit_param["Min"].values, self.fit_param["Max"].values)
@@ -175,7 +176,11 @@ class FitWorker(QObject):
                         adj_matrix,
                         bounds,
                         self.tolerance,
-                        self.method,
+                        (
+                            random.choice(OPT_METHODS)
+                            if self.method == "RandomChoice"
+                            else self.method
+                        ),
                         i,
                     )
                     for i in range(self.num_tries)
