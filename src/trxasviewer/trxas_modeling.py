@@ -88,40 +88,31 @@ def load_trxas_result(npz_filename):
     return TrXASResult(data)
 
 
-def init_plots(graph_widget):
+def init_plots(pg_gfit_svd, pg_gfit_display, pg_pfit_display):
     """
     Initializes a 2x3 grid of plots in a GraphicsLayoutWidget,
     with consistent column widths and labels for all plots/images.
     """
-    import pyqtgraph as pg
-
+    #
     img_hdl = {}
+
+    # Add the SVD plot/image
+    plot = pg_gfit_svd.addPlot(title="SVD")
+    img_hdl["svd_spectrum"] = plot
+
+    # Add the concentration and spectra plots/images
     labels = [
-        "diff",
-        "fit",
-        "residual",
-        "svd_spectrum",
         "concentration",
         "spectra",
     ]
+    for i in range(len(labels)):
+        plot = pg_gfit_display.addPlot(title=labels[i].capitalize())
+        img_hdl[labels[i]] = plot
 
-    # First Row: PlotItems with ImageItems inside
-    for i in range(3):
-        plot = graph_widget.addPlot()
-        plot.setTitle(labels[i].capitalize())
-        plot.getViewBox().setAspectLocked(False)
-        plot.hideAxis("left")
-        plot.hideAxis("bottom")
-        img = pg.ImageItem()
-        plot.addItem(img)
-        img_hdl[labels[i]] = img
-
-    graph_widget.nextRow()
-
-    # Second Row: PlotItems with axis/labels
-    for i in range(3):
-        plot = graph_widget.addPlot(title=labels[i + 3].capitalize())
-        img_hdl[labels[i + 3]] = plot
+    # add profile fitting plots
+    # Add the SVD plot/image
+    plot = pg_pfit_display.addPlot()
+    img_hdl["kinetics_profiles"] = plot
 
     return img_hdl
 
@@ -220,7 +211,13 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         # Stretch both columns to fill the full width
         header = self.tableView.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
-        self.img_hdl = init_plots(self.display)
+        self.img_hdl = init_plots(
+            self.pg_gfit_svd, self.pg_gfit_display, self.pg_pfit_display
+        )
+        # self.preview_hdl = init_preview_plots(self.pg_preview)
+        self.pg_diff.getView().setAspectLocked(False)
+        self.pg_diff.setColorMap(pg.colormap.get("CET-D1A"))
+
         self.pushButton_load.clicked.connect(self.load_dset)
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
@@ -407,15 +404,22 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             self.update_plot()
 
     def update_plot(self):
-        self.img_hdl["diff"].setImage(self.curr_dset.diff)
-        self.img_hdl["diff"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
-
         pen = pg.mkPen(color="blue", width=5)
         self.img_hdl["svd_spectrum"].plot(
             self.curr_dset.get_svd_spectrum(), pen=pen, symbol="o"
         )
         self.img_hdl["svd_spectrum"].setLabel("bottom", "Component Index")
         self.img_hdl["svd_spectrum"].setLabel("left", "SVD Magnitude")
+
+        cdata, levels = self.curr_dset.combined_fitting_data(None, None)
+        self.pg_diff.setImage(cdata, levels=levels)
+
+        self.img_hdl["kinetics_profiles"].clear()
+        if self.checkBox_kinetics_profiles.isChecked():
+            self.groupBox_kprofiles.show()
+            plot_kinetics_profile(self.curr_dset.data, self.img_hdl["kinetics_profiles"])
+        else:
+            self.groupBox_kprofiles.hide()
 
     def plot_fitting(self, concentration, spectra):
         self.img_hdl["concentration"].clear()
@@ -440,14 +444,8 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.img_hdl["spectra"].setLabel("bottom", "Energy Index")
         self.img_hdl["spectra"].setLabel("left", "Absorption Coefficient")
 
-        res = concentration @ spectra
-        self.img_hdl["fit"].clear()
-        self.img_hdl["fit"].setImage(res)
-        self.img_hdl["fit"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
-        residual = self.curr_dset.diff - res
-        self.img_hdl["residual"].clear()
-        self.img_hdl["residual"].setImage(residual)
-        self.img_hdl["residual"].setColorMap(pg.colormap.getFromMatplotlib("viridis"))
+        cdata, levels = self.curr_dset.combined_fitting_data(concentration, spectra)
+        self.pg_diff.setImage(cdata, levels=levels)
 
 
 def main_modeling_gui(args, **kwargs):

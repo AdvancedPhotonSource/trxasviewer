@@ -49,10 +49,18 @@ def convert_npz_obj(loaded_npz):
         return python_dict
 
 
+def get_levels(data, percentile=(0.2, 99.8)):
+    levels = np.percentile(data, percentile)
+    vmax = np.max(np.abs(levels))
+    levels = (-vmax, vmax)
+    return levels
+
+
 class TrXASResult:
     def __init__(self, npz_obj):
         self.data = convert_npz_obj(npz_obj)
-        self.energy, self.t_axis, self.diff = self.get_diff_map()
+        print(list(self.data.keys()))
+        self.energy, self.t_axis, self.diff, self.diff_raw = self.get_diff_map()
         self.svd = self.get_svd()
         # self.plot_diff()
         # self.describe()
@@ -65,15 +73,40 @@ class TrXASResult:
         print(msg)
         return
 
+    def get_levels(self):
+        return get_levels(self.diff)
+
+    def combined_fitting_data(self, concentration=None, spectra=None, h_gap=2):
+        """
+        Computes the fit and residue, and compiles them with the original data
+        for visualization, separated by horizontal gaps.
+        """
+        if concentration is None or spectra is None:
+            fit = np.zeros_like(self.diff)
+            residue = np.zeros_like(self.diff)
+        else:
+            fit = concentration @ spectra
+            residue = self.diff - fit
+        # Create a NaN-filled array for the horizontal gaps
+        gap = np.full((self.diff.shape[0], h_gap), np.nan)
+
+        cdata = np.hstack([self.diff, gap, fit, gap, residue])
+        cdata = np.ascontiguousarray(np.flipud(cdata))
+
+        cdata_valid = cdata[~np.isnan(cdata)]
+        levels = get_levels(cdata_valid)
+        return cdata, levels
+
     def get_diff_map(self, valid_only=True):
         t_axis = self.data["t_axis"]
         energy = self.data["x_axis"]["value"]
-        diff = self.data["diff"].T
+        diff_raw = self.data["diff"].T
+        diff = diff_raw.copy()  # Copy the raw
         if valid_only:
             valid_mask = t_axis >= 0
             diff = diff[valid_mask]
             t_axis = t_axis[valid_mask]
-        return energy, t_axis, diff
+        return energy, t_axis, diff, diff_raw
 
     def plot_diff(self):
         plt.imshow(self.diff, cmap="coolwarm", origin="lower")
