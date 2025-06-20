@@ -43,6 +43,7 @@ from .utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
 from .dtype_cache import DataTypeCache
 from .trxas_modeling import TrXASModeler
+from .trxas_result import TrXASResult
 from .pg_plot import plot_kinetics_profile, plot_kinetics_error
 import logging
 from . import __version__
@@ -316,7 +317,8 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         # Send results if available
         results = self.avg_worker.get_results()
         if results is not None:
-            self.modeler.model.add_data(results)
+            res_dset = TrXASResult(results)
+            self.modeler.model.add_data(res_dset)
 
     def on_modeler_closed(self):
         self.modeler = None
