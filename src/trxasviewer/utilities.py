@@ -29,7 +29,7 @@ def get_scan_type(fname):
         return "invalid"
     elif is_recently_modified(fname):
         return "writing"
-    
+
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
@@ -61,7 +61,6 @@ def get_scan_type(fname):
 
     except Exception:  # Catch all exceptions
         return "invalid"
-
 
 
 def is_recently_modified(fname, threshold=45):
@@ -181,24 +180,52 @@ def prepare_binning_matrix(
     return mat, nobin_laserd_idx
 
 
-def format_time(input_time):
+def format_time(input_time, as_string=True):
     """
-    Convert time in seconds to a human-readable string with appropriate time units,
-    preserving the sign. Returns 'invalid' if input is None or zero.
+    Convert time in seconds to a human-readable string or its components.
+
+    If as_string is True, it returns a formatted string.
+    If as_string is False, it returns the value, unit, and the numeric scale.
 
     Args:
-        input_time (float): Time in seconds (can be negative).
+        input_time (float or None): Time in seconds (can be negative).
+        as_string (bool): If True, return a formatted string. If False,
+                          return a tuple of (value, unit, scale).
 
     Returns:
-        str: Formatted time string like "130 ns", "-5 µs", or "invalid".
+        str or tuple: Formatted time string (e.g., "130.000 ns"),
+                      a tuple (value, unit, scale) (e.g., (130.0, 'ns', 1e-9)),
+                      or "invalid" if input is None.
     """
-    units = [(1e-12, "ps"), (1e-9, "ns"), (1e-6, "µs"), (1e-3, "ms"), (1, "s")]
+    # Handle invalid input as described in the original docstring
+    if input_time is None:
+        # For the tuple return case, returning (None, None, None) is consistent
+        return "invalid" if as_string else (None, None, None)
 
+    # Handle zero case for a clean output
+    if input_time == 0:
+        if as_string:
+            return "0.000 s"
+        else:
+            return 0.0, "s", 1.0
+
+    units = [(1e-12, "ps"), (1e-9, "ns"), (1e-6, "µs"), (1e-3, "ms"), (1, "s")]
     abs_time = abs(input_time)
 
     for scale, unit in units:
+        # Find the first unit where the absolute time is less than 1000 of that unit
         if abs_time < scale * 1000:
             value = input_time / scale
-            return f"{value:.3f} {unit}"
+            if as_string:
+                return f"{value:.3f} {unit}"
+            else:
+                # Return the value, unit, and the requested scale
+                return value, unit, scale
 
-    return f"{input_time:.3f} s"
+    # Default to seconds for large values
+    scale = 1.0
+    if as_string:
+        return f"{input_time:.3f} s"
+    else:
+        # Return the value, unit, and the requested scale
+        return input_time, "s", scale
