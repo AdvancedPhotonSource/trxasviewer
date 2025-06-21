@@ -4,18 +4,24 @@ PGCOLORS = ("r", "b", "k", "m", "g", "m", "y")
 PGSYMBOLS = ("o", "s", "t", "d", "+", "*", "x", "p", "h")
 
 
-def plot_kinetics_profile(results, kinetics_hdl, x_range=(-1, 10)):
-    """Plots the kinetics data."""
+def plot_kinetics_profile(results, kinetics_hdl, fit_data=None, points_only=False):
+    """Plots the kinetics data with optional fitted curve."""
     kinetics_hdl.clear()
     kinetics_hdl.addLegend()
+
     if not results["kinetics"]:
         return
+
     for idx, (key, value) in enumerate(results["kinetics"].items()):
         data = value["profile"]["main"]
-        pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
         x, y = data[0], data[1]
-        # curve + Scatter + error (if present)
-        kinetics_hdl.plot(x, y, pen=pen)
+        pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
+
+        # Plot line only if not points_only
+        if not points_only:
+            kinetics_hdl.plot(x, y, pen=pen)
+
+        # Always plot points
         scatter_plot = pg.ScatterPlotItem(
             x=x,
             y=y,
@@ -33,6 +39,13 @@ def plot_kinetics_profile(results, kinetics_hdl, x_range=(-1, 10)):
             kinetics_hdl.addItem(
                 pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
             )
+
+    # Optional: plot fitted line
+    if fit_data is not None:
+        fit_pen = pg.mkPen("k", width=2)
+        fit_x, fit_y = fit_data[0], fit_data[1]
+        kinetics_hdl.plot(fit_x, fit_y, pen=fit_pen, name="Fit")
+
     kinetics_hdl.setLabel("left", "Intensity (a.u.)")
     kinetics_hdl.setLabel("bottom", "Time", units="s")
 
