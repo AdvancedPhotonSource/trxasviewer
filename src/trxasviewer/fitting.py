@@ -244,7 +244,7 @@ def global_fit_kinetic_model(
 
 
 def run_single_optimization(
-    t_eval, experimental_data, adj_matrix, bounds, tol, method, run_id
+    t_eval_raw, experimental_data_raw, adj_matrix, bounds, tol, method, run_id
 ):
     """
     Wrapper function to run global_fit_kinetic_model for multiprocessing.
@@ -254,6 +254,14 @@ def run_single_optimization(
     # This ensures each process gets a truly independent starting point
     # based on the provided bounds.
     t0 = time.perf_counter()
+
+    # crop the negative time points
+    raw_size = t_eval_raw.size
+    begin_index = np.where(t_eval_raw >= 0)[0][0]
+    # print(t_eval_raw.shape, experimental_data_raw.shape)
+    t_eval = t_eval_raw[begin_index:]
+    experimental_data = experimental_data_raw[begin_index:]
+
     scale = np.max(t_eval)
     bounds_scaled = np.array(bounds) / scale
     rand = np.random.uniform(0, 1, bounds_scaled.shape[0])
@@ -270,6 +278,12 @@ def run_single_optimization(
             initial_params=initial_params
             * scale,  # Pass scaled initial params to the function, as global_fit_kinetic_model expects unscaled
         )
+    )
+
+    # put the initials points back
+    pad_rows = raw_size - t_eval.size
+    final_concentrations = np.pad(
+        final_concentrations, ((pad_rows, 0), (0, 0)), mode="constant"
     )
 
     dt = time.perf_counter() - t0
