@@ -221,6 +221,87 @@ class VlockedRectROI(pg.RectROI):
         super().setSize(modified_size, update=update, finish=finish)
 
 
+class HlockedRectROI(pg.RectROI):
+    """
+    A rectangular ROI that is locked horizontally at x=0 and maintains a constant
+    width when resized using handles.
+    """
+
+    MIN_HEIGHT = 1.0  # Minimum height constant
+
+    def __init__(self, pos, size, **kwargs):
+        """
+        Initialize the ROI.
+
+        Args:
+            pos (QPointF or tuple): Initial position (Y will be used, X is ignored and set to 0)
+            size (QPointF or tuple): Initial size (Width and Height)
+            **kwargs: Additional arguments passed to RectROI
+        """
+        # Store the initial width. Ensure size is treated correctly.
+        initial_size = pg.Point(size)
+        self._locked_width = initial_size.x()
+
+        # Adjust initial position to ensure X is 0
+        initial_pos = pg.Point(pos)
+        initial_pos.setX(0.0)
+
+        # Call superclass init
+        super().__init__(initial_pos, initial_size, centered=True, **kwargs)
+
+    def update_width(self, width):
+        """Update the locked width."""
+        self._locked_width = width
+
+    def itemChange(self, change, value):
+        """Handle position changes to lock X position."""
+        if change == pg.QtWidgets.QGraphicsItem.GraphicsItemChange.ItemPositionChange:
+            new_pos = value
+            # Force X position to 0, keep the proposed Y
+            return QPointF(0.0, new_pos.y())
+        return super().itemChange(change, value)
+
+    def resize(
+        self,
+        pos,
+        size,
+        center=(0.5, 0.5),
+        lockAspect=None,
+        scaleSnap=None,
+        snapScreen=None,
+        constraint=None,
+        finish=True,
+    ):
+        """
+        Override the resize method to maintain constant width.
+        """
+        new_size = pg.Point(size)
+        modified_size = pg.Point(self._locked_width, new_size.y())
+
+        # Enforce minimum height
+        if modified_size.y() < self.MIN_HEIGHT:
+            modified_size.setY(self.MIN_HEIGHT)
+
+        super().resize(
+            pos,
+            modified_size,
+            center=center,
+            lockAspect=lockAspect,
+            scaleSnap=scaleSnap,
+            snapScreen=snapScreen,
+            constraint=constraint,
+            finish=finish,
+        )
+
+    def setSize(self, size, update=True, finish=True):
+        """Override setSize to ensure width consistency."""
+        new_size = pg.Point(size)
+        modified_size = pg.Point(self._locked_width, new_size.y())
+        if modified_size.y() < self.MIN_HEIGHT:
+            modified_size.setY(self.MIN_HEIGHT)
+        super().setSize(modified_size, update=update, finish=finish)
+
+
 def show_error_dialog(parent, title="Error", message="Something went wrong."):
     msg_box = QMessageBox(parent)
     msg_box.setIcon(QMessageBox.Critical)
