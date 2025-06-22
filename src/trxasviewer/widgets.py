@@ -336,9 +336,9 @@ class TrXASResultTableModel(QAbstractTableModel):
             res_dset = self._data[index.row()]
             col = index.column()
             if col == 0:
-                return res_dset.data["label"]
+                return res_dset.label
             elif col == 1:
-                return res_dset.data["created"]
+                return res_dset.created
         return None
 
     def headerData(self, section, orientation, role):
