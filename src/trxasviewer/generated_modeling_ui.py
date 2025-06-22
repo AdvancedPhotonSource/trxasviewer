@@ -511,6 +511,7 @@ class Ui_MainWindow(object):
         self.comboBox_fit_tunit.addItem("")
         self.comboBox_fit_tunit.addItem("")
         self.comboBox_fit_tunit.addItem("")
+        self.comboBox_fit_tunit.addItem("")
         self.comboBox_fit_tunit.setObjectName(u"comboBox_fit_tunit")
         sizePolicy11 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy11.setHorizontalStretch(0)
@@ -640,6 +641,7 @@ class Ui_MainWindow(object):
         self.comboBox_bsl_tunit.addItem("")
         self.comboBox_bsl_tunit.addItem("")
         self.comboBox_bsl_tunit.addItem("")
+        self.comboBox_bsl_tunit.addItem("")
         self.comboBox_bsl_tunit.setObjectName(u"comboBox_bsl_tunit")
         sizePolicy11.setHeightForWidth(self.comboBox_bsl_tunit.sizePolicy().hasHeightForWidth())
         self.comboBox_bsl_tunit.setSizePolicy(sizePolicy11)
@@ -695,12 +697,12 @@ class Ui_MainWindow(object):
 
         self.gridLayout_10.addWidget(self.label_15, 4, 8, 1, 1)
 
-        self.comboBox_fit = QComboBox(self.groupBox_8)
-        self.comboBox_fit.addItem("")
-        self.comboBox_fit.addItem("")
-        self.comboBox_fit.setObjectName(u"comboBox_fit")
+        self.comboBox_fit_method = QComboBox(self.groupBox_8)
+        self.comboBox_fit_method.addItem("")
+        self.comboBox_fit_method.addItem("")
+        self.comboBox_fit_method.setObjectName(u"comboBox_fit_method")
 
-        self.gridLayout_10.addWidget(self.comboBox_fit, 0, 7, 1, 1)
+        self.gridLayout_10.addWidget(self.comboBox_fit_method, 0, 7, 1, 1)
 
         self.doubleSpinBox_fit_tmax = QDoubleSpinBox(self.groupBox_8)
         self.doubleSpinBox_fit_tmax.setObjectName(u"doubleSpinBox_fit_tmax")
@@ -713,6 +715,7 @@ class Ui_MainWindow(object):
 
         self.checkBox_fit_trange = QCheckBox(self.groupBox_8)
         self.checkBox_fit_trange.setObjectName(u"checkBox_fit_trange")
+        self.checkBox_fit_trange.setChecked(True)
 
         self.gridLayout_10.addWidget(self.checkBox_fit_trange, 4, 2, 1, 1)
 
@@ -750,8 +753,8 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.comboBox_fit_tunit.setCurrentIndex(2)
-        self.comboBox_bsl_tunit.setCurrentIndex(2)
+        self.comboBox_fit_tunit.setCurrentIndex(1)
+        self.comboBox_bsl_tunit.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -807,11 +810,12 @@ class Ui_MainWindow(object):
         self.label_17.setText(QCoreApplication.translate("MainWindow", u"]", None))
         self.groupBox_8.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.comboBox_fit_tunit.setItemText(0, QCoreApplication.translate("MainWindow", u"ks", None))
-        self.comboBox_fit_tunit.setItemText(1, QCoreApplication.translate("MainWindow", u"ms", None))
-        self.comboBox_fit_tunit.setItemText(2, QCoreApplication.translate("MainWindow", u"\u00b5s", None))
-        self.comboBox_fit_tunit.setItemText(3, QCoreApplication.translate("MainWindow", u"ns", None))
-        self.comboBox_fit_tunit.setItemText(4, QCoreApplication.translate("MainWindow", u"ps", None))
-        self.comboBox_fit_tunit.setItemText(5, QCoreApplication.translate("MainWindow", u"fs", None))
+        self.comboBox_fit_tunit.setItemText(1, QCoreApplication.translate("MainWindow", u"s", None))
+        self.comboBox_fit_tunit.setItemText(2, QCoreApplication.translate("MainWindow", u"ms", None))
+        self.comboBox_fit_tunit.setItemText(3, QCoreApplication.translate("MainWindow", u"\u00b5s", None))
+        self.comboBox_fit_tunit.setItemText(4, QCoreApplication.translate("MainWindow", u"ns", None))
+        self.comboBox_fit_tunit.setItemText(5, QCoreApplication.translate("MainWindow", u"ps", None))
+        self.comboBox_fit_tunit.setItemText(6, QCoreApplication.translate("MainWindow", u"fs", None))
 
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"--", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"total tries:", None))
@@ -822,11 +826,12 @@ class Ui_MainWindow(object):
         self.label_20.setText(QCoreApplication.translate("MainWindow", u")", None))
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"[", None))
         self.comboBox_bsl_tunit.setItemText(0, QCoreApplication.translate("MainWindow", u"ks", None))
-        self.comboBox_bsl_tunit.setItemText(1, QCoreApplication.translate("MainWindow", u"ms", None))
-        self.comboBox_bsl_tunit.setItemText(2, QCoreApplication.translate("MainWindow", u"\u00b5s", None))
-        self.comboBox_bsl_tunit.setItemText(3, QCoreApplication.translate("MainWindow", u"ns", None))
-        self.comboBox_bsl_tunit.setItemText(4, QCoreApplication.translate("MainWindow", u"ps", None))
-        self.comboBox_bsl_tunit.setItemText(5, QCoreApplication.translate("MainWindow", u"fs", None))
+        self.comboBox_bsl_tunit.setItemText(1, QCoreApplication.translate("MainWindow", u"s", None))
+        self.comboBox_bsl_tunit.setItemText(2, QCoreApplication.translate("MainWindow", u"ms", None))
+        self.comboBox_bsl_tunit.setItemText(3, QCoreApplication.translate("MainWindow", u"\u00b5s", None))
+        self.comboBox_bsl_tunit.setItemText(4, QCoreApplication.translate("MainWindow", u"ns", None))
+        self.comboBox_bsl_tunit.setItemText(5, QCoreApplication.translate("MainWindow", u"ps", None))
+        self.comboBox_bsl_tunit.setItemText(6, QCoreApplication.translate("MainWindow", u"fs", None))
 
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"[", None))
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"workers:", None))
@@ -839,8 +844,8 @@ class Ui_MainWindow(object):
         self.comboBox_opt_method.setItemText(5, QCoreApplication.translate("MainWindow", u"RandomChoice", None))
 
         self.label_15.setText(QCoreApplication.translate("MainWindow", u"]", None))
-        self.comboBox_fit.setItemText(0, QCoreApplication.translate("MainWindow", u"Joint Fit", None))
-        self.comboBox_fit.setItemText(1, QCoreApplication.translate("MainWindow", u"Individual Fit", None))
+        self.comboBox_fit_method.setItemText(0, QCoreApplication.translate("MainWindow", u"IndividualFit", None))
+        self.comboBox_fit_method.setItemText(1, QCoreApplication.translate("MainWindow", u"JointFit", None))
 
         self.checkBox_fit_trange.setText(QCoreApplication.translate("MainWindow", u"Enable", None))
         self.comboBox_bsl_trange.setItemText(0, QCoreApplication.translate("MainWindow", u"Disabled", None))

@@ -1424,15 +1424,15 @@
             </widget>
            </item>
            <item row="0" column="7">
-            <widget class="QComboBox" name="comboBox_fit">
+            <widget class="QComboBox" name="comboBox_fit_method">
              <item>
               <property name="text">
-               <string>Joint Fit</string>
+               <string>IndividualFit</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>Individual Fit</string>
+               <string>JointFit</string>
               </property>
              </item>
             </widget>
@@ -1457,6 +1457,9 @@
             <widget class="QCheckBox" name="checkBox_fit_trange">
              <property name="text">
               <string>Enable</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
