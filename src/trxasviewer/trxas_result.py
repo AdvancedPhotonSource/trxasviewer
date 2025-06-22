@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .utilities import format_time
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def _process_item(item):
@@ -51,7 +55,10 @@ def convert_npz_obj(loaded_npz):
 
 
 def get_levels(data, percentile=(0.2, 99.8)):
-    levels = np.percentile(data, percentile)
+    """
+    Calculates the levels for plotting based on given percentile,
+    """
+    levels = np.percentile(data[~np.isnan(data)], percentile)
     vmax = np.max(np.abs(levels))
     levels = (-vmax, vmax)
     return levels
@@ -66,6 +73,7 @@ class TrXASResult:
         self.svd = self.get_svd()
         self.kinetic_labels = list(data["kinetics"].keys())
         self.num_kinetic_profiles = len(self.kinetic_labels)
+        self.fitting_results = {}
 
     def __getitem__(self, key):
         # add class["member"] access
@@ -86,11 +94,6 @@ class TrXASResult:
         tmin, tmax = np.min(self.t_axis), np.max(self.t_axis)
         _, tunit, scale = format_time(np.max(np.abs([tmin, tmax])), as_string=False)
         return tmin / scale, tmax / scale, tunit
-
-    def get_fitted_line(self, concentration, spectra):
-        y = concentration @ spectra  # N_t x 1
-        xy = np.stack((self.t_axis, y[:, 0]))
-        return xy
 
     def combined_fitting_data(
         self, concentration=None, spectra=None, h_gap=2, full_range=False
@@ -141,20 +144,96 @@ class TrXASResult:
         vp = v[:rank, 0:]
         return up @ sp @ vp
 
-    def get_kinetic_profile(self, idx=0):
-        label = self.kinetic_labels[idx]
-        xy = self.data["kinetics"][label]["profile"]["main"]
-        t_axis, diff, err = xy[0], xy[1], xy[2]
-        diff = diff.reshape(-1, 1)
-        err = err.reshape(-1, 1)
-        return label, t_axis, diff, err
+    def get_diff_map(self):
+        payload = {
+            "t_axis": self.t_axis,  # N_time,
+            "diff": self.diff,  # N_time X N_energy
+            "err": None,
+        }
+        return {"global": payload}
 
-    def get_kinetic_data(self, target: str):
-        if target == "global":
-            return target, self.data["t_axis"], self.diff_raw, None
-        elif target.startswith("profile"):
-            idx = int(target.split(":")[1])
-            return self.get_kinetic_profile(idx)
+    def get_kinetic_profile(self, label):
+        t_axis, diff, err = self.kinetics[label]["profile"]["main"]
+        payload = {
+            "t_axis": t_axis,
+            "diff": diff.reshape(-1, 1),  # needs to be (N_time X N_energy)
+            "err": err.reshape(-1, 1),
+        }
+        return {label: payload}
+
+    def get_kinetic_data(
+        self,
+        bsl_trange=None,
+        bsl_mode="Disabled",
+        fit_method="IndividualFit",
+        **kwargs,
+    ):
+        # assemble fitting data
+        all_data = {}
+        all_data.update(self.get_diff_map())
+        for kp_label in self.kinetic_labels:
+            all_data.update(self.get_kinetic_profile(kp_label))
+
+        if fit_method == "IndividualFit":
+            logger.info(
+                f"Using {fit_method}: the fitting of global map and kinetics profiles will be done independently."
+            )
+            fit_pack = {
+                "num_payloads": len(all_data),
+                "fit_method": fit_method,
+                "payloads": all_data,
+            }
+        elif fit_method == "JointFit":
+            logger.info(
+                f"Using {fit_method}: combine all input data and use the same set of parameters for fitting."
+            )
+            all_diff = [value["diff"] for value in all_data.values()]
+            all_size = [x.shape[1] for x in all_diff]
+            labels = list(all_data.keys())
+            indexes = [0] + np.cumsum(all_size).tolist()
+            slices = [slice(indexes[i], indexes[i + 1]) for i in range(len(all_size))]
+            fit_pack = {
+                "fit_method": fit_method,
+                "num_payloads": 1,
+                "slices": slices,  # extra fields to decompress the results
+                "labels": labels,
+                "payloads": {
+                    "joint": {
+                        "diff": np.hstack(all_diff),
+                        "t_axis": all_data["global"]["t_axis"],
+                        "err": None,
+                    },
+                },
+            }
+        return fit_pack
+
+    def reset_fitting_result(self):
+        self.fitting_results = {}
+
+    def append_fitting_result(self, key, fit_result: dict, fit_pack: dict):
+        fit_method = fit_pack["fit_method"]
+        if fit_method == "IndividualFit":
+            self.fitting_results.update({key: fit_result})
+        elif fit_method == "JointFit":
+            slices, labels = fit_pack.get("slices"), fit_pack.get("labels")
+            named_results = {}
+            for sl, label in zip(slices, labels):
+                spectra = fit_result["spectra"][:, sl]  # get the correspoing spectra
+                named_results[label] = {
+                    "params": fit_result["params"],
+                    "concentrations": fit_result["concentrations"],
+                    "spectra": spectra,
+                    "fitted": fit_result["concentrations"] @ spectra,
+                }
+            self.fitting_results.update(named_results)
+
+    def get_fitted_kinetic_profiles(self):
+        result = {}
+        for key in self.kinetic_labels:
+            x = self.t_axis.flatten()
+            y = self.fitting_results[key]["fitted"].flatten()
+            result[key] = np.stack([x, y])
+        return result
 
 
 if __name__ == "__main__":
@@ -162,4 +241,3 @@ if __name__ == "__main__":
     data = np.load(f, allow_pickle=True)
     tr = TrXASResult(data)
     label, x = tr.get_kinetic_profile()
-    print(label, x.shape)
