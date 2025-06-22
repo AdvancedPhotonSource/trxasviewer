@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from .utilities import format_time
 
 
 def _process_item(item):
@@ -58,12 +59,17 @@ def get_levels(data, percentile=(0.2, 99.8)):
 
 class TrXASResult:
     def __init__(self, npz_obj):
-        self.data = convert_npz_obj(npz_obj)
-        print(list(self.data.keys()))
-        self.energy, self.t_axis, self.diff, self.diff_raw = self.get_diff_map()
+        data = convert_npz_obj(npz_obj)
+        # transpose diff data so: axis 0: time, axis 1: energy/delay
+        data["diff"] = data["diff"].T
+        self.__dict__.update(data)
         self.svd = self.get_svd()
-        # self.plot_diff()
-        # self.describe()
+        self.kinetic_labels = list(data["kinetics"].keys())
+        self.num_kinetic_profiles = len(self.kinetic_labels)
+
+    def __getitem__(self, key):
+        # add class["member"] access
+        return self.__dict__[key]
 
     def describe(self):
         msg = "TrXASResult object with the following attributes:\n"
@@ -73,10 +79,22 @@ class TrXASResult:
         print(msg)
         return
 
-    def get_levels(self):
-        return get_levels(self.diff)
+    def get_levels(self, percentile=(0.2, 99.2)):
+        return get_levels(self.diff, percentile=percentile)
 
-    def combined_fitting_data(self, concentration=None, spectra=None, h_gap=2):
+    def get_time_range_and_unit(self):
+        tmin, tmax = np.min(self.t_axis), np.max(self.t_axis)
+        _, tunit, scale = format_time(np.max(np.abs([tmin, tmax])), as_string=False)
+        return tmin / scale, tmax / scale, tunit
+
+    def get_fitted_line(self, concentration, spectra):
+        y = concentration @ spectra  # N_t x 1
+        xy = np.stack((self.t_axis, y[:, 0]))
+        return xy
+
+    def combined_fitting_data(
+        self, concentration=None, spectra=None, h_gap=2, full_range=False
+    ):
         """
         Computes the fit and residue, and compiles them with the original data
         for visualization, separated by horizontal gaps.
@@ -87,6 +105,7 @@ class TrXASResult:
         else:
             fit = concentration @ spectra
             residue = self.diff - fit
+
         # Create a NaN-filled array for the horizontal gaps
         gap = np.full((self.diff.shape[0], h_gap), np.nan)
 
@@ -97,16 +116,9 @@ class TrXASResult:
         levels = get_levels(cdata_valid)
         return cdata, levels
 
-    def get_diff_map(self, valid_only=True):
-        t_axis = self.data["t_axis"]
-        energy = self.data["x_axis"]["value"]
-        diff_raw = self.data["diff"].T
-        diff = diff_raw.copy()  # Copy the raw
-        if valid_only:
-            valid_mask = t_axis >= 0
-            diff = diff[valid_mask]
-            t_axis = t_axis[valid_mask]
-        return energy, t_axis, diff, diff_raw
+    def get_diff_map(self):
+        energy = self.x_axis["value"]
+        return energy, self.t_axis, self.diff
 
     def plot_diff(self):
         plt.imshow(self.diff, cmap="coolwarm", origin="lower")
@@ -115,7 +127,8 @@ class TrXASResult:
         plt.close()
 
     def get_svd(self):
-        u, s, v = np.linalg.svd(self.diff, full_matrices=False)
+        begin_idx = np.where(self.t_axis >= 0)[0][0]
+        u, s, v = np.linalg.svd(self.diff[begin_idx:], full_matrices=False)
         return (u, s, v)
 
     def get_svd_spectrum(self):
@@ -128,10 +141,25 @@ class TrXASResult:
         vp = v[:rank, 0:]
         return up @ sp @ vp
 
+    def get_kinetic_profile(self, idx=0):
+        label = self.kinetic_labels[idx]
+        xy = self.data["kinetics"][label]["profile"]["main"]
+        t_axis, diff, err = xy[0], xy[1], xy[2]
+        diff = diff.reshape(-1, 1)
+        err = err.reshape(-1, 1)
+        return label, t_axis, diff, err
+
+    def get_kinetic_data(self, target: str):
+        if target == "global":
+            return target, self.data["t_axis"], self.diff_raw, None
+        elif target.startswith("profile"):
+            idx = int(target.split(":")[1])
+            return self.get_kinetic_profile(idx)
+
 
 if __name__ == "__main__":
     f = "/Users/mqichu/Documents/trxas_data/kinetics_results/result_setup-full-00242-00258/results.npz"
     data = np.load(f, allow_pickle=True)
     tr = TrXASResult(data)
-    e, t, diff = tr.get_diff_map()
-    print(e.shape, t.shape, diff.shape)
+    label, x = tr.get_kinetic_profile()
+    print(label, x.shape)
