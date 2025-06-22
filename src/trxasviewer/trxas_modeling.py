@@ -7,6 +7,7 @@ import psutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 import random
+import traceback
 
 import numpy as np
 import pandas as pd
@@ -45,16 +46,14 @@ from PySide6.QtWidgets import (
 from . import __version__
 from .constants import TIME_SCALES
 from .fitting import run_single_optimization
-from .pg_plot import plot_kinetics_profile, plot_kinetics_error
+from .pg_plot import plot_kinetics_profile
 from .generated_modeling_ui import Ui_MainWindow
 from .trxas_graph import draw_decay_graph_with_top_nodes
 from .trxas_result import TrXASResult
-from .utilities import format_time
 from .widgets import (
     ParameterTableModel,
     SaveOptionsDialog,
     TrXASResultTableModel,
-    VlockedRectROI,
     show_error_dialog,
 )
 
@@ -118,85 +117,102 @@ def init_plots(pg_gfit_svd, pg_gfit_display, pg_pfit_display):
 
 
 class FitWorker(QObject):
-    finished = Signal(object, object, object)  # opt_param, concentrations, spectra
+    finished = Signal(object)
     progress = Signal(int, int)  # completed, total
     error = Signal(str)
 
     def __init__(
         self,
-        fit_param,
-        curr_dset,
-        get_state_mat,
+        dset,
+        state_matrix,
+        bounds,
+        fit_trange=None,
         num_tries=100,
         method="L-BFGS-B",
         num_workers=4,
         tolerance=1e-6,
+        dset_kwargs=None,
     ):
         super().__init__()
-        self.fit_param = fit_param
-        self.curr_dset = curr_dset
-        self.get_state_mat = get_state_mat
+        self.dset = dset
+        self.state_matrix = state_matrix
+        self.bounds = bounds
+        self.fit_trange = fit_trange
         self.num_tries = num_tries
         self.num_workers = num_workers
         self.method = method
         self.tolerance = tolerance
+        self.dset_kwargs = dset_kwargs
 
     @Slot()
     def run(self):
-        OPT_METHODS = ["L-BFGS-B", "TNC", "SLSQP", "Powell", "trust-constr"]
+        fit_pack = self.dset.get_kinetic_data(**self.dset_kwargs)
+        total_run = fit_pack["num_payloads"] * self.num_tries
+        payloads = fit_pack.pop("payloads")
         try:
-            bounds = list(
-                zip(self.fit_param["Min"].values, self.fit_param["Max"].values)
-            )
-            scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
-            bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
-            adj_matrix = self.get_state_mat()
-
-            best_loss = np.inf
-            best_opt_params = None
-            best_final_concentrations = None
-            best_final_spectra = None
-            completed = 0
-
-            with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
-                futures = [
-                    executor.submit(
-                        run_single_optimization,
-                        self.curr_dset.t_axis,
-                        self.curr_dset.diff,
-                        adj_matrix,
-                        bounds,
-                        self.tolerance,
-                        (
-                            random.choice(OPT_METHODS)
-                            if self.method == "RandomChoice"
-                            else self.method
-                        ),
-                        i,
-                    )
-                    for i in range(self.num_tries)
-                ]
-
-                for completed, future in enumerate(as_completed(futures), start=1):
-                    try:
-                        loss, opt_params, final_conc, final_spec, res = future.result()
-                        if loss < best_loss:
-                            best_loss = loss
-                            best_opt_params = opt_params
-                            best_final_concentrations = final_conc
-                            best_final_spectra = final_spec
-                    except Exception as exc:
-                        logger.error(f"A run failed: {exc}")
-                    finally:
-                        completed += 1
-                        self.progress.emit(completed, self.num_tries)
-
-            self.finished.emit(
-                best_opt_params, best_final_concentrations, best_final_spectra
-            )
-
+            for index, (key, value) in enumerate(payloads.items()):
+                fit_result = self.single_run(
+                    value["t_axis"],
+                    value["diff"],
+                    self.fit_trange,
+                    self.num_tries * index,
+                    total_run,
+                )
+                self.dset.append_fitting_result(key, fit_result, fit_pack)
+            self.finished.emit("Done")
         except Exception as e:
             self.error.emit(str(e))
+            traceback.print_exc()
+        logger.info("Fitting process finished")
+
+    def single_run(self, t_axis, diff_map, fit_trange, offset, total_run):
+        OPT_METHODS = ["L-BFGS-B", "TNC", "SLSQP", "Powell", "trust-constr"]
+        best_loss = np.inf
+        best_opt_params = None
+        best_final_concentrations = None
+        best_final_spectra = None
+        completed = 0
+        with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
+            futures = [
+                executor.submit(
+                    run_single_optimization,
+                    t_axis,
+                    diff_map,
+                    self.state_matrix,
+                    self.bounds,
+                    fit_trange,
+                    self.tolerance,
+                    (
+                        random.choice(OPT_METHODS)
+                        if self.method == "RandomChoice"
+                        else self.method
+                    ),
+                    i,
+                )
+                for i in range(self.num_tries)
+            ]
+
+            for completed, future in enumerate(as_completed(futures), start=1):
+                try:
+                    loss, opt_params, final_conc, final_spec, res = future.result()
+                    if loss < best_loss:
+                        best_loss = loss
+                        best_opt_params = opt_params
+                        best_final_concentrations = final_conc
+                        best_final_spectra = final_spec
+                except Exception as exc:
+                    logger.error(f"A run failed: {exc}")
+                    traceback.print_exc()
+                finally:
+                    completed += 1
+                    self.progress.emit(completed + offset, total_run)
+
+        return {
+            "params": best_opt_params,
+            "concentrations": best_final_concentrations,
+            "spectra": best_final_spectra,
+            "fitted": best_final_concentrations @ best_final_spectra,
+        }
 
 
 class TrXASModeler(QMainWindow, Ui_MainWindow):
@@ -343,6 +359,12 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         header.setSectionResizeMode(QHeaderView.Stretch)
         self.tableView_parameters.setAlternatingRowColors(True)
 
+    def get_fit_parameters_bounds(self):
+        bounds = list(zip(self.fit_param["Min"].values, self.fit_param["Max"].values))
+        scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
+        bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
+        return bounds
+
     def fit_data(self):
         if self.fit_param is None or self.curr_dset is None or self.is_fitting_running:
             return
@@ -350,15 +372,37 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         num_cores = psutil.cpu_count(logical=False)
         num_workers = min(num_cores, self.spinBox_num_workers.value() or num_cores)
 
-        kwargs = {
+        fit_tscale = TIME_SCALES[self.comboBox_fit_tunit.currentText()]
+        fit_trange = (
+            [
+                self.doubleSpinBox_fit_tmin.value() * fit_tscale,
+                self.doubleSpinBox_fit_tmax.value() * fit_tscale,
+            ]
+            if self.checkBox_fit_trange.isChecked()
+            else [0, np.inf]
+        )
+
+        bsl_tscale = TIME_SCALES[self.comboBox_bsl_tunit.currentText()]
+
+        opt_kwargs = {
             "num_workers": num_workers,
             "num_tries": self.spinBox_num_tries.value(),
             "method": self.comboBox_opt_method.currentText(),
-            # "tolerance": self.doubleSpinBox_tolerance.value(),
+            "fit_trange": fit_trange,
         }
+        dset_kwargs = {
+            "bsl_trange": [
+                self.doubleSpinBox_bsl_tmin.value() * bsl_tscale,
+                self.doubleSpinBox_bsl_tmax.value() * bsl_tscale,
+            ],
+            "bsl_mode": self.comboBox_bsl_trange.currentText(),
+            "fit_method": self.comboBox_fit_method.currentText(),
+        }
+        logger.info(f"{opt_kwargs=}")
+        logger.info(f"{dset_kwargs=}")
 
         logger.info(
-            f"start fitting with {num_workers} workers and {kwargs['num_tries']} total tries"
+            f"start fitting with {num_workers} workers and {opt_kwargs['num_tries']} total tries"
         )
 
         self.is_fitting_running = True
@@ -368,8 +412,13 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
         self.thread = QThread()
         self.worker = FitWorker(
-            self.fit_param, self.curr_dset, self.get_state_mat, **kwargs
+            self.curr_dset,
+            self.get_state_mat(),
+            self.get_fit_parameters_bounds(),
+            dset_kwargs=dset_kwargs,
+            **opt_kwargs,
         )
+
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_fit_finished)
@@ -384,13 +433,19 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         percent = int(100 * done / max(1, total))
         self.progressBar_fit.setValue(percent)
 
-    def on_fit_finished(self, opt_param, opt_concentrations, opt_spectra):
+    def on_fit_finished(self, placeholder):
         self.pushButton_fit.setEnabled(True)
         self.is_fitting_running = False
-        scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
-        self.fit_param["Fit Value"] = opt_param / scale
-        self.fit_param_model.layoutChanged.emit()
-        self.plot_fitting(opt_concentrations, opt_spectra)
+        # scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
+        # self.fit_param["Fit Value"] = opt_param / scale
+        # self.fit_param_model.layoutChanged.emit()
+
+        payload = self.curr_dset.fitting_results.get("global", None)
+        if payload:
+            self.plot_global_fitting(payload["concentrations"], payload["spectra"])
+        fitted_data = self.curr_dset.get_fitted_kinetic_profiles()
+        if fitted_data:
+            self.plot_profile_fitting(fitted_data)
 
     def load_dset(self):
         # f, _ = QFileDialog.getOpenFileName(
@@ -400,8 +455,20 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         if f:
             dset = load_trxas_result(f)
             self.model.add_data(dset)
-            self.curr_dset = dset
-            self.update_plot()
+            self.select_dataseet(dset)
+
+    def select_dataseet(self, dset):
+        self.curr_dset = dset
+        tmin, tmax, tunit = dset.get_time_range_and_unit()
+        self.doubleSpinBox_bsl_tmin.setValue(tmin)
+        self.doubleSpinBox_bsl_tmax.setValue(0.0)
+        self.doubleSpinBox_fit_tmin.setValue(0.0)
+        self.doubleSpinBox_fit_tmax.setValue(tmax)
+        index = self.comboBox_bsl_tunit.findText(tunit, Qt.MatchFixedString)
+        self.comboBox_bsl_tunit.setCurrentIndex(index)
+        self.comboBox_fit_tunit.setCurrentIndex(index)
+
+        self.update_plot()
 
     def update_plot(self):
         pen = pg.mkPen(color="blue", width=5)
@@ -417,11 +484,11 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.img_hdl["kinetics_profiles"].clear()
         if self.checkBox_kinetics_profiles.isChecked():
             self.groupBox_kprofiles.show()
-            plot_kinetics_profile(self.curr_dset.data, self.img_hdl["kinetics_profiles"])
+            plot_kinetics_profile(self.curr_dset, self.img_hdl["kinetics_profiles"])
         else:
             self.groupBox_kprofiles.hide()
 
-    def plot_fitting(self, concentration, spectra):
+    def plot_global_fitting(self, concentration, spectra):
         self.img_hdl["concentration"].clear()
         self.img_hdl["concentration"].addLegend()
         num_states = concentration.shape[1]
@@ -432,7 +499,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             self.img_hdl["concentration"].plot(
                 self.curr_dset.t_axis, line, pen=pen, name=names[idx]
             )
-        self.img_hdl["concentration"].setLabel("bottom", "Time")
+        self.img_hdl["concentration"].setLabel("bottom", "Time", unit="s")
         self.img_hdl["concentration"].setLabel("left", "Concentration")
 
         self.img_hdl["spectra"].clear()
@@ -446,6 +513,14 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
         cdata, levels = self.curr_dset.combined_fitting_data(concentration, spectra)
         self.pg_diff.setImage(cdata, levels=levels)
+
+    def plot_profile_fitting(self, fitted_data):
+        plot_kinetics_profile(
+            self.curr_dset,
+            self.img_hdl["kinetics_profiles"],
+            fit_data=fitted_data,
+            points_only=True,
+        )
 
 
 def main_modeling_gui(args, **kwargs):
