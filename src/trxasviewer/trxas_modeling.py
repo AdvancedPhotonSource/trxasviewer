@@ -1,58 +1,32 @@
-import json
 import logging
-import os
+import random
 import sys
-import time
-import psutil
+import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-import random
-import traceback
 
 import numpy as np
 import pandas as pd
+import psutil
 import pyqtgraph as pg
-from PySide6.QtCore import (
-    QBuffer,
-    QByteArray,
-    QDir,
-    QIODevice,
-    QObject,
-    QSortFilterProxyModel,
-    Qt,
-    QThread,
-    QTimer,
-    Signal,
-    Slot,
-)
+from PySide6.QtCore import QByteArray, QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QDoubleSpinBox,
-    QFileDialog,
-    QFileSystemModel,
     QHeaderView,
-    QLineEdit,
     QMainWindow,
-    QRadioButton,
     QSizePolicy,
-    QSpinBox,
-    QTabWidget,
 )
 
 from . import __version__
 from .constants import TIME_SCALES
 from .fitting import run_single_optimization
-from .pg_plot import plot_kinetics_profile
 from .generated_modeling_ui import Ui_MainWindow
+from .pg_plot import plot_kinetics_profile
 from .trxas_graph import draw_decay_graph_with_top_nodes
 from .trxas_result import TrXASResult
 from .widgets import (
     ParameterTableModel,
-    SaveOptionsDialog,
     TrXASResultTableModel,
     show_error_dialog,
 )
@@ -235,6 +209,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.pg_diff.setColorMap(pg.colormap.get("CET-D1A"))
 
         self.pushButton_load.clicked.connect(self.load_dset)
+        self.pushButton_plot.clicked.connect(self.on_fit_finished)
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
         self.pushButton_fit.clicked.connect(self.fit_data)
@@ -433,12 +408,14 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         percent = int(100 * done / max(1, total))
         self.progressBar_fit.setValue(percent)
 
-    def on_fit_finished(self, placeholder):
+    def on_fit_finished(self, placeholder=None):
         self.pushButton_fit.setEnabled(True)
         self.is_fitting_running = False
-        # scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
-        # self.fit_param["Fit Value"] = opt_param / scale
-        # self.fit_param_model.layoutChanged.emit()
+        scale = [TIME_SCALES[unit] for unit in self.fit_param["Unit"]]
+        self.fit_param["Fit Value"] = (
+            self.curr_dset.fitting_results["global"]["params"] / scale
+        )
+        self.fit_param_model.layoutChanged.emit()
 
         payload = self.curr_dset.fitting_results.get("global", None)
         if payload:
@@ -489,10 +466,16 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             self.groupBox_kprofiles.hide()
 
     def plot_global_fitting(self, concentration, spectra):
-        self.img_hdl["concentration"].clear()
-        self.img_hdl["concentration"].addLegend()
+        show_groundstate = self.checkBox_show_groundstate.isChecked()
         num_states = concentration.shape[1]
         names = [f"state_{idx}" for idx in list(range(1, num_states)) + [0]]
+
+        if not show_groundstate:
+            concentration = concentration[:, :-1]
+            spectra = spectra[0:-1]
+
+        self.img_hdl["concentration"].clear()
+        self.img_hdl["concentration"].addLegend()
         for idx, line in enumerate(concentration.T):
             color = PGCOLORS[idx % len(PGCOLORS)]  # Generate a
             pen = pg.mkPen(color=color, width=5)
