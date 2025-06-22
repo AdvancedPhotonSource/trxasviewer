@@ -244,7 +244,7 @@ def global_fit_kinetic_model(
 
 
 def run_single_optimization(
-    t_eval_raw, experimental_data_raw, adj_matrix, bounds, tol, method, run_id
+    t_eval_raw, experimental_data_raw, adj_matrix, bounds, fit_trange, tol, method, run_id
 ):
     """
     Wrapper function to run global_fit_kinetic_model for multiprocessing.
@@ -257,17 +257,16 @@ def run_single_optimization(
 
     # crop the negative time points
     raw_size = t_eval_raw.size
-    begin_index = np.where(t_eval_raw >= 0)[0][0]
-    # print(t_eval_raw.shape, experimental_data_raw.shape)
-    t_eval = t_eval_raw[begin_index:]
-    experimental_data = experimental_data_raw[begin_index:]
+    mask = (t_eval_raw >= fit_trange[0]) * (t_eval_raw <= fit_trange[1])
+    t_eval = t_eval_raw[mask]
+    experimental_data = experimental_data_raw[mask]
 
     scale = np.max(t_eval)
     bounds_scaled = np.array(bounds) / scale
     rand = np.random.uniform(0, 1, bounds_scaled.shape[0])
     initial_params = bounds_scaled[:, 0] * (1 - rand) + rand * bounds_scaled[:, 1]
 
-    loss, opt_params, final_concentrations, final_spectra, res = (
+    loss, opt_params, opt_concentrations, opt_spectra, res = (
         global_fit_kinetic_model(
             t_eval=t_eval,
             experimental_data=experimental_data,
@@ -279,9 +278,12 @@ def run_single_optimization(
             * scale,  # Pass scaled initial params to the function, as global_fit_kinetic_model expects unscaled
         )
     )
-
-    # put the initials points back
-    pad_rows = raw_size - t_eval.size
+    
+    # some time points may not be evaluated due to the settings in fit_trange
+    t_eval_valid = t_eval_raw[t_eval_raw >= 0]  # get all valid t_eval
+    final_concentrations = calculate_concentrations(opt_params, t_eval_valid, adj_matrix)
+    # pad zeros to the pre-pump time points
+    pad_rows = t_eval_raw.size - t_eval_valid.size
     final_concentrations = np.pad(
         final_concentrations, ((pad_rows, 0), (0, 0)), mode="constant"
     )
@@ -290,97 +292,7 @@ def run_single_optimization(
     logger.info(
         f"Finished fitting {run_id} with {method} in {dt:.2f} seconds. Loss: {loss:.8g}."
     )
-    return loss, opt_params, final_concentrations, final_spectra, res
-
-
-def run_parallel_optimizations(
-    num_runs, t_eval, experimental_data, adj_matrix, bounds, tol=1e-6, method="L-BFGS-B"
-):
-    """
-    Runs global_fit_kinetic_model multiple times in parallel with different
-    random starting points and returns the best result.
-
-    Parameters
-    ----------
-    num_runs : int
-        The number of independent optimization runs to perform.
-    t_eval : np.ndarray
-        Time points for evaluation.
-    experimental_data : np.ndarray
-        Experimental data matrix.
-    adj_matrix : np.ndarray
-        The adjacency matrix defining the reaction structure.
-    bounds : list of tuples
-        Bounds for each parameter, e.g., [(min1, max1), (min2, max2), ...].
-    tol : float, optional
-        Tolerance for optimization. Defaults to 1e-6.
-    method : str, optional
-        Optimization method. Defaults to "L-BFGS-B".
-
-    Returns
-    -------
-    tuple: (float, np.ndarray, np.ndarray, np.ndarray, scipy.optimize.OptimizeResult, int)
-        The best final loss, best optimized parameters, corresponding final concentrations,
-        final spectra, the OptimizeResult object from the best run, and the run_id of the best run.
-    """
-    best_loss = np.inf
-    best_opt_params = None
-    best_final_concentrations = None
-    best_final_spectra = None
-    best_res = None
-    best_run_id = -1
-
-    # Use ProcessPoolExecutor for parallel execution
-    # It's recommended to use 'spawn' start method for multiprocessing in some environments
-    # to avoid issues, especially on macOS and Windows.
-    # mp.set_start_method('spawn', force=True) # Uncomment if you encounter issues
-
-    # max_workers=os.cpu_count() will use all available CPU cores
-    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-        # Submit multiple optimization tasks with different random initial parameters
-        futures = {
-            executor.submit(
-                run_single_optimization,
-                t_eval,
-                experimental_data,
-                adj_matrix,
-                bounds,
-                tol,
-                method,
-                i,
-            ): i
-            for i in range(num_runs)
-        }
-
-        for future in as_completed(futures):
-            run_id = futures[future]
-            try:
-                loss, opt_params, final_concentrations, final_spectra, res, _ = (
-                    future.result()
-                )
-                # if abs(loss) < 1e-6:
-                #     loss = 1e8
-                if loss < best_loss:
-                    best_loss = loss
-                    best_opt_params = opt_params
-                    best_final_concentrations = final_concentrations
-                    best_final_spectra = final_spectra
-                    best_res = res
-                    best_run_id = run_id
-            except Exception as exc:
-                logger.info(f"Run {run_id} generated an exception: {exc}")
-
-    logger.info(f"\n--- Parallel Optimization Summary ---")
-    logger.info(f"Total runs: {num_runs}")
-    logger.info(f"Best run ID: {best_run_id}")
-    logger.info(f"Overall Best Loss: {best_loss:.8e}")
-    logger.info(f"Optimized Parameters from best run: {np.round(best_opt_params, 3)}")
-
-    return (
-        best_opt_params,
-        best_final_concentrations,
-        best_final_spectra,
-    )
+    return loss, opt_params, final_concentrations, opt_spectra, res
 
 
 # --- Unit Test Suite ---
