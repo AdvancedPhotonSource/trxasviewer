@@ -1,8 +1,6 @@
 import logging
-import os
 import time
 import unittest
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -90,9 +88,7 @@ def calculate_concentrations(params, t_eval, adj_matrix):
     """
     # Generate the full Q-matrix (rate matrix) using the provided params.
     rate_matrix = create_q_matrix(adj_matrix, params)
-    initial_concentrations = create_initial_state_array(
-        adj_matrix
-    )  # This dependency on trxas_graph needs to be handled if it's not a direct importable module in some environments.
+    initial_concentrations = create_initial_state_array(adj_matrix)
 
     # Define the system of ordinary differential equations (ODEs).
     def dP_dt(t, P):
@@ -111,7 +107,9 @@ def calculate_concentrations(params, t_eval, adj_matrix):
     return concentrations
 
 
-def calculate_residuals_and_spectra(experimental_data, concentrations):
+def calculate_residuals_and_spectra(
+    experimental_data, concentrations, force_groundstate=True
+):
     """Calculates species spectra and the sum of squared residuals.
 
     This function solves the linear system `concentrations @ spectra = experimental_data`
@@ -125,6 +123,9 @@ def calculate_residuals_and_spectra(experimental_data, concentrations):
     concentrations : np.ndarray
         The time-dependent concentration matrix from `calculate_concentrations`,
         with shape (n_times, n_species).
+    force_groundstate : bool, optional
+        If True (default), the spectrum for the last species (assumed to be
+        the ground state) is forced to be zero.
 
     Returns
     -------
@@ -134,10 +135,31 @@ def calculate_residuals_and_spectra(experimental_data, concentrations):
         The sum of the squared differences between the experimental data and the
         reconstructed model signal.
     """
-    component_spectra, sum_sq_residuals_array, _, _ = np.linalg.lstsq(
-        concentrations, experimental_data, rcond=None
+    if force_groundstate:
+        # Prepare to solve the least-squares problem for the n-1 excited species
+        active_concentrations = concentrations[:, :-1]
+    else:
+        # Prepare to solve for all species
+        active_concentrations = concentrations
+
+    # --- Call lstsq once on the prepared concentrations ---
+    component_spectra_temp, sum_sq_residuals_array, _, _ = np.linalg.lstsq(
+        active_concentrations, experimental_data, rcond=None
     )
-    return component_spectra, np.sum(sum_sq_residuals_array)
+
+    # --- Format the output based on the constraint ---
+    if force_groundstate:
+        # Add a row of zeros for the ground state spectrum to the result
+        zeros_row = np.zeros((1, component_spectra_temp.shape[1]))
+        component_spectra = np.vstack([component_spectra_temp, zeros_row])
+    else:
+        component_spectra = component_spectra_temp
+
+    # Sum the residuals from each feature column to get a single loss value.
+    # np.sum() on an empty array (if it occurs) correctly returns 0.0.
+    total_residuals = np.sum(sum_sq_residuals_array)
+
+    return component_spectra, total_residuals
 
 
 def objective_function(params, t_eval, experimental_data, adj_matrix):
@@ -244,7 +266,14 @@ def global_fit_kinetic_model(
 
 
 def run_single_optimization(
-    t_eval_raw, experimental_data_raw, adj_matrix, bounds, fit_trange, tol, method, run_id
+    t_eval_raw,
+    experimental_data_raw,
+    adj_matrix,
+    bounds,
+    fit_trange,
+    tol,
+    method,
+    run_id,
 ):
     """
     Wrapper function to run global_fit_kinetic_model for multiprocessing.
@@ -256,7 +285,6 @@ def run_single_optimization(
     t0 = time.perf_counter()
 
     # crop the negative time points
-    raw_size = t_eval_raw.size
     mask = (t_eval_raw >= fit_trange[0]) * (t_eval_raw <= fit_trange[1])
     t_eval = t_eval_raw[mask]
     experimental_data = experimental_data_raw[mask]
@@ -266,27 +294,31 @@ def run_single_optimization(
     rand = np.random.uniform(0, 1, bounds_scaled.shape[0])
     initial_params = bounds_scaled[:, 0] * (1 - rand) + rand * bounds_scaled[:, 1]
 
-    loss, opt_params, opt_concentrations, opt_spectra, res = (
-        global_fit_kinetic_model(
-            t_eval=t_eval,
-            experimental_data=experimental_data,
-            adj_matrix=adj_matrix,
-            bounds=bounds,  # Pass original bounds to global_fit_kinetic_model, it will scale internally
-            tol=tol,
-            method=method,
-            initial_params=initial_params
-            * scale,  # Pass scaled initial params to the function, as global_fit_kinetic_model expects unscaled
-        )
+    loss, opt_params, opt_concentrations, opt_spectra, res = global_fit_kinetic_model(
+        t_eval=t_eval,
+        experimental_data=experimental_data,
+        adj_matrix=adj_matrix,
+        bounds=bounds,  # Pass original bounds to global_fit_kinetic_model, it will scale internally
+        tol=tol,
+        method=method,
+        initial_params=initial_params * scale,
     )
-    
+
     # some time points may not be evaluated due to the settings in fit_trange
     t_eval_valid = t_eval_raw[t_eval_raw >= 0]  # get all valid t_eval
-    final_concentrations = calculate_concentrations(opt_params, t_eval_valid, adj_matrix)
+    final_concentrations = calculate_concentrations(
+        opt_params, t_eval_valid, adj_matrix
+    )
     # pad zeros to the pre-pump time points
     pad_rows = t_eval_raw.size - t_eval_valid.size
+    # t0 concentrations
+    initial_concentrations = create_initial_state_array(adj_matrix)
+    total_concentrations = np.sum(initial_concentrations)
+
     final_concentrations = np.pad(
-        final_concentrations, ((pad_rows, 0), (0, 0)), mode="constant"
+        final_concentrations, ((pad_rows, 0), (0, 0)), mode="constant",
     )
+    final_concentrations[0:pad_rows, -1] = total_concentrations
 
     dt = time.perf_counter() - t0
     logger.info(
@@ -395,41 +427,6 @@ class TestKineticModel(unittest.TestCase):
             f"Optimized parameters {np.round(opt_params, 3)} are not close to true values {self.true_params}.",
         )
         logger.info("PASSED: test_global_fit_finds_correct_parameters")
-
-    def test_parallel_fit_finds_best_parameters(self):
-        """Tests that the parallel fit can find the best parameters from multiple runs."""
-        logger.info("\nRunning test: test_parallel_fit_finds_best_parameters")
-        num_parallel_runs = 5  # Number of parallel runs for the test
-
-        best_loss, best_opt_params, _, _, best_res, best_run_id = (
-            run_parallel_optimizations(
-                num_runs=num_parallel_runs,
-                t_eval=self.t_eval,
-                experimental_data=self.mock_data,
-                adj_matrix=self.adj_matrix,
-                bounds=self.bounds,
-                tol=1e-6,
-                method="L-BFGS-B",
-            )
-        )
-
-        self.assertLessEqual(
-            best_loss,
-            0.1,
-            "Best loss from parallel runs is too high, indicating poor fit.",
-        )
-        self.assertTrue(
-            np.allclose(best_opt_params, self.true_params, rtol=0.2),
-            f"Best optimized parameters {np.round(best_opt_params, 3)} are not close to true values {self.true_params}.",
-        )
-        self.assertIsInstance(
-            best_res,
-            type(minimize(lambda x: x[0] ** 2, [1]).fun),
-            "Returned best_res is not a SciPy OptimizeResult object.",
-        )
-        logger.info(
-            f"PASSED: test_parallel_fit_finds_best_parameters (Best run ID: {best_run_id}, Loss: {best_loss:.4f})"
-        )
 
 
 if __name__ == "__main__":
