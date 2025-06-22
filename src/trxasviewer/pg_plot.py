@@ -42,9 +42,9 @@ def plot_kinetics_profile(results, kinetics_hdl, fit_data=None, points_only=Fals
 
     # Optional: plot fitted line
     if fit_data is not None:
-        fit_pen = pg.mkPen("k", width=2)
-        fit_x, fit_y = fit_data[0], fit_data[1]
-        kinetics_hdl.plot(fit_x, fit_y, pen=fit_pen, name="Fit")
+        for idx, (key, line) in enumerate(fit_data.items()):
+            fit_pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
+            kinetics_hdl.plot(line[0], line[1], pen=fit_pen, name=key + "_fit")
 
     kinetics_hdl.setLabel("left", "Intensity (a.u.)")
     kinetics_hdl.setLabel("bottom", "Time", units="s")
