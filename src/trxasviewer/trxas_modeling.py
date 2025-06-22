@@ -1,6 +1,7 @@
 import logging
 import random
 import sys
+import json
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QMainWindow,
     QSizePolicy,
+    QFileDialog,
 )
 
 from . import __version__
@@ -25,6 +27,7 @@ from .generated_modeling_ui import Ui_MainWindow
 from .pg_plot import plot_kinetics_profile
 from .trxas_graph import draw_decay_graph_with_top_nodes
 from .trxas_result import TrXASResult
+from .utilities import NumpyEncoder
 from .widgets import (
     ParameterTableModel,
     TrXASResultTableModel,
@@ -210,6 +213,8 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
         self.pushButton_load.clicked.connect(self.load_dset)
         self.pushButton_plot.clicked.connect(self.on_fit_finished)
+        self.pushButton_save_model.clicked.connect(self.save_model)
+        self.pushButton_load_model.clicked.connect(self.load_model)
         self.comboBox_model.currentIndexChanged.connect(self.change_model)
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
         self.pushButton_fit.clicked.connect(self.fit_data)
@@ -267,6 +272,19 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             # this is the sink state
             state[-1, num_states - 1] = True
         return state
+
+    def set_state_mat(self, mat):
+        full_state = np.zeros((MAX_STATES, MAX_STATES), dtype=bool)
+        full_state[0 : mat.shape[0] - 1, 0 :mat.shape[1]] = mat[0:-1]
+        full_state[-1, 0:mat.shape[1]] = mat[-1]
+        for n in range(MAX_STATES):
+            for m in range(n + 1):
+                widget = getattr(self, f"checkBox_m{n+1}{m+1}", None)
+                if widget:
+                    if full_state[n, m]:
+                        widget.setChecked(True)
+                    else:
+                        widget.setChecked(False)
 
     def get_state_mat(self):
         state = np.zeros((MAX_STATES, MAX_STATES), dtype=bool)
@@ -340,6 +358,57 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         bounds = np.array(bounds) * np.array(scale).reshape(-1, 1)
         return bounds
 
+    def save_model(self):
+        if self.fit_param is not None:
+            fit_param = self.fit_param.to_dict()
+        else:
+            fit_param = None
+        state_mat = self.get_state_mat()
+        model = {
+            "fit_param": fit_param,
+            "state_mat": state_mat,
+            "num_states": self.spinBox_nstates.value(),
+            "model_type": self.comboBox_model.currentText(),
+        }
+        file_filter = "JSON File (*.json);;Text File (*.txt);;All Files (*)"
+        save_fname, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Model to File As",
+            "",  # use last location
+            file_filter,
+        )
+        if save_fname:
+            with open(save_fname, "w") as fp:
+                json.dump(model, fp, indent=4, cls=NumpyEncoder)
+
+    def load_model(self):
+        open_fname, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select a Model File to Load",
+            "",  # use last location 
+            "JSON File (*.json);;Text File (*.txt);;All Files (*)",
+        )
+        if open_fname:
+            with open(open_fname, "r") as fp:
+                model = json.load(fp)
+            model["state_mat"] = np.array(model["state_mat"], dtype=bool)
+            model_type = model.get("model_type")
+            type_index = {
+                "parallel": 0,
+                "sequential": 1,
+                "advanced": 2
+            }[model_type]
+            self.comboBox_model.setCurrentIndex(type_index),
+            self.spinBox_nstates.setValue(model["num_states"])
+            if model_type == "advanced":
+                self.set_state_mat(model["state_mat"])
+
+            self.draw_graph()
+            if model["fit_param"] not in [None, "none"]:
+                self.fit_param = pd.DataFrame(model["fit_param"])
+                self.fit_param_model = ParameterTableModel(self.fit_param)
+                self.tableView_parameters.setModel(self.fit_param_model)
+            
     def fit_data(self):
         if self.fit_param is None or self.curr_dset is None or self.is_fitting_running:
             return

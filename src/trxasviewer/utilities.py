@@ -6,6 +6,7 @@ from functools import lru_cache
 import numpy as np
 from scipy.sparse import coo_array
 import logging
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -229,3 +230,23 @@ def format_time(input_time, as_string=True):
     else:
         # Return the value, unit, and the requested scale
         return input_time, "s", scale
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder for NumPy types.
+    Converts np.ndarray to list, and other np types to native Python types.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            # Convert NaN to None (which becomes null in JSON)
+            return float(obj) if not np.isnan(obj) else None
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        # Let the base class default method raise the TypeError
+        return super(NumpyEncoder, self).default(obj)
