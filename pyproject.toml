@@ -7,11 +7,11 @@ name = "trxasviewer"
 dynamic = ["version"]
 description = "A python GUI for visualizing Time Resolved X-ray Absorption Spectroscopy datasets"
 readme = "README.rst"
-authors = [{name = "Miaoqi Chu", email = "mqichu@anl.gov"}]
-maintainers = [{name = "Miaoqi Chu", email = "mqichu@anl.gov"}]
+authors = [{ name = "Miaoqi Chu", email = "mqichu@anl.gov" }]
+maintainers = [{ name = "Miaoqi Chu", email = "mqichu@anl.gov" }]
 
 classifiers = [
-    "Development Status :: 4 - Beta",  
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering",
@@ -24,11 +24,18 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
-    "Natural Language :: English"
+    "Natural Language :: English",
 ]
 
-license = {text = "MIT"}
-keywords = ["X-ray absorption", "spectroscopy", "synchrotron", "visualization", "science"]
+license = { text = "MIT" }
+keywords = [
+    "X-ray absorption",
+    "spectroscopy",
+    "time-resolved",
+    "synchrotron",
+    "visualization",
+    "science",
+]
 
 dependencies = [
     "numpy",
@@ -38,25 +45,17 @@ dependencies = [
     "scipy",
     "h5py",
     "pandas",
-    "graphviz",  # install graphviz binary first
+    "graphviz",       # install graphviz binary first
     "PySide6==6.8.3",
+    "psutil",
 ]
 
 [project.scripts]
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = [
-    "coverage",
-    "pytest",
-    "pytest-cov",
-    "mypy",
-    "ruff"
-]
-docs = [
-    "sphinx",
-    "sphinx-rtd-theme"
-]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff"]
+docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
 bugs = "https://github.com/AZjk/trxasviewer/issues"
@@ -64,7 +63,7 @@ changelog = "https://github.com/AZjk/trxasviewer/blob/master/changelog.md"
 homepage = "https://github.com/AZjk/trxasviewer"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
