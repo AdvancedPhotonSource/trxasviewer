@@ -15,11 +15,11 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
-    QGridLayout, QGroupBox, QHeaderView, QLabel,
-    QMainWindow, QMenuBar, QProgressBar, QPushButton,
-    QSizePolicy, QSpinBox, QSplitter, QStatusBar,
-    QTableView, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QDoubleSpinBox, QGridLayout, QGroupBox, QHeaderView,
+    QLabel, QMainWindow, QMenuBar, QProgressBar,
+    QPushButton, QSizePolicy, QSpinBox, QSplitter,
+    QStatusBar, QTableView, QVBoxLayout, QWidget)
 
 from pyqtgraph import (GraphicsLayoutWidget, ImageView)
 
@@ -60,6 +60,7 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(1)
         sizePolicy1.setHeightForWidth(self.tableView.sizePolicy().hasHeightForWidth())
         self.tableView.setSizePolicy(sizePolicy1)
+        self.tableView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
         self.gridLayout.addWidget(self.tableView, 1, 0, 1, 2)
 
