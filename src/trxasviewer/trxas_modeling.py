@@ -275,8 +275,8 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
     def set_state_mat(self, mat):
         full_state = np.zeros((MAX_STATES, MAX_STATES), dtype=bool)
-        full_state[0 : mat.shape[0] - 1, 0 :mat.shape[1]] = mat[0:-1]
-        full_state[-1, 0:mat.shape[1]] = mat[-1]
+        full_state[0 : mat.shape[0] - 1, 0 : mat.shape[1]] = mat[0:-1]
+        full_state[-1, 0 : mat.shape[1]] = mat[-1]
         for n in range(MAX_STATES):
             for m in range(n + 1):
                 widget = getattr(self, f"checkBox_m{n+1}{m+1}", None)
@@ -385,7 +385,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         open_fname, _ = QFileDialog.getOpenFileName(
             self,
             "Select a Model File to Load",
-            "",  # use last location 
+            "",  # use last location
             "JSON File (*.json);;Text File (*.txt);;All Files (*)",
         )
         if open_fname:
@@ -393,11 +393,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
                 model = json.load(fp)
             model["state_mat"] = np.array(model["state_mat"], dtype=bool)
             model_type = model.get("model_type")
-            type_index = {
-                "parallel": 0,
-                "sequential": 1,
-                "advanced": 2
-            }[model_type]
+            type_index = {"parallel": 0, "sequential": 1, "advanced": 2}[model_type]
             self.comboBox_model.setCurrentIndex(type_index),
             self.spinBox_nstates.setValue(model["num_states"])
             if model_type == "advanced":
@@ -408,7 +404,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
                 self.fit_param = pd.DataFrame(model["fit_param"])
                 self.fit_param_model = ParameterTableModel(self.fit_param)
                 self.tableView_parameters.setModel(self.fit_param_model)
-            
+
     def fit_data(self):
         if self.fit_param is None or self.curr_dset is None or self.is_fitting_running:
             return
@@ -494,17 +490,18 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             self.plot_profile_fitting(fitted_data)
 
     def load_dset(self):
-        # f, _ = QFileDialog.getOpenFileName(
-        #     self, "Load Dataset", "", "NumPy Archive (*.npz)"
-        # )
-        f = "/Users/mqichu/Documents/trxas_data/kinetics_results/result_setup-full-00242-00258/results.npz"
+        f, _ = QFileDialog.getOpenFileName(
+            self, "Load Dataset", "", "NumPy Archive (*.npz)"
+        )
+        # f = "/Users/mqichu/Documents/trxas_data/kinetics_results/result_setup-full-00242-00258/results.npz"
         if f:
             dset = load_trxas_result(f)
-            self.model.add_data(dset)
-            self.select_dataseet(dset)
+            self.select_dataset(dset)
 
-    def select_dataseet(self, dset):
+    def select_dataset(self, dset):
         self.curr_dset = dset
+        self.model.add_data(dset)
+
         tmin, tmax, tunit = dset.get_time_range_and_unit()
         self.doubleSpinBox_bsl_tmin.setValue(tmin)
         self.doubleSpinBox_bsl_tmax.setValue(0.0)
@@ -525,7 +522,34 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.img_hdl["svd_spectrum"].setLabel("left", "SVD Magnitude")
 
         cdata, levels = self.curr_dset.combined_fitting_data(None, None)
+
+        self.pg_diff.clear()
+        plot_item = self.pg_diff.getView()
+        items_to_remove = []
+
+        # Iterate through all items currently in the PlotItem
+        for item in plot_item.addedItems:
+            # Check if the item is a TextItem (or a subclass of it)
+            if isinstance(item, pg.TextItem):
+                items_to_remove.append(item)
+
+        # Remove them after iterating to avoid modifying list during iteration
+        for item in items_to_remove:
+            plot_item.removeItem(item)
+
         self.pg_diff.setImage(cdata, levels=levels)
+        vsize, hsize = cdata.shape[0] + 3, cdata.shape[1] // 3
+        labels_info = [
+            ("Raw", hsize * 0.5, (255, 0, 0)),  # Yellow
+            ("Fit", hsize * 1.5, (0, 255, 0)),  # Cyan
+            ("Residual", hsize * 2.5, (0, 0, 255)),  # Magenta
+        ]
+        # Add text labels using a for loop
+        for text_str, x_pos, color in labels_info:
+            text_item = pg.TextItem(text_str, color=color)
+            text_item.setPos(x_pos, vsize)
+            text_item.setAnchor((0.5, 0.5))  # Left-middle anchor
+            plot_item.addItem(text_item)
 
         self.img_hdl["kinetics_profiles"].clear()
         if self.checkBox_kinetics_profiles.isChecked():
