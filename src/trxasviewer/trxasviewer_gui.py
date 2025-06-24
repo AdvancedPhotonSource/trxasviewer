@@ -893,11 +893,12 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.pushButton_replot.setText("Process")
         self.pushButton_replot.setEnabled(True)
 
-    def plot_kinetics(self, x_range=(-1, 10)):
+    def plot_kinetics(self):
         """Plots the kinetics data."""
         if not self.results["kinetics"]:
             return
-        plot_kinetics_profile(self.results, self.pg_hdl_kinetics)
+        use_errorbar = self.checkBox_kinetics_errorbar.isChecked()
+        plot_kinetics_profile(self.results, self.pg_hdl_kinetics, use_errorbar=use_errorbar)
         plot_kinetics_error(self.results, self.pg_hdl_kinetics_err)
 
     def update_progress_bar(self, value):
