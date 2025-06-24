@@ -4,7 +4,8 @@ PGCOLORS = ("r", "b", "k", "m", "g", "m", "y")
 PGSYMBOLS = ("o", "s", "t", "d", "+", "*", "x", "p", "h")
 
 
-def plot_kinetics_profile(results, kinetics_hdl, fit_data=None, points_only=False):
+def plot_kinetics_profile(results, kinetics_hdl, fit_data=None, points_only=False,
+                          use_errorbar=True):
     """Plots the kinetics data with optional fitted curve."""
     kinetics_hdl.clear()
     kinetics_hdl.addLegend()
@@ -33,7 +34,7 @@ def plot_kinetics_profile(results, kinetics_hdl, fit_data=None, points_only=Fals
         kinetics_hdl.addItem(scatter_plot)
 
         # Optional error bars
-        if data.shape[0] == 3:
+        if use_errorbar and data.shape[0] == 3:
             yerr = data[2]
             beam = (x.max() - x.min()) / 200
             kinetics_hdl.addItem(
