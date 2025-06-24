@@ -322,6 +322,12 @@ class TrXASResultTableModel(QAbstractTableModel):
     def columnCount(self, parent=None):
         return 2  # label and created time
 
+    def get_data(self, row):
+        if 0 <= row < len(self._data):
+            return self._data[row]
+        else:
+            return None
+
     def add_data(self, data_dict):
         # Allow passing either a single dict or a list of dicts
         start_row = len(self._data)

@@ -219,6 +219,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.pushButton_updatemodel.clicked.connect(self.draw_graph)
         self.pushButton_fit.clicked.connect(self.fit_data)
         self.spinBox_nstates.valueChanged.connect(self.change_model)
+        self.tableView.doubleClicked.connect(self.mouse_select_dataset)
         self.fit_param_model = None
         self.fit_param = None
         self.curr_dset = None
@@ -498,9 +499,13 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
             dset = load_trxas_result(f)
             self.select_dataset(dset)
 
-    def select_dataset(self, dset):
+    def select_dataset(self, dset, append=True):
+        if dset is None:
+            return
         self.curr_dset = dset
-        self.model.add_data(dset)
+
+        if append:
+            self.model.add_data(dset)
 
         tmin, tmax, tunit = dset.get_time_range_and_unit()
         self.doubleSpinBox_bsl_tmin.setValue(tmin)
@@ -510,8 +515,11 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         index = self.comboBox_bsl_tunit.findText(tunit, Qt.MatchFixedString)
         self.comboBox_bsl_tunit.setCurrentIndex(index)
         self.comboBox_fit_tunit.setCurrentIndex(index)
-
         self.update_plot()
+    
+    def mouse_select_dataset(self, event):
+        if self.model is not None:
+            self.select_dataset(self.model.get_data(event.row()), append=False)
 
     def update_plot(self):
         pen = pg.mkPen(color="blue", width=5)
