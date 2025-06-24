@@ -42,6 +42,9 @@ from .trxas_dataset import (
 from .utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
 from .dtype_cache import DataTypeCache
+from .trxas_modeling import TrXASModeler
+from .trxas_result import TrXASResult
+from .pg_plot import plot_kinetics_profile, plot_kinetics_error
 import logging
 from . import __version__
 
@@ -221,6 +224,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.kinetics_roi = {}
         self.is_processing = False
         self.reset_cache = reset_cache
+        self.modeler = None
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
         self.setup_imageview()
@@ -262,6 +266,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.comboBox_groundstate_method.currentIndexChanged.connect(
             self.update_groundstate_label
         )
+        self.pushButton_model.clicked.connect(self.send_result_to_modeler)
 
         for n in range(5):
 
@@ -297,6 +302,26 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.timer.setInterval(1000)  # 1000 ms = 1 second
         self.timer.timeout.connect(self.refresh_filesystem)
         self.timer.start()
+
+    def send_result_to_modeler(self):
+        # Create the modeler window only if it doesn't exist
+        if self.modeler is None:
+            self.modeler = TrXASModeler()
+            # Connect destroyed signal to reset the reference when the window is closed
+            self.modeler.closed.connect(self.on_modeler_closed)
+            self.modeler.show()
+        else:
+            self.modeler.raise_()
+            self.modeler.activateWindow()
+
+        # Send results if available
+        results = self.avg_worker.get_results()
+        if results is not None:
+            res_dset = TrXASResult(results)
+            self.modeler.select_dataset(res_dset)
+
+    def on_modeler_closed(self):
+        self.modeler = None
 
     def save_load_settings(self, mode="save"):
         keys = [
@@ -870,53 +895,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
-        use_errorbar = self.checkBox_kinetics_errorbar.isChecked()
-        self.pg_hdl_kinetics.clear()
-        self.pg_hdl_kinetics.addLegend()
-        self.pg_hdl_kinetics_err.clear()
-        self.pg_hdl_kinetics_err.addLegend()
         if not self.results["kinetics"]:
             return
-        for idx, (key, value) in enumerate(self.results["kinetics"].items()):
-            data = value["profile"]["main"]
-            pen = pg.mkPen(PGCOLORS[idx % len(PGCOLORS)], width=2)
-            x, y = data[0], data[1]
-            # curve + Scatter + error (if present)
-            self.pg_hdl_kinetics.plot(x, y, pen=pen)
-            scatter_plot = pg.ScatterPlotItem(
-                x=x,
-                y=y,
-                size=3,
-                pen=pen,
-                brush=None,
-                name=value["long_label"],
-            )
-            self.pg_hdl_kinetics.addItem(scatter_plot)
-
-            # Optional error bars
-            print(use_errorbar)
-            if use_errorbar and data.shape[0] == 3:
-                yerr = data[2]
-                beam = (x.max() - x.min()) / 200
-                self.pg_hdl_kinetics.addItem(
-                    pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
-                )
-
-            err_profile = value["profile"]["error"]
-            if err_profile is not None:
-                self.pg_hdl_kinetics_err.plot(
-                    err_profile[:, 0],
-                    err_profile[:, 1],
-                    pen=pen,
-                    symbol=PGSYMBOLS[idx % len(PGSYMBOLS)],
-                    symbolPen=pen,
-                    name=key,
-                )
-
-        self.pg_hdl_kinetics.setLabel("left", "Intensity (a.u.)")
-        self.pg_hdl_kinetics.setLabel("bottom", "Time", units="s")
-        self.pg_hdl_kinetics_err.setLabel("left", "Normalized Uncertainty")
-        self.pg_hdl_kinetics_err.setLabel("bottom", "Number of scans")
+        plot_kinetics_profile(self.results, self.pg_hdl_kinetics)
+        plot_kinetics_error(self.results, self.pg_hdl_kinetics_err)
 
     def update_progress_bar(self, value):
         """Updates the progress bar."""

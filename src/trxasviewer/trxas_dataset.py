@@ -6,6 +6,7 @@ import numpy as np
 import logging
 import json
 import os
+import datetime
 import shutil
 import h5py
 import traceback
@@ -245,6 +246,7 @@ class TrXASDatasetManager:
                 "label": self.label,
                 "analysis_type": "normalized-GS",
                 "analysis_kwargs": kwargs,
+                "created": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
         )
         return good_results
