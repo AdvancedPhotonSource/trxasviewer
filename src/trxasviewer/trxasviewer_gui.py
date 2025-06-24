@@ -318,7 +318,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         results = self.avg_worker.get_results()
         if results is not None:
             res_dset = TrXASResult(results)
-            self.modeler.model.add_data(res_dset)
+            self.modeler.select_dataset(res_dset)
 
     def on_modeler_closed(self):
         self.modeler = None
