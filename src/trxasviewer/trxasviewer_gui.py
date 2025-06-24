@@ -870,6 +870,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
 
     def plot_kinetics(self, x_range=(-1, 10)):
         """Plots the kinetics data."""
+        use_errorbar = self.checkBox_kinetics_errorbar.isChecked()
         self.pg_hdl_kinetics.clear()
         self.pg_hdl_kinetics.addLegend()
         self.pg_hdl_kinetics_err.clear()
@@ -893,12 +894,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             self.pg_hdl_kinetics.addItem(scatter_plot)
 
             # Optional error bars
-            if data.shape[0] == 3:
+            print(use_errorbar)
+            if use_errorbar and data.shape[0] == 3:
                 yerr = data[2]
                 beam = (x.max() - x.min()) / 200
                 self.pg_hdl_kinetics.addItem(
                     pg.ErrorBarItem(x=x, y=y, height=yerr, beam=beam, pen=pen)
                 )
+
             err_profile = value["profile"]["error"]
             if err_profile is not None:
                 self.pg_hdl_kinetics_err.plot(

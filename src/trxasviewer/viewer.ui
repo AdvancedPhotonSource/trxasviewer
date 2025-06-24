@@ -15,6 +15,18 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_19">
+    <property name="leftMargin">
+     <number>2</number>
+    </property>
+    <property name="topMargin">
+     <number>2</number>
+    </property>
+    <property name="rightMargin">
+     <number>2</number>
+    </property>
+    <property name="bottomMargin">
+     <number>2</number>
+    </property>
     <item row="0" column="0">
      <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
@@ -40,6 +52,18 @@
            <string>Rawdata</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
            <item row="0" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
@@ -697,27 +721,6 @@
               <property name="bottomMargin">
                <number>2</number>
               </property>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>Fitting Model</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="comboBox">
-                <item>
-                 <property name="text">
-                  <string>Placeholder1</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Placeholder2</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
               <item row="0" column="0" colspan="2">
                <layout class="QGridLayout" name="gridLayout_3">
                 <item row="1" column="1">
@@ -994,8 +997,8 @@
          <property name="bottomMargin">
           <number>0</number>
          </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_10">
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_9">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -1003,7 +1006,20 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Target</string>
+            <string>Channel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Cmap</string>
            </property>
           </widget>
          </item>
@@ -1030,19 +1046,6 @@
              <string>raw</string>
             </property>
            </item>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_9">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Channel</string>
-           </property>
           </widget>
          </item>
          <item row="0" column="3">
@@ -1073,127 +1076,7 @@
            </item>
           </widget>
          </item>
-         <item row="0" column="4">
-          <widget class="QLabel" name="label_3">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Cmap</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="5">
-          <widget class="QComboBox" name="comboBox_cmap">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <item>
-            <property name="text">
-             <string>bwr</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>jet</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Spectral</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>coolwarm</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>seismic</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>viridis</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>plasma</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>inferno</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>magma</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Greys</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Blues</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="0" column="6">
-          <widget class="QLabel" name="label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>ROI(x-y)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="7">
-          <widget class="QSpinBox" name="spinBox_roix">
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>999999</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="8">
-          <widget class="QSpinBox" name="spinBox_roiy">
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>999999</number>
-           </property>
-           <property name="singleStep">
-            <number>200</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="9">
+         <item row="1" column="0" colspan="11">
           <layout class="QGridLayout" name="gridLayout_13">
            <item row="0" column="0">
             <widget class="QGroupBox" name="groupBox_data">
@@ -1207,6 +1090,18 @@
               <string>Data</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_6">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
               <item row="0" column="0">
                <widget class="ImageView" name="pg_hdl_img2d" native="true">
                 <property name="sizePolicy">
@@ -1333,6 +1228,133 @@
            </item>
           </layout>
          </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Target</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="10">
+          <widget class="QCheckBox" name="checkBox_kinetics_errorbar">
+           <property name="text">
+            <string>Errorbar</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="9">
+          <widget class="QSpinBox" name="spinBox_roiy">
+           <property name="minimum">
+            <number>5</number>
+           </property>
+           <property name="maximum">
+            <number>999999</number>
+           </property>
+           <property name="singleStep">
+            <number>200</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="8">
+          <widget class="QSpinBox" name="spinBox_roix">
+           <property name="minimum">
+            <number>5</number>
+           </property>
+           <property name="maximum">
+            <number>999999</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="7">
+          <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>ROI(x-y)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="5">
+          <widget class="QComboBox" name="comboBox_cmap">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>bwr</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>jet</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Spectral</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>coolwarm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>seismic</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>viridis</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>plasma</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>inferno</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>magma</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Greys</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Blues</string>
+            </property>
+           </item>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QGroupBox" name="groupBox_11">
@@ -1346,6 +1368,18 @@
          <string>Kinetics</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_7">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item row="0" column="0">
           <widget class="QSplitter" name="splitter_3">
            <property name="orientation">
@@ -1385,7 +1419,7 @@
      <x>0</x>
      <y>0</y>
      <width>1758</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
