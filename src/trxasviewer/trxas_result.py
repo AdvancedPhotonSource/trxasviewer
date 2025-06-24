@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .utilities import format_time
 import logging
+import copy
 
 
 logger = logging.getLogger(__name__)
@@ -45,13 +46,13 @@ def convert_npz_obj(loaded_npz):
     Converts numpy arrays from an .npz file into Python objects where applicable.
     """
     if isinstance(loaded_npz, dict):
-        return loaded_npz
+        python_dict = loaded_npz
     else:
         python_dict = {}
         for key in loaded_npz.files:
             python_dict[key] = _process_item(loaded_npz[key])
         loaded_npz.close()
-        return python_dict
+    return copy.deepcopy(python_dict)
 
 
 def get_levels(data, percentile=(0.2, 99.8)):
