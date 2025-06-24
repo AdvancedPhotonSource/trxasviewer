@@ -34,6 +34,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_19 = QGridLayout(self.centralwidget)
         self.gridLayout_19.setObjectName(u"gridLayout_19")
+        self.gridLayout_19.setContentsMargins(2, 2, 2, 2)
         self.splitter_2 = QSplitter(self.centralwidget)
         self.splitter_2.setObjectName(u"splitter_2")
         self.splitter_2.setOrientation(Qt.Orientation.Horizontal)
@@ -52,6 +53,7 @@ class Ui_MainWindow(object):
         self.groupBox_2.setMaximumSize(QSize(1200, 16777215))
         self.gridLayout_2 = QGridLayout(self.groupBox_2)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.pushButton_select_rawfolder = QPushButton(self.groupBox_2)
@@ -443,18 +445,6 @@ class Ui_MainWindow(object):
         self.gridLayout_11 = QGridLayout(self.groupBox_6)
         self.gridLayout_11.setObjectName(u"gridLayout_11")
         self.gridLayout_11.setContentsMargins(2, 2, 2, 2)
-        self.label_13 = QLabel(self.groupBox_6)
-        self.label_13.setObjectName(u"label_13")
-
-        self.gridLayout_11.addWidget(self.label_13, 1, 0, 1, 1)
-
-        self.comboBox = QComboBox(self.groupBox_6)
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.setObjectName(u"comboBox")
-
-        self.gridLayout_11.addWidget(self.comboBox, 1, 1, 1, 1)
-
         self.gridLayout_3 = QGridLayout()
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.doubleSpinBox_kinetics_edelta1 = QDoubleSpinBox(self.groupBox_6)
@@ -620,15 +610,22 @@ class Ui_MainWindow(object):
         self.gridLayout_14 = QGridLayout(self.groupBox)
         self.gridLayout_14.setObjectName(u"gridLayout_14")
         self.gridLayout_14.setContentsMargins(0, 0, 0, 0)
-        self.label_10 = QLabel(self.groupBox)
-        self.label_10.setObjectName(u"label_10")
+        self.label_9 = QLabel(self.groupBox)
+        self.label_9.setObjectName(u"label_9")
         sizePolicy10 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
         sizePolicy10.setHorizontalStretch(0)
         sizePolicy10.setVerticalStretch(0)
-        sizePolicy10.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
-        self.label_10.setSizePolicy(sizePolicy10)
+        sizePolicy10.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        self.label_9.setSizePolicy(sizePolicy10)
 
-        self.gridLayout_14.addWidget(self.label_10, 0, 0, 1, 1)
+        self.gridLayout_14.addWidget(self.label_9, 0, 2, 1, 1)
+
+        self.label_3 = QLabel(self.groupBox)
+        self.label_3.setObjectName(u"label_3")
+        sizePolicy10.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        self.label_3.setSizePolicy(sizePolicy10)
+
+        self.gridLayout_14.addWidget(self.label_3, 0, 4, 1, 1)
 
         self.comboBox_target = QComboBox(self.groupBox)
         self.comboBox_target.addItem("")
@@ -638,13 +635,6 @@ class Ui_MainWindow(object):
         self.comboBox_target.setMinimumSize(QSize(120, 0))
 
         self.gridLayout_14.addWidget(self.comboBox_target, 0, 1, 1, 1)
-
-        self.label_9 = QLabel(self.groupBox)
-        self.label_9.setObjectName(u"label_9")
-        sizePolicy10.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
-        self.label_9.setSizePolicy(sizePolicy10)
-
-        self.gridLayout_14.addWidget(self.label_9, 0, 2, 1, 1)
 
         self.comboBox_channel_num = QComboBox(self.groupBox)
         self.comboBox_channel_num.addItem("")
@@ -657,54 +647,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_14.addWidget(self.comboBox_channel_num, 0, 3, 1, 1)
 
-        self.label_3 = QLabel(self.groupBox)
-        self.label_3.setObjectName(u"label_3")
-        sizePolicy10.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
-        self.label_3.setSizePolicy(sizePolicy10)
-
-        self.gridLayout_14.addWidget(self.label_3, 0, 4, 1, 1)
-
-        self.comboBox_cmap = QComboBox(self.groupBox)
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.addItem("")
-        self.comboBox_cmap.setObjectName(u"comboBox_cmap")
-        sizePolicy4.setHeightForWidth(self.comboBox_cmap.sizePolicy().hasHeightForWidth())
-        self.comboBox_cmap.setSizePolicy(sizePolicy4)
-        self.comboBox_cmap.setMaximumSize(QSize(80, 16777215))
-
-        self.gridLayout_14.addWidget(self.comboBox_cmap, 0, 5, 1, 1)
-
-        self.label = QLabel(self.groupBox)
-        self.label.setObjectName(u"label")
-        sizePolicy10.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy10)
-
-        self.gridLayout_14.addWidget(self.label, 0, 6, 1, 1)
-
-        self.spinBox_roix = QSpinBox(self.groupBox)
-        self.spinBox_roix.setObjectName(u"spinBox_roix")
-        self.spinBox_roix.setMinimum(5)
-        self.spinBox_roix.setMaximum(999999)
-
-        self.gridLayout_14.addWidget(self.spinBox_roix, 0, 7, 1, 1)
-
-        self.spinBox_roiy = QSpinBox(self.groupBox)
-        self.spinBox_roiy.setObjectName(u"spinBox_roiy")
-        self.spinBox_roiy.setMinimum(5)
-        self.spinBox_roiy.setMaximum(999999)
-        self.spinBox_roiy.setSingleStep(200)
-
-        self.gridLayout_14.addWidget(self.spinBox_roiy, 0, 8, 1, 1)
-
         self.gridLayout_13 = QGridLayout()
         self.gridLayout_13.setObjectName(u"gridLayout_13")
         self.groupBox_data = QGroupBox(self.groupBox)
@@ -716,6 +658,7 @@ class Ui_MainWindow(object):
         self.groupBox_data.setSizePolicy(sizePolicy11)
         self.gridLayout_6 = QGridLayout(self.groupBox_data)
         self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.gridLayout_6.setContentsMargins(0, 0, 0, 0)
         self.pg_hdl_img2d = ImageView(self.groupBox_data)
         self.pg_hdl_img2d.setObjectName(u"pg_hdl_img2d")
         sizePolicy12 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -796,7 +739,60 @@ class Ui_MainWindow(object):
         self.gridLayout_13.addWidget(self.groupBox_4, 1, 1, 1, 1)
 
 
-        self.gridLayout_14.addLayout(self.gridLayout_13, 1, 0, 1, 9)
+        self.gridLayout_14.addLayout(self.gridLayout_13, 1, 0, 1, 11)
+
+        self.label_10 = QLabel(self.groupBox)
+        self.label_10.setObjectName(u"label_10")
+        sizePolicy10.setHeightForWidth(self.label_10.sizePolicy().hasHeightForWidth())
+        self.label_10.setSizePolicy(sizePolicy10)
+
+        self.gridLayout_14.addWidget(self.label_10, 0, 0, 1, 1)
+
+        self.checkBox_kinetics_errorbar = QCheckBox(self.groupBox)
+        self.checkBox_kinetics_errorbar.setObjectName(u"checkBox_kinetics_errorbar")
+
+        self.gridLayout_14.addWidget(self.checkBox_kinetics_errorbar, 0, 10, 1, 1)
+
+        self.spinBox_roiy = QSpinBox(self.groupBox)
+        self.spinBox_roiy.setObjectName(u"spinBox_roiy")
+        self.spinBox_roiy.setMinimum(5)
+        self.spinBox_roiy.setMaximum(999999)
+        self.spinBox_roiy.setSingleStep(200)
+
+        self.gridLayout_14.addWidget(self.spinBox_roiy, 0, 9, 1, 1)
+
+        self.spinBox_roix = QSpinBox(self.groupBox)
+        self.spinBox_roix.setObjectName(u"spinBox_roix")
+        self.spinBox_roix.setMinimum(5)
+        self.spinBox_roix.setMaximum(999999)
+
+        self.gridLayout_14.addWidget(self.spinBox_roix, 0, 8, 1, 1)
+
+        self.label = QLabel(self.groupBox)
+        self.label.setObjectName(u"label")
+        sizePolicy10.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy10)
+
+        self.gridLayout_14.addWidget(self.label, 0, 7, 1, 1)
+
+        self.comboBox_cmap = QComboBox(self.groupBox)
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.addItem("")
+        self.comboBox_cmap.setObjectName(u"comboBox_cmap")
+        sizePolicy4.setHeightForWidth(self.comboBox_cmap.sizePolicy().hasHeightForWidth())
+        self.comboBox_cmap.setSizePolicy(sizePolicy4)
+        self.comboBox_cmap.setMaximumSize(QSize(80, 16777215))
+
+        self.gridLayout_14.addWidget(self.comboBox_cmap, 0, 5, 1, 1)
 
         self.splitter.addWidget(self.groupBox)
         self.groupBox_11 = QGroupBox(self.splitter)
@@ -808,6 +804,7 @@ class Ui_MainWindow(object):
         self.groupBox_11.setSizePolicy(sizePolicy18)
         self.gridLayout_7 = QGridLayout(self.groupBox_11)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.gridLayout_7.setContentsMargins(0, 0, 0, 0)
         self.splitter_3 = QSplitter(self.groupBox_11)
         self.splitter_3.setObjectName(u"splitter_3")
         self.splitter_3.setOrientation(Qt.Orientation.Horizontal)
@@ -845,7 +842,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1758, 33))
+        self.menubar.setGeometry(QRect(0, 0, 1758, 24))
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
@@ -903,10 +900,6 @@ class Ui_MainWindow(object):
         self.label_rtime0.setText("")
         self.tabWidget_binning.setTabText(self.tabWidget_binning.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Manual", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics-Modeling", None))
-        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Fitting Model", None))
-        self.comboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"Placeholder1", None))
-        self.comboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"Placeholder2", None))
-
         self.checkBox_kinetics_roi4.setText(QCoreApplication.translate("MainWindow", u"ROI4", None))
         self.checkBox_kinetics_roi1.setText(QCoreApplication.translate("MainWindow", u"ROI1", None))
         self.checkBox_kinetics_roi3.setText(QCoreApplication.translate("MainWindow", u"ROI3", None))
@@ -917,17 +910,23 @@ class Ui_MainWindow(object):
         self.pushButton_replot.setText(QCoreApplication.translate("MainWindow", u"Process", None))
         self.pushButton_model.setText(QCoreApplication.translate("MainWindow", u"Model", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Time-resolved XAS", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Target", None))
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Channel", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Cmap", None))
         self.comboBox_target.setItemText(0, QCoreApplication.translate("MainWindow", u"normalized", None))
         self.comboBox_target.setItemText(1, QCoreApplication.translate("MainWindow", u"normalized-GS", None))
         self.comboBox_target.setItemText(2, QCoreApplication.translate("MainWindow", u"raw", None))
 
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Channel", None))
         self.comboBox_channel_num.setItemText(0, QCoreApplication.translate("MainWindow", u"1", None))
         self.comboBox_channel_num.setItemText(1, QCoreApplication.translate("MainWindow", u"2", None))
         self.comboBox_channel_num.setItemText(2, QCoreApplication.translate("MainWindow", u"0", None))
 
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Cmap", None))
+        self.groupBox_data.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
+        self.groupBox_vlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Vertical Linecut", None))
+        self.groupBox_hlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal Linecut", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Target", None))
+        self.checkBox_kinetics_errorbar.setText(QCoreApplication.translate("MainWindow", u"Errorbar", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"ROI(x-y)", None))
         self.comboBox_cmap.setItemText(0, QCoreApplication.translate("MainWindow", u"bwr", None))
         self.comboBox_cmap.setItemText(1, QCoreApplication.translate("MainWindow", u"jet", None))
         self.comboBox_cmap.setItemText(2, QCoreApplication.translate("MainWindow", u"Spectral", None))
@@ -940,11 +939,6 @@ class Ui_MainWindow(object):
         self.comboBox_cmap.setItemText(9, QCoreApplication.translate("MainWindow", u"Greys", None))
         self.comboBox_cmap.setItemText(10, QCoreApplication.translate("MainWindow", u"Blues", None))
 
-        self.label.setText(QCoreApplication.translate("MainWindow", u"ROI(x-y)", None))
-        self.groupBox_data.setTitle(QCoreApplication.translate("MainWindow", u"Data", None))
-        self.groupBox_vlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Vertical Linecut", None))
-        self.groupBox_hlinecut.setTitle(QCoreApplication.translate("MainWindow", u"Horizontal Linecut", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Zoomin", None))
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics", None))
     # retranslateUi
 
