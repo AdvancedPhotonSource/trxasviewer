@@ -606,6 +606,10 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
 
 def main_modeling_gui(args, **kwargs):
+    if sys.platform.startswith('win'):
+        # This is required for multiprocessing to work correctly on Windows
+        from multiprocessing import freeze_support
+        freeze_support()
     app = QApplication(sys.argv)
     window = TrXASModeler()
     window.show()
@@ -613,4 +617,4 @@ def main_modeling_gui(args, **kwargs):
 
 
 if __name__ == "__main__":
-    main_modeling_gui()
+    main_modeling_gui(None)
