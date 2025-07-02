@@ -48,12 +48,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-pg.setConfigOption("background", "w")
-pg.setConfigOption("foreground", "k")
-pg.setConfigOptions(antialias=True)
-pg.setConfigOptions(imageAxisOrder="row-major")
-
-
 def load_trxas_result(npz_filename):
     npz_file = np.load(npz_filename, allow_pickle=True)
     raw = dict(npz_file)
@@ -197,6 +191,10 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
     def __init__(self):
         super(TrXASModeler, self).__init__()
+        pg.setConfigOption("background", "w")
+        pg.setConfigOption("foreground", "k")
+        pg.setConfigOptions(antialias=True)
+        pg.setConfigOptions(imageAxisOrder="row-major")
         self.setupUi(self)
         self.setWindowTitle(f"TrXASModeler v{__version__}")
         self.model = TrXASResultTableModel()
