@@ -15,13 +15,18 @@ from .utilities import (
     is_recently_modified,
 )
 from .plot import plot_results
-from . import __version__
 
 
 logger = logging.getLogger(__name__)
 
 TRXAS_PATTERN = re.compile(r"c(\d+)o(\d+)b(\d+)")
-P0 = 271555.0  # 271.555 kHz is P0 for APS, i.e. frequency of orbits
+P0 = 352055282.000000 / 1296  # RF frequency in Hz / number of bucket
+# Each orbital has 1296 bunket, so the maximum bunch mode can be 1296
+# at the APS, the RF frequency can be read from
+# caget A014-IETS:BTC:CFG:SRNomFreqM -f8 -a
+# A014-IETS:BTC:CFG:SRNomFreqM   2025-11-11 13:15:24.536419 352055282.00000000
+
+
 CACHE_PATH = ".cache"
 
 
