@@ -33,7 +33,8 @@ def get_scan_type(fname):
 
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
-        pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
+        # pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
+        pattern_laserd = re.compile(r"^#S\s+\d+\s+\S*scan\S*\s+laserd")
         line_count = 0
         scan_type = "invalid"  # Move this outside the loop
         matched = False
