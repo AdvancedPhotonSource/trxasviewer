@@ -389,7 +389,7 @@ class TrXASDataset:
         kinetics_kwargs=None,
     ):
         if target == "raw":
-            if self.xas_data == None:
+            if self.xas_data is None:
                 self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(
@@ -434,8 +434,8 @@ class TrXASDataset:
 
         # it's (num_rows, total_bunches)
         norm_data = np.mean(xas_data[:, 1:3], axis=(1,))
-        # cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
-        # norm_data /= orbital_mean_ch0[:, cycle_indices]
+        cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
+        norm_data /= orbital_mean_ch0[:, cycle_indices]
 
         return norm_data.astype(np.float32)
 
