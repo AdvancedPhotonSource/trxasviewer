@@ -10,6 +10,8 @@ import datetime
 import shutil
 import h5py
 import traceback
+import warnings
+
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
@@ -111,6 +113,113 @@ def process_header(header_line):
     return dset_type, shape, labels, labels_mask, payload_mask
 
 
+def get_scan_type_from_header(header_line):
+    """
+    Determines the scan type from a header line.
+
+    - If the header contains "Energy", returns "exafs".
+    - If the header contains "laserd", returns "laserd".
+    - Otherwise, returns "invalid".
+    """
+    header = header_line[3:128]
+    if re.match(r".* Energy ", header):
+        return "EXAFS"
+    elif re.match(r".* laserd ", header) or re.match(r".* dutd ", header):
+        return "LASERD"
+    else:
+        return "INVALID"
+
+
+@lru_cache(maxsize=128)
+def process_header_2(fname):
+    """
+    Processes a header line to determine the dataset type and extract relevant metadata.
+
+    This function extracts the dataset type (either "Energy" or "laserd") from the header line,
+    parses labels, and computes indexing information for a structured dataset.
+
+    Parameters
+    ----------
+    header_line : str
+        A header string, typically starting with `#L`, followed by column labels.
+
+    Returns
+    -------
+    dset_type : str
+        The dataset type, either "EXAFS" or "LASERD".
+    shape : tuple of int
+        The shape of the dataset inferred from parsed indices, given as (channels, orbitals, bunches).
+    labels : list of str
+        The cleaned column labels after processing.
+    labels_mask : numpy.ndarray
+        A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
+    payload_mask : numpy.ndarray
+        A boolean mask of the dataset shape, marking valid payload indices.
+
+    Raises
+    ------
+    ValueError
+        If the dataset type cannot be determined from the header.
+
+    Notes
+    -----
+    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
+    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
+    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
+
+    Examples
+    --------
+    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
+    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
+    >>> print(dset_type)
+    'Energy'
+    >>> print(shape)
+    (2, 2, 2)
+    >>> print(labels)
+    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
+    >>> print(payload_mask.shape)
+    (8,)  # Flattened shape of (2, 2, 2)
+    """
+    is_double_length = False
+    with open(fname, "r") as f:
+        for line in f:
+            if "acquisition.message1 = doublelength" in line:
+                # this line is always ahead of the header line
+                is_double_length = True
+            if line.startswith("#L "):  # Header line
+                header_line = line
+                break
+
+    dset_type = get_scan_type_from_header(header_line)
+
+    header = header_line[3:].strip()
+    labels = header.split()
+    if dset_type == "LASERD" and "dutd" in labels:
+        index = labels.index("dutd")
+        labels[index] = "laserd"
+
+    labels_mask = np.ones(len(labels), dtype=bool)
+    record = []
+    matches = [TRXAS_PATTERN.match(col) for col in labels]
+    for index, match in enumerate(matches):
+        if match:
+            labels_mask[index] = False
+            record.append(tuple(map(int, match.groups())))
+    labels = [labels[n] for n in range(len(labels)) if labels_mask[n]]
+
+    record = np.array(record)
+    # np.savetxt('record.txt', record, fmt='%d')
+    c_min, o_min, b_min = record.min(axis=0)
+    c_max, o_max, b_max = record.max(axis=0)
+
+    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
+    shape = [c_max + 1, o_max + 1, b_max + 1]
+    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
+    payload_mask = np.zeros(np.prod(shape), dtype=bool)
+    payload_mask[index] = True
+    return dset_type, shape, labels, labels_mask, payload_mask, is_double_length
+
+
 def safe_mean(data_list, compute_kinetics_errorbar=False):
     """
     Compute the mean of a list of datasets, handling None values and computing error bars if needed.
@@ -134,7 +243,11 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
         # Only fill valid regions
         data_full[i, :valid_rows, :valid_cols] = d
 
-    data_avg = np.nanmean(data_full, axis=0)
+    data_sum = np.nansum(data_full, axis=0)
+    data_count = np.nansum(~np.isnan(data_full), axis=0)
+    data_count = np.clip(data_count, 1, None)
+    data_avg = data_sum / data_count
+
     if not compute_kinetics_errorbar:
         return data_avg
     else:
@@ -147,11 +260,14 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
 
         # compute errorbar as function of num_dsets
         data_err_num = []
+        data_full = np.nan_to_num(data_full, nan=0.0)
+
         for n in range(2, num_dsets):
             # compute the normalized error bar and get the mean value
             error_t = np.nanstd(data_full[:n, 1], axis=0) / np.sqrt(n)
-            norm_error = error_t / np.abs(np.nanmean(data_full[:n, 1], axis=0))
-            data_err_num.append((n, np.median(norm_error)))
+            # norm_error = error_t / np.abs(np.nanmean(data_full[:n, 1], axis=0))
+            norm_error = error_t / 1.0 # np.abs(np.nanmean(data_full[:n, 1], axis=0))
+            data_err_num.append((n, np.mean(norm_error)))
         data_err_num = np.array(data_err_num)
         return data_avg, data_err_num
 
@@ -215,6 +331,10 @@ class TrXASDatasetManager:
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
             dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
+            if dset is None:
+                logger.error(f"Failed to load dataset from {fname}")
+                continue
+
             logger.info(f"{dset.num_rows} rows in {fname}")
             if dset_type is None:
                 dset_type = dset.dset_type
@@ -232,6 +352,10 @@ class TrXASDatasetManager:
 
         good_idx = 0  # np.argmax(shapes[:, 0])
         good_dset = create_trxas_dataset(self.flist[good_idx])
+        if good_dset is None:
+            logger.error(f"Failed to load dataset from {self.flist[good_idx]}")
+            return None
+
         good_results = good_dset.get_energy_vs_time(**kwargs)
 
         good_results["data"] = safe_mean(data_list)
@@ -294,6 +418,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
+        traceback.print_exc()
         return None
 
 
@@ -316,8 +441,8 @@ class TrXASDataset:
             self.init_from_cache(self.cache_name)
         else:
             self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
-            if not self.cache_name.exists() and not is_recently_modified(self.fname):
-                self.save_to_cache()
+            # if not self.cache_name.exists() and not is_recently_modified(self.fname):
+            #     self.save_to_cache()
         self.xas_data = None
 
     @staticmethod
@@ -343,13 +468,10 @@ class TrXASDataset:
         temp_cache_name.replace(self.cache_name)
 
     def init_from_file(self, fname, ignore_incomplete=True):
-        with open(fname, "r") as f:
-            for line in f:
-                if line.startswith("#L "):  # Header line
-                    dset_type, shape, labels, labels_mask, payload_mask = (
-                        process_header(line)
-                    )
-                    break
+        dset_type, shape, labels, labels_mask, payload_mask, is_double_length = (
+            process_header_2(fname)
+        )
+        num_channel = shape[0]
         data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
         self.num_rows = data.shape[0]
         self.labels = labels
@@ -364,13 +486,30 @@ class TrXASDataset:
             self.energy = 0.0
 
         # xas_part is [num_energy, channel, total_bunches]
-        xas_part = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
-            self.num_rows, shape[0], -1
+        data = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
+            self.num_rows, num_channel, -1
         )
-
         # remove the last bunch because it may be incomplete
-        xas_part = xas_part[:, :, :-1]  # (141, 3, 8668)
-        assert xas_part.shape[2] <= np.prod(shape[1:])
+        data = data[:, :, :-1]  # (141, 3, 8668)
+        xas_part = np.full(
+            (self.num_rows, num_channel, shape[1] * shape[2]), np.nan, dtype=float
+        )
+        xas_part[:, :, 0 : data.shape[2]] = data
+
+        if is_double_length:
+            shape_5d = (self.num_rows, shape[0], shape[1], shape[2] // 2, 2)
+            xas_part = xas_part.reshape(shape_5d)
+            xas_part_0 = xas_part[:, :, :, :, 0]
+            xas_part_0 = xas_part_0.reshape(self.num_rows, shape[0], -1)
+            xas_part_1 = xas_part[:, :, :, :, 1]
+            xas_part_1 = xas_part_1.reshape(self.num_rows, shape[0], -1)
+
+            # xas_part = np.concatenate((xas_part_0, xas_part_1), axis=-1)
+            xas_part = np.concatenate((xas_part_1, xas_part_0), axis=-1)
+            # xas_part = np.swapaxes(xas_part, -1, -3).reshape(-1)
+            # xas_part = xas_part.reshape(self.num_rows, shape[0], -1)
+            shape = [shape[0], shape[1] * 2, shape[2] // 2]
+
         # in cases, after removing the last bunch, the number of bunches
         # is a multiple of num_bunches. So we need to trim the shape
         # shape[1] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
@@ -582,7 +721,11 @@ class TrXASDataset:
             return None
         e0, e1 = center_energy - delta_energy, center_energy + delta_energy
         slected = (self.energy >= e0) & (self.energy <= e1)
-        kinetics_profile = np.stack([t_axis, avg[slected].mean(axis=0)])
+        if np.sum(slected) == 0:
+            kinetics_profile = np.stack([t_axis, np.zeros_like(t_axis)])
+        else:
+            kinetics_profile = np.stack([t_axis, avg[slected].mean(axis=0)])
+
         single_result = {
             "profile": kinetics_profile,
             "long_label": f"{label}: {center_energy:.3f}±{delta_energy:.3f} keV",
