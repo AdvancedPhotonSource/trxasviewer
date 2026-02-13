@@ -35,6 +35,7 @@ def get_scan_type(fname):
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
         # pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+\S*scan\S*\s+laserd")
+        pattern_dutd = re.compile(r"^#S\s+\d+\s+\S*scan\S*\s+dutd")
         line_count = 0
         scan_type = "invalid"  # Move this outside the loop
         matched = False
@@ -45,7 +46,7 @@ def get_scan_type(fname):
                     if pattern_exafs.match(line):
                         scan_type = "exafs"
                         matched = True
-                    elif pattern_laserd.match(line):
+                    elif pattern_laserd.match(line) or pattern_dutd.match(line):
                         scan_type = "laserd"
                         matched = True
                 if line_count >= 12:  # Stop reading after 12 lines

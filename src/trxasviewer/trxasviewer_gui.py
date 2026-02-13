@@ -478,7 +478,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if index == 0:
             prev_anchor = 0
         else:
-            prev_anchor = self.__dict__[f"spinBox_anchor{index-1}"].value()
+            prev_anchor = self.__dict__[f"spinBox_anchor{index - 1}"].value()
         if length == -1 or not prev_enable:
             self.__dict__[f"spinBox_anchor{index}"].setEnabled(False)
             self.update_binning_params(index=index + 1, prev_enable=False)
@@ -665,12 +665,16 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
             center_energy, delta_energy = self.compute_energy_bounds(
                 roi.pos(), roi.size()
             )
-            getattr(self, f"doubleSpinBox_kinetics_ecenter{target}").setValue(
-                center_energy
-            ),
-            getattr(self, f"doubleSpinBox_kinetics_edelta{target}").setValue(
-                delta_energy
-            ),
+            (
+                getattr(self, f"doubleSpinBox_kinetics_ecenter{target}").setValue(
+                    center_energy
+                ),
+            )
+            (
+                getattr(self, f"doubleSpinBox_kinetics_edelta{target}").setValue(
+                    delta_energy
+                ),
+            )
 
     def mouse_clicked(self, event=None):
         if self.image is None:
@@ -868,11 +872,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
                 self.spinBox_roiy.setValue(data.shape[0] // 10)
 
             if self.comboBox_target.currentText() == "normalized-GS":
-                vmin, vmax = np.percentile(data.ravel(), [0.2, 99.8])
+                vmin, vmax = np.nanpercentile(data.ravel(), [0.2, 99.8])
                 vmax = max(abs(vmax), abs(vmin))
                 vmin = -vmax
             else:
-                vmin, vmax = np.percentile(data.ravel(), [0, 100])
+                vmin, vmax = np.nanpercentile(data.ravel(), [0, 100])
 
             self.image, prev_image = np.flipud(data), self.image
             self.pg_hdl_img2d.setImage(self.image, levels=(vmin, vmax))
@@ -898,7 +902,9 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         if not self.results["kinetics"]:
             return
         use_errorbar = self.checkBox_kinetics_errorbar.isChecked()
-        plot_kinetics_profile(self.results, self.pg_hdl_kinetics, use_errorbar=use_errorbar)
+        plot_kinetics_profile(
+            self.results, self.pg_hdl_kinetics, use_errorbar=use_errorbar
+        )
         plot_kinetics_error(self.results, self.pg_hdl_kinetics_err)
 
     def update_progress_bar(self, value):
