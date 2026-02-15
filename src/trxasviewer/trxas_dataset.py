@@ -274,10 +274,9 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
 
 
 class TrXASDatasetManager:
-    def __init__(self, ignore_incomplete=True):
+    def __init__(self):
         self.flist = []
         self.label = None
-        self.ignore_incomplete = ignore_incomplete
 
     def update_flist(self, flist):
         self.flist = flist
@@ -331,7 +330,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
+            dset = create_trxas_dataset(fname)
             if dset is None:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
@@ -383,7 +382,7 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
+def create_trxas_dataset(fname, load_cache=True):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -402,7 +401,7 @@ def create_trxas_cache_from_flist(flist, **kwargs):
     return
 
 
-def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
+def create_trxas_cache(fname, load_cache=True):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -413,9 +412,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname)
         if not cache_exists:
-            TrXASDataset(
-                fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache
-            )
+            TrXASDataset(fname, load_cache=load_cache)
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -424,7 +421,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
 
 
 class TrXASDataset:
-    def __init__(self, fname, ignore_incomplete=True, load_cache=True):
+    def __init__(self, fname, load_cache=True):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -441,7 +438,7 @@ class TrXASDataset:
         if load_cache and cache_exists:
             self.init_from_cache(self.cache_name)
         else:
-            self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
+            self.init_from_file(fname)
             # if not self.cache_name.exists() and not is_recently_modified(self.fname):
             #     self.save_to_cache()
         self.xas_data = None
@@ -468,7 +465,7 @@ class TrXASDataset:
         )
         temp_cache_name.replace(self.cache_name)
 
-    def init_from_file(self, fname, ignore_incomplete=True):
+    def init_from_file(self, fname):
         dset_type, shape, labels, labels_mask, payload_mask, is_double_length = (
             process_header_2(fname)
         )
