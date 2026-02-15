@@ -11,6 +11,7 @@ import shutil
 import h5py
 import traceback
 import warnings
+from scipy.stats import median_abs_deviation
 
 from .utilities import (
     prepare_binning_matrix,
@@ -472,6 +473,7 @@ class TrXASDataset:
             process_header_2(fname)
         )
         num_channel = shape[0]
+        assert num_channel == 3, f"only support 3 channels, but got {num_channel}"
         data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
         self.num_rows = data.shape[0]
         self.labels = labels
@@ -490,11 +492,11 @@ class TrXASDataset:
             self.num_rows, num_channel, -1
         )
         # remove the last bunch because it may be incomplete
-        data = data[:, :, :-1]  # (141, 3, 8668)
-        xas_part = np.full(
-            (self.num_rows, num_channel, shape[1] * shape[2]), np.nan, dtype=float
-        )
-        xas_part[:, :, 0 : data.shape[2]] = data
+        xas_part = data[:, :, :-1]  # (141, 3, 8668)
+        # xas_part = np.full(
+        #     (self.num_rows, num_channel, shape[1] * shape[2]), np.nan, dtype=float
+        # )
+        # xas_part[:, :, 0 : data.shape[2]] = data
 
         if is_double_length:
             shape_5d = (self.num_rows, shape[0], shape[1], shape[2] // 2, 2)
@@ -555,10 +557,43 @@ class TrXASDataset:
         bunch = index % self.shape[0]
         orbital = index // self.shape[0]
         return (orbital, bunch)
+    
+    def _remove_outlier(self, threshold=1):
+        """
+        Remove outliers from XAS data using median absolute deviation.
+        
+        Outliers are detected in the background channel (channel 0) and replaced
+        with the average of neighboring values in all channels.
+        
+        Parameters
+        ----------
+        threshold : float, default=1
+            Number of MAD units beyond which a point is considered an outlier.
+            
+        Returns
+        -------
+        xas_data : ndarray
+            Corrected XAS data with outliers replaced.
+        """
+        xas_data = np.copy(self.xas_data)
+        
+        # Detect outliers using background channel (channel 0)
+        background = xas_data[:, 0, :]
+        mad_threshold = median_abs_deviation(background, axis=1, keepdims=True)
+        outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * mad_threshold
+        
+        # Replace outliers with average of neighbors in all channels
+        # usually only one bunch is missing, so we can use the average of neighbors
+        neighbor_up = np.roll(xas_data, 1, axis=2)
+        neighbor_dn = np.roll(xas_data, -1, axis=2)
+        xas_data[:, :, outlier_mask] = 0.5 * (neighbor_up[:, :, outlier_mask] + neighbor_dn[:, :, outlier_mask])
+        
+        return xas_data
 
     def normalize(self, repeat_rate=0):
         # acquire_time = self.get("Seconds")
-        xas_data = np.copy(self.xas_data)
+        # xas_data = np.copy(self.xas_data)
+        xas_data = self._remove_outlier(threshold=6)
         # if repeat_rate > 0:
         #     offset = xas_data / (repeat_rate * acquire_time)
         #     xas_data = -np.log(1.0 - offset)
@@ -569,6 +604,7 @@ class TrXASDataset:
         xas_3d = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
         xas_3d[:, :, 0 : xas_data.shape[2]] = xas_data
         xas_4d = xas_3d.reshape(shape_4d)
+        # ch0 is background; ch1 and ch2 are signals
         orbital_mean_ch0 = np.nanmean(xas_4d[:, 0], axis=1)  # rows x bunch
 
         # it's (num_rows, total_bunches)
