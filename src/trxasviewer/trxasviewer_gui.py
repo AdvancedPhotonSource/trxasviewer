@@ -765,10 +765,11 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         # if kwargs["target"] == "raw":  # fix me; disable raw plotting
         #     return
 
-        if kwargs["target"] in ["normalized-GS"]:
-            kwargs["norm_kwargs"] = self.get_normalization_subgs_kwargs()
-            kwargs["binning_kwargs"] = self.get_binning_kwargs()
-            kwargs["kinetics_kwargs"] = self.get_kinetics_kwargs()
+        kwargs["preprocessing_kwargs"] = self.get_preprocessing_kwargs()
+        kwargs["norm_kwargs"] = self.get_normalization_subgs_kwargs()
+        kwargs["binning_kwargs"] = self.get_binning_kwargs()
+        kwargs["kinetics_kwargs"] = self.get_kinetics_kwargs()
+
         if kwargs["target"] in ["normalized-GS", "normalized"]:
             self.comboBox_channel_num.setEnabled(False)
         else:
@@ -797,6 +798,18 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         elif stype == "bunch":
             sync_time = sval * self.results["delta_t_s"] * 1e6  # s to us
             self.doubleSpinBox_sync_time_us.setValue(sync_time)
+    
+    def get_preprocessing_kwargs(self):
+        remove_outlier = self.checkBox_outlier.isChecked()
+        if remove_outlier:
+            outlier_method = self.comboBox_outlier_method.currentText()
+        else:
+            outlier_method = None
+        outlier_threshold = self.doubleSpinBox_outlier_threshold.value()
+        return {
+            "outlier_method": outlier_method,
+            "outlier_threshold": outlier_threshold,
+        }
 
     def get_normalization_subgs_kwargs(self):
         sync_time = self.radioButton_sync_time.isChecked()

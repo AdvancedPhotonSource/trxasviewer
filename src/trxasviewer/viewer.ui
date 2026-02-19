@@ -138,6 +138,70 @@
            <property name="bottomMargin">
             <number>2</number>
            </property>
+           <item row="1" column="0" colspan="5">
+            <widget class="QGroupBox" name="groupBox_timing">
+             <property name="title">
+              <string>Sync Timing</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_5">
+              <property name="leftMargin">
+               <number>2</number>
+              </property>
+              <property name="topMargin">
+               <number>2</number>
+              </property>
+              <property name="rightMargin">
+               <number>2</number>
+              </property>
+              <property name="bottomMargin">
+               <number>2</number>
+              </property>
+              <item row="0" column="3">
+               <widget class="QSpinBox" name="spinBox_syncbunch_number">
+                <property name="maximum">
+                 <number>999999</number>
+                </property>
+                <property name="value">
+                 <number>1820</number>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="2">
+               <widget class="QRadioButton" name="radioButton_sync_bunch">
+                <property name="text">
+                 <string>Bunch</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QRadioButton" name="radioButton_sync_time">
+                <property name="text">
+                 <string>Time</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="doubleSpinBox_sync_time_us">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="decimals">
+                 <number>6</number>
+                </property>
+                <property name="maximum">
+                 <double>999999.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item row="5" column="0" colspan="5">
             <widget class="QGroupBox" name="groupBox_10">
              <property name="title">
@@ -239,100 +303,17 @@
              </layout>
             </widget>
            </item>
-           <item row="7" column="1">
-            <widget class="QProgressBar" name="progressBar">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="value">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="5">
-            <widget class="QGroupBox" name="groupBox_timing">
-             <property name="title">
-              <string>Sync Timing</string>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_5">
-              <property name="leftMargin">
-               <number>2</number>
-              </property>
-              <property name="topMargin">
-               <number>2</number>
-              </property>
-              <property name="rightMargin">
-               <number>2</number>
-              </property>
-              <property name="bottomMargin">
-               <number>2</number>
-              </property>
-              <item row="0" column="3">
-               <widget class="QSpinBox" name="spinBox_syncbunch_number">
-                <property name="maximum">
-                 <number>999999</number>
-                </property>
-                <property name="value">
-                 <number>1820</number>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QRadioButton" name="radioButton_sync_bunch">
-                <property name="text">
-                 <string>Bunch</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QRadioButton" name="radioButton_sync_time">
-                <property name="text">
-                 <string>Time</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QDoubleSpinBox" name="doubleSpinBox_sync_time_us">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="suffix">
-                 <string> μs</string>
-                </property>
-                <property name="decimals">
-                 <number>6</number>
-                </property>
-                <property name="maximum">
-                 <double>999999.000000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QLabel" name="label_2">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Progress:</string>
-             </property>
-            </widget>
-           </item>
            <item row="7" column="2">
             <widget class="QPushButton" name="pushButton_select_savefname">
              <property name="text">
               <string>Save</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="4">
+            <widget class="QPushButton" name="pushButton_replot">
+             <property name="text">
+              <string>Process</string>
              </property>
             </widget>
            </item>
@@ -690,6 +671,26 @@
              </layout>
             </widget>
            </item>
+           <item row="7" column="3">
+            <widget class="QPushButton" name="pushButton_model">
+             <property name="text">
+              <string>Model</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QProgressBar" name="progressBar">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="0" colspan="5">
             <widget class="QGroupBox" name="groupBox_6">
              <property name="sizePolicy">
@@ -958,18 +959,86 @@
              </layout>
             </widget>
            </item>
-           <item row="7" column="4">
-            <widget class="QPushButton" name="pushButton_replot">
+           <item row="7" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
-              <string>Process</string>
+              <string>Progress:</string>
              </property>
             </widget>
            </item>
-           <item row="7" column="3">
-            <widget class="QPushButton" name="pushButton_model">
-             <property name="text">
-              <string>Model</string>
+           <item row="0" column="0" colspan="5">
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Preprocessing</string>
              </property>
+             <layout class="QGridLayout" name="gridLayout_21">
+              <item row="0" column="2">
+               <widget class="QComboBox" name="comboBox_outlier_method">
+                <property name="currentIndex">
+                 <number>1</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>MedianAbsoluteDeviation</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>StandardDeviation</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="0" column="4">
+               <widget class="QDoubleSpinBox" name="doubleSpinBox_outlier_threshold">
+                <property name="value">
+                 <double>4.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="label_6">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Method:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QCheckBox" name="checkBox_outlier">
+                <property name="text">
+                 <string>Remove bunch outlier</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="3">
+               <widget class="QLabel" name="label_13">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Threshold:</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
@@ -1426,20 +1495,20 @@
      <x>0</x>
      <y>0</y>
      <width>1758</width>
-     <height>24</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PlotWidget</class>
+   <class>ImageView</class>
    <extends>QWidget</extends>
    <header>pyqtgraph</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ImageView</class>
+   <class>PlotWidget</class>
    <extends>QWidget</extends>
    <header>pyqtgraph</header>
    <container>1</container>
@@ -1454,12 +1523,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>297</x>
-     <y>709</y>
+     <x>301</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>297</x>
-     <y>679</y>
+     <x>301</x>
+     <y>718</y>
     </hint>
    </hints>
   </connection>
@@ -1470,12 +1539,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>297</x>
-     <y>709</y>
+     <x>301</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>297</x>
-     <y>646</y>
+     <x>301</x>
+     <y>685</y>
     </hint>
    </hints>
   </connection>
@@ -1486,12 +1555,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>439</x>
-     <y>709</y>
+     <x>448</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>439</x>
-     <y>679</y>
+     <x>448</x>
+     <y>718</y>
     </hint>
    </hints>
   </connection>
@@ -1502,12 +1571,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>439</x>
-     <y>709</y>
+     <x>448</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>439</x>
-     <y>646</y>
+     <x>448</x>
+     <y>685</y>
     </hint>
    </hints>
   </connection>
@@ -1518,12 +1587,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>580</x>
-     <y>709</y>
+     <x>595</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>580</x>
-     <y>679</y>
+     <x>595</x>
+     <y>718</y>
     </hint>
    </hints>
   </connection>
@@ -1534,12 +1603,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>580</x>
-     <y>709</y>
+     <x>595</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>580</x>
-     <y>646</y>
+     <x>595</x>
+     <y>685</y>
     </hint>
    </hints>
   </connection>
@@ -1550,12 +1619,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>722</x>
-     <y>709</y>
+     <x>742</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>722</x>
-     <y>679</y>
+     <x>742</x>
+     <y>718</y>
     </hint>
    </hints>
   </connection>
@@ -1566,12 +1635,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>722</x>
-     <y>709</y>
+     <x>742</x>
+     <y>748</y>
     </hint>
     <hint type="destinationlabel">
-     <x>722</x>
-     <y>646</y>
+     <x>742</x>
+     <y>685</y>
     </hint>
    </hints>
   </connection>
@@ -1598,12 +1667,44 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>141</x>
-     <y>786</y>
+     <x>150</x>
+     <y>811</y>
     </hint>
     <hint type="destinationlabel">
-     <x>674</x>
-     <y>785</y>
+     <x>743</x>
+     <y>813</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_outlier</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>comboBox_outlier_method</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>162</x>
+     <y>328</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>317</x>
+     <y>329</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_outlier</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>doubleSpinBox_outlier_threshold</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>182</x>
+     <y>326</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>573</x>
+     <y>327</y>
     </hint>
    </hints>
   </connection>

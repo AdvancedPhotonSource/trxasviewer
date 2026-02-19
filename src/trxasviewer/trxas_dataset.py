@@ -401,7 +401,7 @@ def create_trxas_cache_from_flist(flist, **kwargs):
     return
 
 
-def create_trxas_cache(fname, load_cache=True):
+def create_trxas_cache(fname, load_cache=True, remove_outlier=True, outlier_threshold=5):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -421,7 +421,7 @@ def create_trxas_cache(fname, load_cache=True):
 
 
 class TrXASDataset:
-    def __init__(self, fname, load_cache=True):
+    def __init__(self, fname, load_cache=True, outlier_method="MedianAbsoluteDeviation", outlier_threshold=5):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -435,12 +435,13 @@ class TrXASDataset:
             "delta_t_s",
             "xas_data_norm",
         ]
-        if load_cache and cache_exists:
-            self.init_from_cache(self.cache_name)
-        else:
-            self.init_from_file(fname)
-            # if not self.cache_name.exists() and not is_recently_modified(self.fname):
-            #     self.save_to_cache()
+        self.curr_preprocessing_kwargs = {"outlier_method": None} 
+        # if load_cache and cache_exists:
+        #     self.init_from_cache(self.cache_name)
+        # else:
+        self.init_from_file(fname, self.curr_preprocessing_kwargs)
+        #     # if not self.cache_name.exists() and not is_recently_modified(self.fname):
+        #     #     self.save_to_cache()
         self.xas_data = None
 
     @staticmethod
@@ -465,7 +466,7 @@ class TrXASDataset:
         )
         temp_cache_name.replace(self.cache_name)
 
-    def init_from_file(self, fname):
+    def init_from_file(self, fname, preprocessing_kwargs=None):
         dset_type, shape, labels, labels_mask, payload_mask, is_double_length = (
             process_header_2(fname)
         )
@@ -516,28 +517,35 @@ class TrXASDataset:
 
         self.delta_t_s = 1 / P0 / self.shape[2]
         self.xas_data = xas_part
-        self.xas_data_norm = self.normalize()
+        self.xas_data_norm = self.normalize(**preprocessing_kwargs)
 
     def get_energy_vs_time(
         self,
         channel=0,
         target="raw",
+        preprocessing_kwargs=None,
         norm_kwargs=None,
         binning_kwargs=None,
         kinetics_kwargs=None,
     ):
+        if preprocessing_kwargs is None:
+            preprocessing_kwargs = {}
+        reprocess_flag = self.curr_preprocessing_kwargs != preprocessing_kwargs
+        if reprocess_flag:
+            logger.info(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
+            self.curr_preprocessing_kwargs = preprocessing_kwargs
+
+        if target == "raw" or self.xas_data is None or reprocess_flag:
+            self.init_from_file(self.fname, preprocessing_kwargs)
+        
         if target == "raw":
-            if self.xas_data is None:
-                self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(
                 "raw", None, self.xas_data[:, channel, :], t_axis
             )
-
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
             return self.compile_results("normalized", None, self.xas_data_norm, t_axis)
-
         elif target == "normalized-GS":
             if self.dset_type == "LASERD":
                 return self.process_laserd(norm_kwargs, binning_kwargs)
@@ -555,7 +563,7 @@ class TrXASDataset:
         orbital = index // self.shape[0]
         return (orbital, bunch)
     
-    def _remove_outlier(self, threshold=1):
+    def _remove_outlier(self, method="MedianAbsoluteDeviation", threshold=1):
         """
         Remove outliers from XAS data using median absolute deviation.
         
@@ -575,25 +583,29 @@ class TrXASDataset:
         xas_data = np.copy(self.xas_data)
         
         # Detect outliers using background channel (channel 0)
-        background = xas_data[:, 0, :]
-        mad_threshold = median_abs_deviation(background, axis=1, keepdims=True)
-        outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * mad_threshold
+        if method == "MedianAbsoluteDeviation":
+            background = xas_data[:, 0, :]
+            mad_threshold = median_abs_deviation(background, axis=1, keepdims=True)
+            outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * mad_threshold
+        elif method == "StandardDeviation":
+            background = xas_data[:, 0, :]
+            std_threshold = np.std(background, axis=1, keepdims=True)
+            outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * std_threshold
         
         # Replace outliers with average of neighbors in all channels
         # usually only one bunch is missing, so we can use the average of neighbors
-        neighbor_up = np.roll(xas_data, 1, axis=2)
-        neighbor_dn = np.roll(xas_data, -1, axis=2)
-        xas_data[:, :, outlier_mask] = 0.5 * (neighbor_up[:, :, outlier_mask] + neighbor_dn[:, :, outlier_mask])
+        for channel in range(xas_data.shape[1]):
+            neighbor_up = np.roll(xas_data[:, channel, :], 1, axis=1)
+            neighbor_dn = np.roll(xas_data[:, channel, :], -1, axis=1)
+            xas_data[:, channel, :][outlier_mask] = 0.5 * (neighbor_up[outlier_mask] + neighbor_dn[outlier_mask])
         
         return xas_data
 
-    def normalize(self, repeat_rate=0):
-        # acquire_time = self.get("Seconds")
-        # xas_data = np.copy(self.xas_data)
-        xas_data = self._remove_outlier(threshold=6)
-        # if repeat_rate > 0:
-        #     offset = xas_data / (repeat_rate * acquire_time)
-        #     xas_data = -np.log(1.0 - offset)
+    def normalize(self, outlier_method="MedianAbsoluteDeviation", outlier_threshold=5):
+        if outlier_method is not None:
+            xas_data = self._remove_outlier(method=outlier_method, threshold=outlier_threshold)
+        else:
+            xas_data = np.copy(self.xas_data)
 
         shape_4d = (self.num_rows, self.shape[0], self.shape[1], self.shape[2])
         shape_3d = (self.num_rows, self.shape[0], self.shape[1] * self.shape[2])
