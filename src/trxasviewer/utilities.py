@@ -5,6 +5,7 @@ from packaging.version import Version
 from functools import lru_cache
 import numpy as np
 from scipy.sparse import coo_array
+from scipy.stats import median_abs_deviation
 import logging
 import json
 
@@ -232,6 +233,109 @@ def format_time(input_time, as_string=True):
     else:
         # Return the value, unit, and the requested scale
         return input_time, "s", scale
+
+
+def remove_outlier(xas_data_3d_input, outlier_method="MedianAbsoluteDeviation", outlier_threshold=1):
+    """
+    Remove outliers from XAS data using median absolute deviation.
+
+    Outliers are detected in the background channel (channel 0) and replaced
+    with the average of neighboring values in all channels.
+
+    Parameters
+    ----------
+    xas_data : ndarray
+        XAS data array of shape (num_energy, num_channel, num_bunches).
+    method : str, default="MedianAbsoluteDeviation"
+        Outlier detection method: "MedianAbsoluteDeviation" or "StandardDeviation".
+    threshold : float, default=1
+        Number of MAD/std units beyond which a point is considered an outlier.
+
+    Returns
+    -------
+    xas_data : ndarray
+        Corrected XAS data with outliers replaced.
+    """
+    if outlier_method is None:
+        return xas_data_3d_input
+
+    xas_data_3d = np.copy(xas_data_3d_input)
+
+    background = xas_data_3d[:, 0, :]  # ch0 is background, now has shape (num_rows, num_bunches)
+    # Detect outliers using background channel (channel 0)
+    if outlier_method == "MedianAbsoluteDeviation":
+        mad_threshold = median_abs_deviation(background, axis=1, keepdims=True)
+        outlier_mask = (
+            np.abs(background - np.median(background, axis=1, keepdims=True))
+            > outlier_threshold * mad_threshold
+        )
+    elif outlier_method == "StandardDeviation":
+        std_threshold = np.std(background, axis=1, keepdims=True)
+        outlier_mask = (
+            np.abs(background - np.median(background, axis=1, keepdims=True))
+            > outlier_threshold * std_threshold
+        )
+    else:
+        raise ValueError(f"Unsupported outlier detection method: {outlier_method}")
+
+    # Replace outliers with average of neighbors in all channels
+    # usually only one bunch is missing, so we can use the average of neighbors
+    for channel in range(xas_data_3d.shape[1]):    # go through each channel
+        neighbor_up = np.roll(xas_data_3d[:, channel, :], 1, axis=1)
+        neighbor_dn = np.roll(xas_data_3d[:, channel, :], -1, axis=1)
+        xas_data_3d[:, channel, :][outlier_mask] = 0.5 * (
+            neighbor_up[outlier_mask] + neighbor_dn[outlier_mask]
+        )
+
+    return xas_data_3d
+
+
+def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
+    num_channel, num_orbital, num_bunch = shape
+    shape_4d = (num_rows, num_channel, num_orbital, num_bunch)
+    shape_3d = (num_rows, num_channel, num_orbital * num_bunch)
+
+    # pad with nan if needed, so that we can reshape to 4d for easier processing;
+    if xas_data_3d.shape[2] < num_orbital * num_bunch:
+        temp = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
+        temp[:, :, : xas_data_3d.shape[2]] = xas_data_3d
+        xas_data_3d = temp
+
+    xas_data_4d = xas_data_3d.reshape(shape_4d)
+
+    # ch0 is background; ch1 and ch2 are signals
+    orbital_mean_ch0 = np.nanmean(xas_data_4d[:, 0], axis=1)  # rows x [orbital] x bunch
+
+    # it's (num_rows, total_bunches)
+    norm_data = np.nanmean(xas_data_3d[:, 1:3], axis=(1,))
+    cycle_indices = np.arange(norm_data.shape[1]) % num_bunch
+    norm_data /= orbital_mean_ch0[:, cycle_indices]
+    return norm_data
+
+
+def preprocess_xas_data(xas_data_3d, shape, num_rows, **outlier_kwargs):
+    """
+    Preprocess XAS data by removing outliers and normalizing by bunch mean.
+
+    Parameters
+    ----------
+    xas_data : ndarray
+        Raw XAS data array of shape (num_energy, num_channel, num_bunches).
+    shape : tuple
+        Shape of the XAS data (num_channel, num_orbital, num_bunch).
+    num_rows : int
+        Number of rows in the dataset.
+    outlier_kwargs : dict
+        Additional keyword arguments for outlier removal.
+
+    Returns
+    -------
+    norm_data : ndarray
+        Preprocessed XAS data normalized by bunch mean and background.
+    """
+    xas_data_3d = remove_outlier(xas_data_3d, **outlier_kwargs)
+    norm_data = normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows)
+    return xas_data_3d, norm_data
 
 
 class NumpyEncoder(json.JSONEncoder):

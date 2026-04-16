@@ -11,11 +11,11 @@ import shutil
 import h5py
 import traceback
 import warnings
-from scipy.stats import median_abs_deviation
-
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
+    preprocess_xas_data,
+    remove_outlier,
 )
 from .plot import plot_results
 
@@ -214,7 +214,7 @@ def process_header_2(fname):
     c_max, o_max, b_max = record.max(axis=0)
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = [c_max + 1, o_max + 1, b_max + 1]
+    shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
     index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
     payload_mask = np.zeros(np.prod(shape), dtype=bool)
     payload_mask[index] = True
@@ -267,7 +267,7 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
             # compute the normalized error bar and get the mean value
             error_t = np.nanstd(data_full[:n, 1], axis=0) / np.sqrt(n)
             # norm_error = error_t / np.abs(np.nanmean(data_full[:n, 1], axis=0))
-            norm_error = error_t / 1.0 # np.abs(np.nanmean(data_full[:n, 1], axis=0))
+            norm_error = error_t / 1.0  # np.abs(np.nanmean(data_full[:n, 1], axis=0))
             data_err_num.append((n, np.mean(norm_error)))
         data_err_num = np.array(data_err_num)
         return data_avg, data_err_num
@@ -401,7 +401,9 @@ def create_trxas_cache_from_flist(flist, **kwargs):
     return
 
 
-def create_trxas_cache(fname, load_cache=True, remove_outlier=True, outlier_threshold=5):
+def create_trxas_cache(
+    fname, load_cache=True, remove_outlier=True, outlier_threshold=5
+):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -421,7 +423,13 @@ def create_trxas_cache(fname, load_cache=True, remove_outlier=True, outlier_thre
 
 
 class TrXASDataset:
-    def __init__(self, fname, load_cache=True, outlier_method="MedianAbsoluteDeviation", outlier_threshold=5):
+    def __init__(
+        self,
+        fname,
+        load_cache=True,
+        outlier_method="MedianAbsoluteDeviation",
+        outlier_threshold=5,
+    ):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -435,7 +443,7 @@ class TrXASDataset:
             "delta_t_s",
             "xas_data_norm",
         ]
-        self.curr_preprocessing_kwargs = {"outlier_method": None} 
+        self.curr_preprocessing_kwargs = {"outlier_method": None}
         # if load_cache and cache_exists:
         #     self.init_from_cache(self.cache_name)
         # else:
@@ -467,13 +475,16 @@ class TrXASDataset:
         temp_cache_name.replace(self.cache_name)
 
     def init_from_file(self, fname, preprocessing_kwargs=None):
-        dset_type, shape, labels, labels_mask, payload_mask, is_double_length = (
+        dset_type, shape, labels, labels_mask, _, is_double_length = (
             process_header_2(fname)
         )
-        num_channel = shape[0]
+        num_channel, num_orbital, num_bunch = shape
         assert num_channel == 3, f"only support 3 channels, but got {num_channel}"
+
         data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
         self.num_rows = data.shape[0]
+
+        num_energy = data.shape[0]
         self.labels = labels
         self.meta_data = data[:, labels_mask[0 : data.shape[1]]]
         self.dset_type = dset_type
@@ -487,37 +498,65 @@ class TrXASDataset:
 
         # xas_part is [num_energy, channel, total_bunches]
         data = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
-            self.num_rows, num_channel, -1
+            num_energy, num_channel, -1
         )
+
         # remove the last bunch because it may be incomplete
         xas_part = data[:, :, :-1]  # (141, 3, 8668)
-        # xas_part = np.full(
-        #     (self.num_rows, num_channel, shape[1] * shape[2]), np.nan, dtype=float
-        # )
-        # xas_part[:, :, 0 : data.shape[2]] = data
 
-        if is_double_length:
-            shape_5d = (self.num_rows, shape[0], shape[1], shape[2] // 2, 2)
-            xas_part = xas_part.reshape(shape_5d)
+        # pad with nan if the number of bunches is not a multiple of num_bunch
+        if num_orbital * num_bunch != xas_part.shape[2]:
+            xas_part_full = np.full(
+                (num_energy, num_channel, num_orbital * num_bunch),
+                np.nan,
+                dtype=np.float32,
+            )
+            xas_part_full[:, :, : xas_part.shape[-1]] = xas_part
+            xas_part = xas_part_full
+
+        if not is_double_length:
+            xas_parts = [xas_part]
+            part_shape = shape
+        else:
+            xas_part = xas_part.reshape(
+                num_energy, num_channel, num_orbital, num_bunch // 2, 2
+            )
+
             xas_part_0 = xas_part[:, :, :, :, 0]
-            xas_part_0 = xas_part_0.reshape(self.num_rows, shape[0], -1)
+            xas_part_0 = xas_part_0.reshape(num_energy, num_channel, -1)
             xas_part_1 = xas_part[:, :, :, :, 1]
-            xas_part_1 = xas_part_1.reshape(self.num_rows, shape[0], -1)
+            xas_part_1 = xas_part_1.reshape(num_energy, num_channel, -1)
+            xas_parts = [xas_part_1, xas_part_0]
+            shape = np.array([num_channel, num_orbital * 2, num_bunch // 2])
+            part_shape = np.array([num_channel, num_orbital, num_bunch // 2])
 
-            # xas_part = np.concatenate((xas_part_0, xas_part_1), axis=-1)
-            xas_part = np.concatenate((xas_part_1, xas_part_0), axis=-1)
-            # xas_part = np.swapaxes(xas_part, -1, -3).reshape(-1)
-            # xas_part = xas_part.reshape(self.num_rows, shape[0], -1)
-            shape = [shape[0], shape[1] * 2, shape[2] // 2]
+        raw_data_all = []
+        norm_data_all = []
+        for part in xas_parts:
+            raw_part, norm_part = preprocess_xas_data(part, part_shape, self.num_rows, **preprocessing_kwargs)
+            raw_data_all.append(raw_part)
+            norm_data_all.append(norm_part)
 
+        if len(raw_data_all) == 2:
+            raw_data = np.concatenate((raw_data_all[0], raw_data_all[1]), axis=2)
+            norm_data = np.hstack((norm_data_all[0], norm_data_all[1]))
+        else:
+            raw_data = raw_data_all[0]
+            norm_data = norm_data_all[0]
+
+        self.delta_t_s = 1 / P0 / num_bunch
         # in cases, after removing the last bunch, the number of bunches
         # is a multiple of num_bunches. So we need to trim the shape
         # shape[1] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
-        self.shape = shape
-
-        self.delta_t_s = 1 / P0 / self.shape[2]
-        self.xas_data = xas_part
-        self.xas_data_norm = self.normalize(**preprocessing_kwargs)
+        self.shape = shape 
+        self.xas_data = raw_data
+        self.xas_data_norm = norm_data
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        ax[0].imshow(norm_data_all[0], aspect="auto")
+        ax[1].imshow(norm_data_all[1], aspect="auto")
+        plt.savefig("debug_norm.png")
+        plt.close()
 
     def get_energy_vs_time(
         self,
@@ -537,7 +576,7 @@ class TrXASDataset:
 
         if target == "raw" or self.xas_data is None or reprocess_flag:
             self.init_from_file(self.fname, preprocessing_kwargs)
-        
+
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(
@@ -562,66 +601,6 @@ class TrXASDataset:
         bunch = index % self.shape[0]
         orbital = index // self.shape[0]
         return (orbital, bunch)
-    
-    def _remove_outlier(self, method="MedianAbsoluteDeviation", threshold=1):
-        """
-        Remove outliers from XAS data using median absolute deviation.
-        
-        Outliers are detected in the background channel (channel 0) and replaced
-        with the average of neighboring values in all channels.
-        
-        Parameters
-        ----------
-        threshold : float, default=1
-            Number of MAD units beyond which a point is considered an outlier.
-            
-        Returns
-        -------
-        xas_data : ndarray
-            Corrected XAS data with outliers replaced.
-        """
-        xas_data = np.copy(self.xas_data)
-        
-        # Detect outliers using background channel (channel 0)
-        if method == "MedianAbsoluteDeviation":
-            background = xas_data[:, 0, :]
-            mad_threshold = median_abs_deviation(background, axis=1, keepdims=True)
-            outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * mad_threshold
-        elif method == "StandardDeviation":
-            background = xas_data[:, 0, :]
-            std_threshold = np.std(background, axis=1, keepdims=True)
-            outlier_mask = np.abs(background - np.median(background, axis=1, keepdims=True)) > threshold * std_threshold
-        
-        # Replace outliers with average of neighbors in all channels
-        # usually only one bunch is missing, so we can use the average of neighbors
-        for channel in range(xas_data.shape[1]):
-            neighbor_up = np.roll(xas_data[:, channel, :], 1, axis=1)
-            neighbor_dn = np.roll(xas_data[:, channel, :], -1, axis=1)
-            xas_data[:, channel, :][outlier_mask] = 0.5 * (neighbor_up[outlier_mask] + neighbor_dn[outlier_mask])
-        
-        return xas_data
-
-    def normalize(self, outlier_method="MedianAbsoluteDeviation", outlier_threshold=5):
-        if outlier_method is not None:
-            xas_data = self._remove_outlier(method=outlier_method, threshold=outlier_threshold)
-        else:
-            xas_data = np.copy(self.xas_data)
-
-        shape_4d = (self.num_rows, self.shape[0], self.shape[1], self.shape[2])
-        shape_3d = (self.num_rows, self.shape[0], self.shape[1] * self.shape[2])
-
-        xas_3d = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
-        xas_3d[:, :, 0 : xas_data.shape[2]] = xas_data
-        xas_4d = xas_3d.reshape(shape_4d)
-        # ch0 is background; ch1 and ch2 are signals
-        orbital_mean_ch0 = np.nanmean(xas_4d[:, 0], axis=1)  # rows x bunch
-
-        # it's (num_rows, total_bunches)
-        norm_data = np.mean(xas_data[:, 1:3], axis=(1,))
-        cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
-        norm_data /= orbital_mean_ch0[:, cycle_indices]
-
-        return norm_data.astype(np.float32)
 
     @staticmethod
     def plot_results(results, save_name):
@@ -851,7 +830,6 @@ if __name__ == "__main__":
         # fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
         fname = "/local/MQICHU/playground/Dugan_2024_3_saveddata/setup-full-00737"
         dset = TrXASDataset(fname)
-        dset.normalize()
         # dset.plot()
         dset.process_energy()
         t1 = time.perf_counter()
