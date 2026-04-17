@@ -222,6 +222,7 @@ class TrXASDatasetManager:
         diff_list = []
         kinetics_dict = {}
         dset_type = None
+        good_results = None
         # Load datasets
         for n, fname in enumerate(self.flist):
             if progress is not None:
@@ -236,23 +237,20 @@ class TrXASDatasetManager:
                 dset_type = dset.dset_type
             elif dset_type != dset.dset_type:
                 continue
-            if dset is not None:
-                results = dset.get_energy_vs_time(**kwargs)
-                diff_list.append(results["diff"])
-                data_list.append(results["data"])
-                if results["kinetics"]:
-                    for key in results["kinetics"].keys():
-                        if key not in kinetics_dict.keys():
-                            kinetics_dict[key] = []
-                        kinetics_dict[key].append(results["kinetics"][key]["profile"])
+            results = dset.get_energy_vs_time(**kwargs)
+            if good_results is None:
+                good_results = results
+            diff_list.append(results["diff"])
+            data_list.append(results["data"])
+            if results["kinetics"]:
+                for key in results["kinetics"].keys():
+                    if key not in kinetics_dict.keys():
+                        kinetics_dict[key] = []
+                    kinetics_dict[key].append(results["kinetics"][key]["profile"])
 
-        good_idx = 0  # np.argmax(shapes[:, 0])
-        good_dset = create_trxas_dataset(self.flist[good_idx], use_cache=use_cache)
-        if good_dset is None:
-            logger.error(f"Failed to load dataset from {self.flist[good_idx]}")
+        if good_results is None:
+            logger.error(f"Failed to load any dataset from {self.flist}")
             return None
-
-        good_results = good_dset.get_energy_vs_time(**kwargs)
 
         good_results["data"] = safe_mean(data_list)
         good_results["diff"] = safe_mean(diff_list)
@@ -450,6 +448,11 @@ class TrXASDataset:
         assert shape[0] == 3, f"only support 3 channels, but got {shape[0]}"
 
         raw_table = np.loadtxt(fname, comments="#", dtype=np.float64, delimiter="\t")
+        if raw_table.size == 0:
+            raise ValueError(f"No data found in {fname}")
+        if raw_table.ndim == 1:
+            raw_table = raw_table.reshape(1, -1)
+
         self._setup_metadata(raw_table, labels, labels_mask, dset_type)
 
         xas_part = self._extract_xas_payload(raw_table, labels_mask, shape)

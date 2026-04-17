@@ -130,14 +130,15 @@ class DatasetFilterModel(QSortFilterProxyModel):
 
 
 class _SignalLogHandler(logging.Handler):
-    """Forwards log records at WARNING level or above to a Qt signal."""
+    """Forwards WARNING-level log records to a Qt signal (excludes errors)."""
 
     def __init__(self, signal):
         super().__init__()
         self.signal = signal
 
     def emit(self, record):
-        self.signal.emit(self.format(record))
+        if record.levelno == logging.WARNING:
+            self.signal.emit(self.format(record))
 
 
 class AverageWorker(QObject):
