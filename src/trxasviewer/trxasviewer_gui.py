@@ -469,7 +469,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.proxy_model.invalidate()
 
     def show_status(self, msg, level=logging.INFO, timeout=5000):
-        logger.error(level, msg)
+        logger.log(level, msg)
         self.statusBar().showMessage(msg, timeout)
 
     def _on_worker_warning(self, msg):
