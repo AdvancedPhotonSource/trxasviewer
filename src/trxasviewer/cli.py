@@ -39,6 +39,12 @@ def create_argparser():
         help="Invalidate previous cache.",
         default=False,
     )
+    view_parser.add_argument(
+        "--use-cache",
+        action="store_true",
+        help="Load preprocessed data from cache when available; save to cache after parsing.",
+        default=False,
+    )
     view_parser.set_defaults(func=run_view)
 
     # --- Model Subcommand ---
@@ -55,6 +61,7 @@ def run_view(args):
             syncbunch=args.syncbunch,
             autoload=(not args.disable_autoload),
             reset_cache=args.reset_dtype_cache,
+            use_cache=args.use_cache,
         )
     )
 

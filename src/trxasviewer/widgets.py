@@ -1,6 +1,4 @@
-import os
-import sys
-from datetime import datetime
+from pathlib import Path
 import pandas as pd
 
 import pyqtgraph as pg
@@ -104,7 +102,7 @@ class SaveOptionsDialog(QDialog):
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Save Directory",
-            os.path.expanduser("~"),  # Start in user's home directory
+            str(Path.home()),
         )
         if directory:  # If a directory was selected (not cancelled)
             self.path_edit.setText(directory)
@@ -305,6 +303,15 @@ class HlockedRectROI(pg.RectROI):
 def show_error_dialog(parent, title="Error", message="Something went wrong."):
     msg_box = QMessageBox(parent)
     msg_box.setIcon(QMessageBox.Critical)
+    msg_box.setWindowTitle(title)
+    msg_box.setText(message)
+    msg_box.setStandardButtons(QMessageBox.Ok)
+    msg_box.exec()
+
+
+def show_warning_dialog(parent, title="Warning", message=""):
+    msg_box = QMessageBox(parent)
+    msg_box.setIcon(QMessageBox.Warning)
     msg_box.setWindowTitle(title)
     msg_box.setText(message)
     msg_box.setStandardButtons(QMessageBox.Ok)

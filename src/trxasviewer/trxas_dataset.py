@@ -5,16 +5,15 @@ from pathlib import Path
 import numpy as np
 import logging
 import json
-import os
 import datetime
 import shutil
 import h5py
 import traceback
-import warnings
-
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
+    preprocess_xas_data,
+    pad_last_dim,
 )
 from .plot import plot_results
 
@@ -29,88 +28,7 @@ P0 = 352055282.000000 / 1296  # RF frequency in Hz / number of bucket
 # A014-IETS:BTC:CFG:SRNomFreqM   2025-11-11 13:15:24.536419 352055282.00000000
 
 
-CACHE_PATH = ".cache"
-
-
-@lru_cache(maxsize=128)
-def process_header(header_line):
-    """
-    Processes a header line to determine the dataset type and extract relevant metadata.
-
-    This function extracts the dataset type (either "Energy" or "laserd") from the header line,
-    parses labels, and computes indexing information for a structured dataset.
-
-    Parameters
-    ----------
-    header_line : str
-        A header string, typically starting with `#L`, followed by column labels.
-
-    Returns
-    -------
-    dset_type : str
-        The dataset type, either "EXAFS" or "LASERD".
-    shape : tuple of int
-        The shape of the dataset inferred from parsed indices, given as (channels, orbitals, bunches).
-    labels : list of str
-        The cleaned column labels after processing.
-    labels_mask : numpy.ndarray
-        A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
-    payload_mask : numpy.ndarray
-        A boolean mask of the dataset shape, marking valid payload indices.
-
-    Raises
-    ------
-    ValueError
-        If the dataset type cannot be determined from the header.
-
-    Notes
-    -----
-    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
-    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
-    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
-
-    Examples
-    --------
-    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
-    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
-    >>> print(dset_type)
-    'Energy'
-    >>> print(shape)
-    (2, 2, 2)
-    >>> print(labels)
-    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
-    >>> print(payload_mask.shape)
-    (8,)  # Flattened shape of (2, 2, 2)
-    """
-    header = header_line[3:].strip()
-    if re.match(r".* Energy ", header):
-        dset_type = "EXAFS"
-    elif re.match(r".* laserd ", header):
-        dset_type = "LASERD"
-    else:
-        raise ValueError("Unknown dataset type")
-
-    labels = header.split()
-    labels_mask = np.ones(len(labels), dtype=bool)
-    record = []
-    matches = [TRXAS_PATTERN.match(col) for col in labels]
-    for index, match in enumerate(matches):
-        if match:
-            labels_mask[index] = False
-            record.append(tuple(map(int, match.groups())))
-    labels = [labels[n] for n in range(len(labels)) if labels_mask[n]]
-
-    record = np.array(record)
-    # np.savetxt('record.txt', record, fmt='%d')
-    c_min, o_min, b_min = record.min(axis=0)
-    c_max, o_max, b_max = record.max(axis=0)
-
-    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = [c_max + 1, o_max + 1, b_max + 1]
-    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
-    payload_mask = np.zeros(np.prod(shape), dtype=bool)
-    payload_mask[index] = True
-    return dset_type, shape, labels, labels_mask, payload_mask
+CACHE_PATH = "trxasviewer_cache"
 
 
 def get_scan_type_from_header(header_line):
@@ -131,7 +49,7 @@ def get_scan_type_from_header(header_line):
 
 
 @lru_cache(maxsize=128)
-def process_header_2(fname):
+def parse_header(fname):
     """
     Processes a header line to determine the dataset type and extract relevant metadata.
 
@@ -153,32 +71,13 @@ def process_header_2(fname):
         The cleaned column labels after processing.
     labels_mask : numpy.ndarray
         A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
-    payload_mask : numpy.ndarray
-        A boolean mask of the dataset shape, marking valid payload indices.
+    is_double_length : bool
+        Whether the file uses double-length acquisition mode.
 
     Raises
     ------
     ValueError
         If the dataset type cannot be determined from the header.
-
-    Notes
-    -----
-    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
-    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
-    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
-
-    Examples
-    --------
-    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
-    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
-    >>> print(dset_type)
-    'Energy'
-    >>> print(shape)
-    (2, 2, 2)
-    >>> print(labels)
-    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
-    >>> print(payload_mask.shape)
-    (8,)  # Flattened shape of (2, 2, 2)
     """
     is_double_length = False
     with open(fname, "r") as f:
@@ -213,11 +112,8 @@ def process_header_2(fname):
     c_max, o_max, b_max = record.max(axis=0)
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = [c_max + 1, o_max + 1, b_max + 1]
-    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
-    payload_mask = np.zeros(np.prod(shape), dtype=bool)
-    payload_mask[index] = True
-    return dset_type, shape, labels, labels_mask, payload_mask, is_double_length
+    shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
+    return dset_type, shape, labels, labels_mask, is_double_length
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):
@@ -251,8 +147,9 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
     if not compute_kinetics_errorbar:
         return data_avg
     else:
+        nan_row = np.full(data_avg.shape[1], np.nan)
         if num_dsets < 2:
-            return data_avg, None
+            return np.vstack([data_avg, nan_row]), None
         # get the kinetics profile row and compute the error bar
         # using the standard error of the mean as the error bar
         errorbar = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
@@ -266,25 +163,24 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
             # compute the normalized error bar and get the mean value
             error_t = np.nanstd(data_full[:n, 1], axis=0) / np.sqrt(n)
             # norm_error = error_t / np.abs(np.nanmean(data_full[:n, 1], axis=0))
-            norm_error = error_t / 1.0 # np.abs(np.nanmean(data_full[:n, 1], axis=0))
+            norm_error = error_t / 1.0  # np.abs(np.nanmean(data_full[:n, 1], axis=0))
             data_err_num.append((n, np.mean(norm_error)))
         data_err_num = np.array(data_err_num)
         return data_avg, data_err_num
 
 
 class TrXASDatasetManager:
-    def __init__(self, ignore_incomplete=True):
+    def __init__(self):
         self.flist = []
         self.label = None
-        self.ignore_incomplete = ignore_incomplete
 
     def update_flist(self, flist):
         self.flist = flist
         if len(flist) == 1:
-            self.label = f"result_{os.path.basename(flist[0])}"
+            self.label = f"result_{Path(flist[0]).name}"
         else:
             flist.sort()
-            self.label = f"result_{os.path.basename(flist[0])}-{flist[-1][-5:]}"
+            self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
 
     def save_results(
         self,
@@ -319,7 +215,7 @@ class TrXASDatasetManager:
         # save settings in human readable format
         TrXASDataset.save_as_json(folder / "settings.json", results)
 
-    def get_energy_vs_time(self, progress=None, **kwargs):
+    def get_energy_vs_time(self, progress=None, use_cache=False, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
@@ -330,7 +226,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(fname, ignore_incomplete=self.ignore_incomplete)
+            dset = create_trxas_dataset(fname, use_cache=use_cache)
             if dset is None:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
@@ -351,7 +247,7 @@ class TrXASDatasetManager:
                         kinetics_dict[key].append(results["kinetics"][key]["profile"])
 
         good_idx = 0  # np.argmax(shapes[:, 0])
-        good_dset = create_trxas_dataset(self.flist[good_idx])
+        good_dset = create_trxas_dataset(self.flist[good_idx], use_cache=use_cache)
         if good_dset is None:
             logger.error(f"Failed to load dataset from {self.flist[good_idx]}")
             return None
@@ -382,26 +278,25 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname, ignore_incomplete=True, load_cache=True):
+def create_trxas_dataset(fname, use_cache=False):
     fname = Path(fname)
-    if not fname.exists():  # or not is_sample_data(fname):
+    if not fname.exists():
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname, load_cache=load_cache)
+        return TrXASDataset(fname, use_cache=use_cache)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()
         return None
 
 
-def create_trxas_cache_from_flist(flist, **kwargs):
+def create_trxas_cache_from_flist(flist):
     for fname in flist:
-        create_trxas_cache(fname=fname, **kwargs)
-    return
+        create_trxas_cache(fname)
 
 
-def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
+def create_trxas_cache(fname):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -412,9 +307,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname)
         if not cache_exists:
-            TrXASDataset(
-                fname, ignore_incomplete=ignore_incomplete, load_cache=load_cache
-            )
+            TrXASDataset(fname)
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -423,7 +316,7 @@ def create_trxas_cache(fname, ignore_incomplete=True, load_cache=True):
 
 
 class TrXASDataset:
-    def __init__(self, fname, ignore_incomplete=True, load_cache=True):
+    def __init__(self, fname, use_cache=False):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -437,13 +330,14 @@ class TrXASDataset:
             "delta_t_s",
             "xas_data_norm",
         ]
-        if load_cache and cache_exists:
-            self.init_from_cache(self.cache_name)
-        else:
-            self.init_from_file(fname, ignore_incomplete=ignore_incomplete)
-            # if not self.cache_name.exists() and not is_recently_modified(self.fname):
-            #     self.save_to_cache()
+        self.curr_preprocessing_kwargs = {"outlier_method": None}
         self.xas_data = None
+        if use_cache and cache_exists:
+            self._load_npz(self.cache_name)
+        else:
+            self.init_from_file(fname, self.curr_preprocessing_kwargs)
+            if use_cache:
+                self.save_to_cache()
 
     @staticmethod
     def check_cache(fname):
@@ -452,32 +346,57 @@ class TrXASDataset:
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
 
-    def init_from_cache(self, fname):
-        data = np.load(fname, allow_pickle=True)
+    def _load_npz(self, path):
+        data = np.load(path, allow_pickle=True)
+        self.dset_attributes = list(data.files)
         for attr in self.dset_attributes:
             setattr(self, attr, data[attr])
         self.dset_type = str(self.dset_type)
+        logger.info(f"Loaded from cache {path}")
 
-    def save_to_cache(self):
-        self.cache_name.parent.mkdir(parents=True, exist_ok=True)
-        temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
-        np.savez(
-            temp_cache_name,
-            **{attr: getattr(self, attr) for attr in self.dset_attributes},
-        )
-        temp_cache_name.replace(self.cache_name)
+    def save_to_cache(self, fname=None):
+        """Save this dataset to an npz cache file.
 
-    def init_from_file(self, fname, ignore_incomplete=True):
-        dset_type, shape, labels, labels_mask, payload_mask, is_double_length = (
-            process_header_2(fname)
-        )
-        num_channel = shape[0]
-        data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
-        self.num_rows = data.shape[0]
+        Parameters
+        ----------
+        fname : path-like, optional
+            Destination path. Defaults to ``self.cache_name``.
+        """
+        dest = Path(fname) if fname is not None else self.cache_name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_suffix(".tmp.npz")
+        np.savez_compressed(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
+        tmp.replace(dest)
+        logger.info(f"Cache saved to {dest}")
+
+    @classmethod
+    def load_from_cache(cls, fname):
+        """Load a dataset from an npz cache file and return a new instance.
+
+        Parameters
+        ----------
+        fname : path-like
+            Path to the ``.npz`` cache file.
+
+        Returns
+        -------
+        TrXASDataset
+        """
+        fname = Path(fname)
+        obj = cls.__new__(cls)
+        obj.fname = fname
+        obj.cache_name = fname
+        obj.curr_preprocessing_kwargs = {"outlier_method": None}
+        obj.xas_data = None
+        obj._load_npz(fname)
+        return obj
+
+    def _setup_metadata(self, raw_table, labels, labels_mask, dset_type):
+        """Populate metadata attributes from the raw data table and header info."""
+        self.num_rows = raw_table.shape[0]
         self.labels = labels
-        self.meta_data = data[:, labels_mask[0 : data.shape[1]]]
         self.dset_type = dset_type
-
+        self.meta_data = raw_table[:, labels_mask[: raw_table.shape[1]]]
         if self.dset_type == "EXAFS":
             self.energy = self.get("Energy")
             self.laserd = 0.0
@@ -485,60 +404,89 @@ class TrXASDataset:
             self.laserd = self.get("laserd") * 1e-9  # convert to seconds
             self.energy = 0.0
 
-        # xas_part is [num_energy, channel, total_bunches]
-        data = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
-            self.num_rows, num_channel, -1
+    @staticmethod
+    def _extract_xas_payload(raw_table, labels_mask, shape):
+        """Extract XAS columns, drop the last (potentially incomplete) bunch, and pad."""
+        num_channel, num_orbital, num_bunch = shape
+        num_row = raw_table.shape[0]
+        xas_part = raw_table[:, ~labels_mask[: raw_table.shape[1]]].reshape(num_row, num_channel, -1)
+        xas_part = xas_part[:, :, :-1]  # drop last bunch — may be incomplete
+        return pad_last_dim(xas_part, num_orbital * num_bunch)
+
+    @staticmethod
+    def _split_xas_parts(xas_part, shape, is_double):
+        """Return (xas_parts, part_shape, full_shape).
+
+        For double-length mode the interleaved acquisition is de-interleaved into
+        two sub-parts; otherwise the data is returned as-is.
+        """
+        num_channel, num_orbital, num_bunch = shape
+        num_row = xas_part.shape[0]
+        if not is_double:
+            return [xas_part], shape, shape
+        xas_part = xas_part.reshape(num_row, num_channel, num_orbital, num_bunch // 2, 2)
+        part_0 = xas_part[:, :, :, :, 0].reshape(num_row, num_channel, -1)
+        part_1 = xas_part[:, :, :, :, 1].reshape(num_row, num_channel, -1)
+        full_shape = np.array([num_channel, num_orbital * 2, num_bunch // 2])
+        part_shape = np.array([num_channel, num_orbital, num_bunch // 2])
+        return [part_1, part_0], part_shape, full_shape
+
+    @staticmethod
+    def _preprocess_and_combine(xas_parts, part_shape, num_rows, preprocessing_kwargs):
+        """Preprocess each part and concatenate along the bunch axis."""
+        raw_parts, norm_parts = zip(*[
+            preprocess_xas_data(part, part_shape, num_rows, **preprocessing_kwargs)
+            for part in xas_parts
+        ])
+        if len(raw_parts) == 1:
+            return raw_parts[0], norm_parts[0]
+        return np.concatenate(raw_parts, axis=2), np.hstack(norm_parts)
+
+    def init_from_file(self, fname, preprocessing_kwargs=None):
+        if preprocessing_kwargs is None:
+            preprocessing_kwargs = {}
+
+        dset_type, shape, labels, labels_mask, is_double = parse_header(fname)
+        assert shape[0] == 3, f"only support 3 channels, but got {shape[0]}"
+
+        raw_table = np.loadtxt(fname, comments="#", dtype=np.float64, delimiter="\t")
+        self._setup_metadata(raw_table, labels, labels_mask, dset_type)
+
+        xas_part = self._extract_xas_payload(raw_table, labels_mask, shape)
+        xas_parts, part_shape, shape = self._split_xas_parts(xas_part, shape, is_double)
+        self.xas_data, self.xas_data_norm = self._preprocess_and_combine(
+            xas_parts, part_shape, self.num_rows, preprocessing_kwargs
         )
-        # remove the last bunch because it may be incomplete
-        data = data[:, :, :-1]  # (141, 3, 8668)
-        xas_part = np.full(
-            (self.num_rows, num_channel, shape[1] * shape[2]), np.nan, dtype=float
-        )
-        xas_part[:, :, 0 : data.shape[2]] = data
-
-        if is_double_length:
-            shape_5d = (self.num_rows, shape[0], shape[1], shape[2] // 2, 2)
-            xas_part = xas_part.reshape(shape_5d)
-            xas_part_0 = xas_part[:, :, :, :, 0]
-            xas_part_0 = xas_part_0.reshape(self.num_rows, shape[0], -1)
-            xas_part_1 = xas_part[:, :, :, :, 1]
-            xas_part_1 = xas_part_1.reshape(self.num_rows, shape[0], -1)
-
-            # xas_part = np.concatenate((xas_part_0, xas_part_1), axis=-1)
-            xas_part = np.concatenate((xas_part_1, xas_part_0), axis=-1)
-            # xas_part = np.swapaxes(xas_part, -1, -3).reshape(-1)
-            # xas_part = xas_part.reshape(self.num_rows, shape[0], -1)
-            shape = [shape[0], shape[1] * 2, shape[2] // 2]
-
-        # in cases, after removing the last bunch, the number of bunches
-        # is a multiple of num_bunches. So we need to trim the shape
-        # shape[1] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
         self.shape = shape
-
-        self.delta_t_s = 1 / P0 / self.shape[2]
-        self.xas_data = xas_part
-        self.xas_data_norm = self.normalize()
+        self.delta_t_s = 1 / P0 / self.shape[2] 
 
     def get_energy_vs_time(
         self,
         channel=0,
         target="raw",
+        preprocessing_kwargs=None,
         norm_kwargs=None,
         binning_kwargs=None,
         kinetics_kwargs=None,
     ):
+        if preprocessing_kwargs is None:
+            preprocessing_kwargs = {}
+        reprocess_flag = self.curr_preprocessing_kwargs != preprocessing_kwargs
+        if reprocess_flag:
+            logger.info(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
+            self.curr_preprocessing_kwargs = preprocessing_kwargs
+
+        if target == "raw" or self.xas_data is None or reprocess_flag:
+            self.init_from_file(self.fname, preprocessing_kwargs)
+
         if target == "raw":
-            if self.xas_data is None:
-                self.init_from_file(self.fname)
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
             return self.compile_results(
                 "raw", None, self.xas_data[:, channel, :], t_axis
             )
-
         elif target == "normalized":
             t_axis = np.arange(self.xas_data_norm.shape[1]) * self.delta_t_s
             return self.compile_results("normalized", None, self.xas_data_norm, t_axis)
-
         elif target == "normalized-GS":
             if self.dset_type == "LASERD":
                 return self.process_laserd(norm_kwargs, binning_kwargs)
@@ -555,28 +503,6 @@ class TrXASDataset:
         bunch = index % self.shape[0]
         orbital = index // self.shape[0]
         return (orbital, bunch)
-
-    def normalize(self, repeat_rate=0):
-        # acquire_time = self.get("Seconds")
-        xas_data = np.copy(self.xas_data)
-        # if repeat_rate > 0:
-        #     offset = xas_data / (repeat_rate * acquire_time)
-        #     xas_data = -np.log(1.0 - offset)
-
-        shape_4d = (self.num_rows, self.shape[0], self.shape[1], self.shape[2])
-        shape_3d = (self.num_rows, self.shape[0], self.shape[1] * self.shape[2])
-
-        xas_3d = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
-        xas_3d[:, :, 0 : xas_data.shape[2]] = xas_data
-        xas_4d = xas_3d.reshape(shape_4d)
-        orbital_mean_ch0 = np.nanmean(xas_4d[:, 0], axis=1)  # rows x bunch
-
-        # it's (num_rows, total_bunches)
-        norm_data = np.mean(xas_data[:, 1:3], axis=(1,))
-        cycle_indices = np.arange(norm_data.shape[1]) % self.shape[2]
-        norm_data /= orbital_mean_ch0[:, cycle_indices]
-
-        return norm_data.astype(np.float32)
 
     @staticmethod
     def plot_results(results, save_name):
@@ -658,8 +584,14 @@ class TrXASDataset:
             sync_index = sync_value
 
         if gs_method == "orbital-average":
+            max_gs = sync_index // num_bunches
+            if gs_value > max_gs:
+                logger.warning(
+                    f"gs_value={gs_value} exceeds available orbitals before sync "
+                    f"({max_gs}); clamping to {max_gs}"
+                )
+                gs_value = max_gs
             avg_slice = slice(sync_index - gs_value * num_bunches, sync_index)
-            assert avg_slice.start >= 0, "ground state start < 0"
             avg_data = data[:, avg_slice].reshape(-1, gs_value, num_bunches)
             avg_data = np.mean(avg_data, axis=1)  # num_energys * num_bunches
             offset = (-1 * sync_index) % num_bunches
@@ -668,10 +600,14 @@ class TrXASDataset:
             diff = data - avg_data[:, cycle_indices]
 
         elif gs_method == "bunch-average":
+            if gs_value > sync_index:
+                logger.warning(
+                    f"gs_value={gs_value} exceeds available bunches before sync "
+                    f"({sync_index}); clamping to {sync_index}"
+                )
+                gs_value = sync_index
             avg_slice = slice(sync_index - gs_value, sync_index)
-            assert avg_slice.start >= 0, "ground state start < 0"
             avg_data = np.mean(data[:, avg_slice], axis=1)
-            # print(data.shape, avg_data.shape, data[:, avg_slice].shape)
             diff = data - avg_data.reshape(-1, 1)
         else:
             raise ValueError(f"Unknown gs_method: {gs_method}")
@@ -806,7 +742,6 @@ if __name__ == "__main__":
         # fname = "/Users/mqichu/Documents/trxas/XTA_data/setup-full-00099"
         fname = "/local/MQICHU/playground/Dugan_2024_3_saveddata/setup-full-00737"
         dset = TrXASDataset(fname)
-        dset.normalize()
         # dset.plot()
         dset.process_energy()
         t1 = time.perf_counter()
