@@ -71,7 +71,7 @@ def get_human_readable_size(full_path):
     """
     Get the size of a file in a human-readable format.
     """
-    size = os.path.getsize(full_path)
+    size = Path(full_path).stat().st_size
     if size <= 0:
         return "0 B"
     for unit in ["B", "KB", "MB", "GB", "TB"]:

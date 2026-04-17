@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 import logging
 import json
-import os
 import datetime
 import shutil
 import h5py
@@ -177,10 +176,10 @@ class TrXASDatasetManager:
     def update_flist(self, flist):
         self.flist = flist
         if len(flist) == 1:
-            self.label = f"result_{os.path.basename(flist[0])}"
+            self.label = f"result_{Path(flist[0]).name}"
         else:
             flist.sort()
-            self.label = f"result_{os.path.basename(flist[0])}-{flist[-1][-5:]}"
+            self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
 
     def save_results(
         self,
@@ -278,28 +277,25 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname, load_cache=True):
+def create_trxas_dataset(fname):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname, load_cache=load_cache)
+        return TrXASDataset(fname)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()
         return None
 
 
-def create_trxas_cache_from_flist(flist, **kwargs):
+def create_trxas_cache_from_flist(flist):
     for fname in flist:
-        create_trxas_cache(fname=fname, **kwargs)
-    return
+        create_trxas_cache(fname)
 
 
-def create_trxas_cache(
-    fname, load_cache=True, remove_outlier=True, outlier_threshold=5
-):
+def create_trxas_cache(fname):
     fname = Path(fname)
     if not fname.exists():  # or not is_sample_data(fname):
         logger.error(f"check dataset file: {fname}")
@@ -310,7 +306,7 @@ def create_trxas_cache(
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname)
         if not cache_exists:
-            TrXASDataset(fname, load_cache=load_cache)
+            TrXASDataset(fname)
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -319,13 +315,7 @@ def create_trxas_cache(
 
 
 class TrXASDataset:
-    def __init__(
-        self,
-        fname,
-        load_cache=True,
-        outlier_method="MedianAbsoluteDeviation",
-        outlier_threshold=5,
-    ):
+    def __init__(self, fname):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -340,12 +330,7 @@ class TrXASDataset:
             "xas_data_norm",
         ]
         self.curr_preprocessing_kwargs = {"outlier_method": None}
-        # if load_cache and cache_exists:
-        #     self.init_from_cache(self.cache_name)
-        # else:
         self.init_from_file(fname, self.curr_preprocessing_kwargs)
-        #     # if not self.cache_name.exists() and not is_recently_modified(self.fname):
-        #     #     self.save_to_cache()
         self.xas_data = None
 
     @staticmethod
@@ -355,20 +340,47 @@ class TrXASDataset:
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
 
-    def init_from_cache(self, fname):
-        data = np.load(fname, allow_pickle=True)
-        for attr in self.dset_attributes:
-            setattr(self, attr, data[attr])
-        self.dset_type = str(self.dset_type)
+    def save_to_cache(self, fname=None):
+        """Save this dataset to an npz cache file.
 
-    def save_to_cache(self):
-        self.cache_name.parent.mkdir(parents=True, exist_ok=True)
-        temp_cache_name = self.cache_name.with_suffix(".tmp.npz")
-        np.savez(
-            temp_cache_name,
-            **{attr: getattr(self, attr) for attr in self.dset_attributes},
-        )
-        temp_cache_name.replace(self.cache_name)
+        Parameters
+        ----------
+        fname : path-like, optional
+            Destination path. Defaults to ``self.cache_name``.
+        """
+        dest = Path(fname) if fname is not None else self.cache_name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_suffix(".tmp.npz")
+        np.savez_compressed(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
+        tmp.replace(dest)
+        logger.info(f"Cache saved to {dest}")
+
+    @classmethod
+    def load_from_cache(cls, fname):
+        """Load a dataset from an npz cache file and return a new instance.
+
+        Parameters
+        ----------
+        fname : path-like
+            Path to the ``.npz`` cache file.
+
+        Returns
+        -------
+        TrXASDataset
+        """
+        fname = Path(fname)
+        obj = cls.__new__(cls)
+        obj.fname = fname
+        obj.cache_name = fname
+        obj.curr_preprocessing_kwargs = {"outlier_method": None}
+        obj.xas_data = None
+        data = np.load(fname, allow_pickle=True)
+        obj.dset_attributes = list(data.files)
+        for attr in obj.dset_attributes:
+            setattr(obj, attr, data[attr])
+        obj.dset_type = str(obj.dset_type)
+        logger.info(f"Dataset loaded from cache {fname}")
+        return obj
 
     def _setup_metadata(self, raw_table, labels, labels_mask, dset_type):
         """Populate metadata attributes from the raw data table and header info."""

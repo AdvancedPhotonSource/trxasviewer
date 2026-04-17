@@ -1,6 +1,4 @@
-import os
-import sys
-from datetime import datetime
+from pathlib import Path
 import pandas as pd
 
 import pyqtgraph as pg
@@ -104,7 +102,7 @@ class SaveOptionsDialog(QDialog):
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Save Directory",
-            os.path.expanduser("~"),  # Start in user's home directory
+            str(Path.home()),
         )
         if directory:  # If a directory was selected (not cancelled)
             self.path_edit.setText(directory)
