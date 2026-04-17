@@ -10,12 +10,11 @@ import datetime
 import shutil
 import h5py
 import traceback
-import warnings
 from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
     preprocess_xas_data,
-    remove_outlier,
+    pad_last_dim,
 )
 from .plot import plot_results
 
@@ -30,88 +29,7 @@ P0 = 352055282.000000 / 1296  # RF frequency in Hz / number of bucket
 # A014-IETS:BTC:CFG:SRNomFreqM   2025-11-11 13:15:24.536419 352055282.00000000
 
 
-CACHE_PATH = ".cache"
-
-
-@lru_cache(maxsize=128)
-def process_header(header_line):
-    """
-    Processes a header line to determine the dataset type and extract relevant metadata.
-
-    This function extracts the dataset type (either "Energy" or "laserd") from the header line,
-    parses labels, and computes indexing information for a structured dataset.
-
-    Parameters
-    ----------
-    header_line : str
-        A header string, typically starting with `#L`, followed by column labels.
-
-    Returns
-    -------
-    dset_type : str
-        The dataset type, either "EXAFS" or "LASERD".
-    shape : tuple of int
-        The shape of the dataset inferred from parsed indices, given as (channels, orbitals, bunches).
-    labels : list of str
-        The cleaned column labels after processing.
-    labels_mask : numpy.ndarray
-        A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
-    payload_mask : numpy.ndarray
-        A boolean mask of the dataset shape, marking valid payload indices.
-
-    Raises
-    ------
-    ValueError
-        If the dataset type cannot be determined from the header.
-
-    Notes
-    -----
-    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
-    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
-    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
-
-    Examples
-    --------
-    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
-    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
-    >>> print(dset_type)
-    'Energy'
-    >>> print(shape)
-    (2, 2, 2)
-    >>> print(labels)
-    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
-    >>> print(payload_mask.shape)
-    (8,)  # Flattened shape of (2, 2, 2)
-    """
-    header = header_line[3:].strip()
-    if re.match(r".* Energy ", header):
-        dset_type = "EXAFS"
-    elif re.match(r".* laserd ", header):
-        dset_type = "LASERD"
-    else:
-        raise ValueError("Unknown dataset type")
-
-    labels = header.split()
-    labels_mask = np.ones(len(labels), dtype=bool)
-    record = []
-    matches = [TRXAS_PATTERN.match(col) for col in labels]
-    for index, match in enumerate(matches):
-        if match:
-            labels_mask[index] = False
-            record.append(tuple(map(int, match.groups())))
-    labels = [labels[n] for n in range(len(labels)) if labels_mask[n]]
-
-    record = np.array(record)
-    # np.savetxt('record.txt', record, fmt='%d')
-    c_min, o_min, b_min = record.min(axis=0)
-    c_max, o_max, b_max = record.max(axis=0)
-
-    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = [c_max + 1, o_max + 1, b_max + 1]
-    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
-    payload_mask = np.zeros(np.prod(shape), dtype=bool)
-    payload_mask[index] = True
-    return dset_type, shape, labels, labels_mask, payload_mask
+CACHE_PATH = "trxasviewer_cache"
 
 
 def get_scan_type_from_header(header_line):
@@ -132,7 +50,7 @@ def get_scan_type_from_header(header_line):
 
 
 @lru_cache(maxsize=128)
-def process_header_2(fname):
+def parse_header(fname):
     """
     Processes a header line to determine the dataset type and extract relevant metadata.
 
@@ -154,32 +72,13 @@ def process_header_2(fname):
         The cleaned column labels after processing.
     labels_mask : numpy.ndarray
         A boolean array indicating which labels are retained (`True`) and which are removed (`False`).
-    payload_mask : numpy.ndarray
-        A boolean mask of the dataset shape, marking valid payload indices.
+    is_double_length : bool
+        Whether the file uses double-length acquisition mode.
 
     Raises
     ------
     ValueError
         If the dataset type cannot be determined from the header.
-
-    Notes
-    -----
-    - The function uses a **least-recently used (LRU) cache** to store results for up to 128 unique inputs.
-    - It expects the header line format to include "Energy" or "laserd" to classify the dataset type.
-    - It uses a regex pattern (`TRXAS_PATTERN`) to extract index information from certain columns.
-
-    Examples
-    --------
-    >>> header = "#L N  Epoch  Energy  mono  monoE  undE  c0o0b0  c0o0b1  c0o1b0  c0o1b1  c1o0b0  c1o0b1  c1o1b0  c1o1b1"
-    >>> dset_type, shape, labels, labels_mask, payload_mask = process_header(header)
-    >>> print(dset_type)
-    'Energy'
-    >>> print(shape)
-    (2, 2, 2)
-    >>> print(labels)
-    ['N', 'Epoch', 'Energy', 'mono', 'monoE', 'undE']
-    >>> print(payload_mask.shape)
-    (8,)  # Flattened shape of (2, 2, 2)
     """
     is_double_length = False
     with open(fname, "r") as f:
@@ -215,10 +114,7 @@ def process_header_2(fname):
 
     assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
     shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
-    index = record[:, 0] * shape[1] * shape[2] + record[:, 1] * shape[2] + record[:, 2]
-    payload_mask = np.zeros(np.prod(shape), dtype=bool)
-    payload_mask[index] = True
-    return dset_type, shape, labels, labels_mask, payload_mask, is_double_length
+    return dset_type, shape, labels, labels_mask, is_double_length
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):
@@ -474,21 +370,12 @@ class TrXASDataset:
         )
         temp_cache_name.replace(self.cache_name)
 
-    def init_from_file(self, fname, preprocessing_kwargs=None):
-        dset_type, shape, labels, labels_mask, _, is_double_length = (
-            process_header_2(fname)
-        )
-        num_channel, num_orbital, num_bunch = shape
-        assert num_channel == 3, f"only support 3 channels, but got {num_channel}"
-
-        data = np.loadtxt(fname, comments="#", dtype=np.float32, delimiter="\t")
-        self.num_rows = data.shape[0]
-
-        num_energy = data.shape[0]
+    def _setup_metadata(self, raw_table, labels, labels_mask, dset_type):
+        """Populate metadata attributes from the raw data table and header info."""
+        self.num_rows = raw_table.shape[0]
         self.labels = labels
-        self.meta_data = data[:, labels_mask[0 : data.shape[1]]]
         self.dset_type = dset_type
-
+        self.meta_data = raw_table[:, labels_mask[: raw_table.shape[1]]]
         if self.dset_type == "EXAFS":
             self.energy = self.get("Energy")
             self.laserd = 0.0
@@ -496,67 +383,61 @@ class TrXASDataset:
             self.laserd = self.get("laserd") * 1e-9  # convert to seconds
             self.energy = 0.0
 
-        # xas_part is [num_energy, channel, total_bunches]
-        data = data[:, ~labels_mask[0 : data.shape[1]]].reshape(
-            num_energy, num_channel, -1
+    @staticmethod
+    def _extract_xas_payload(raw_table, labels_mask, shape):
+        """Extract XAS columns, drop the last (potentially incomplete) bunch, and pad."""
+        num_channel, num_orbital, num_bunch = shape
+        num_row = raw_table.shape[0]
+        xas_part = raw_table[:, ~labels_mask[: raw_table.shape[1]]].reshape(num_row, num_channel, -1)
+        xas_part = xas_part[:, :, :-1]  # drop last bunch — may be incomplete
+        return pad_last_dim(xas_part, num_orbital * num_bunch)
+
+    @staticmethod
+    def _split_xas_parts(xas_part, shape, is_double):
+        """Return (xas_parts, part_shape, full_shape).
+
+        For double-length mode the interleaved acquisition is de-interleaved into
+        two sub-parts; otherwise the data is returned as-is.
+        """
+        num_channel, num_orbital, num_bunch = shape
+        num_row = xas_part.shape[0]
+        if not is_double:
+            return [xas_part], shape, shape
+        xas_part = xas_part.reshape(num_row, num_channel, num_orbital, num_bunch // 2, 2)
+        part_0 = xas_part[:, :, :, :, 0].reshape(num_row, num_channel, -1)
+        part_1 = xas_part[:, :, :, :, 1].reshape(num_row, num_channel, -1)
+        full_shape = np.array([num_channel, num_orbital * 2, num_bunch // 2])
+        part_shape = np.array([num_channel, num_orbital, num_bunch // 2])
+        return [part_1, part_0], part_shape, full_shape
+
+    @staticmethod
+    def _preprocess_and_combine(xas_parts, part_shape, num_rows, preprocessing_kwargs):
+        """Preprocess each part and concatenate along the bunch axis."""
+        raw_parts, norm_parts = zip(*[
+            preprocess_xas_data(part, part_shape, num_rows, **preprocessing_kwargs)
+            for part in xas_parts
+        ])
+        if len(raw_parts) == 1:
+            return raw_parts[0], norm_parts[0]
+        return np.concatenate(raw_parts, axis=2), np.hstack(norm_parts)
+
+    def init_from_file(self, fname, preprocessing_kwargs=None):
+        if preprocessing_kwargs is None:
+            preprocessing_kwargs = {}
+
+        dset_type, shape, labels, labels_mask, is_double = parse_header(fname)
+        assert shape[0] == 3, f"only support 3 channels, but got {shape[0]}"
+
+        raw_table = np.loadtxt(fname, comments="#", dtype=np.float64, delimiter="\t")
+        self._setup_metadata(raw_table, labels, labels_mask, dset_type)
+
+        xas_part = self._extract_xas_payload(raw_table, labels_mask, shape)
+        xas_parts, part_shape, shape = self._split_xas_parts(xas_part, shape, is_double)
+        self.xas_data, self.xas_data_norm = self._preprocess_and_combine(
+            xas_parts, part_shape, self.num_rows, preprocessing_kwargs
         )
-
-        # remove the last bunch because it may be incomplete
-        xas_part = data[:, :, :-1]  # (141, 3, 8668)
-
-        # pad with nan if the number of bunches is not a multiple of num_bunch
-        if num_orbital * num_bunch != xas_part.shape[2]:
-            xas_part_full = np.full(
-                (num_energy, num_channel, num_orbital * num_bunch),
-                np.nan,
-                dtype=np.float32,
-            )
-            xas_part_full[:, :, : xas_part.shape[-1]] = xas_part
-            xas_part = xas_part_full
-
-        if not is_double_length:
-            xas_parts = [xas_part]
-            part_shape = shape
-        else:
-            xas_part = xas_part.reshape(
-                num_energy, num_channel, num_orbital, num_bunch // 2, 2
-            )
-
-            xas_part_0 = xas_part[:, :, :, :, 0]
-            xas_part_0 = xas_part_0.reshape(num_energy, num_channel, -1)
-            xas_part_1 = xas_part[:, :, :, :, 1]
-            xas_part_1 = xas_part_1.reshape(num_energy, num_channel, -1)
-            xas_parts = [xas_part_1, xas_part_0]
-            shape = np.array([num_channel, num_orbital * 2, num_bunch // 2])
-            part_shape = np.array([num_channel, num_orbital, num_bunch // 2])
-
-        raw_data_all = []
-        norm_data_all = []
-        for part in xas_parts:
-            raw_part, norm_part = preprocess_xas_data(part, part_shape, self.num_rows, **preprocessing_kwargs)
-            raw_data_all.append(raw_part)
-            norm_data_all.append(norm_part)
-
-        if len(raw_data_all) == 2:
-            raw_data = np.concatenate((raw_data_all[0], raw_data_all[1]), axis=2)
-            norm_data = np.hstack((norm_data_all[0], norm_data_all[1]))
-        else:
-            raw_data = raw_data_all[0]
-            norm_data = norm_data_all[0]
-
-        self.delta_t_s = 1 / P0 / num_bunch
-        # in cases, after removing the last bunch, the number of bunches
-        # is a multiple of num_bunches. So we need to trim the shape
-        # shape[1] = (xas_part.shape[2] + shape[2] - 1) // shape[2]
-        self.shape = shape 
-        self.xas_data = raw_data
-        self.xas_data_norm = norm_data
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-        ax[0].imshow(norm_data_all[0], aspect="auto")
-        ax[1].imshow(norm_data_all[1], aspect="auto")
-        plt.savefig("debug_norm.png")
-        plt.close()
+        self.shape = shape
+        self.delta_t_s = 1 / P0 / self.shape[2] 
 
     def get_energy_vs_time(
         self,
@@ -682,8 +563,14 @@ class TrXASDataset:
             sync_index = sync_value
 
         if gs_method == "orbital-average":
+            max_gs = sync_index // num_bunches
+            if gs_value > max_gs:
+                logger.warning(
+                    f"gs_value={gs_value} exceeds available orbitals before sync "
+                    f"({max_gs}); clamping to {max_gs}"
+                )
+                gs_value = max_gs
             avg_slice = slice(sync_index - gs_value * num_bunches, sync_index)
-            assert avg_slice.start >= 0, "ground state start < 0"
             avg_data = data[:, avg_slice].reshape(-1, gs_value, num_bunches)
             avg_data = np.mean(avg_data, axis=1)  # num_energys * num_bunches
             offset = (-1 * sync_index) % num_bunches
@@ -692,10 +579,14 @@ class TrXASDataset:
             diff = data - avg_data[:, cycle_indices]
 
         elif gs_method == "bunch-average":
+            if gs_value > sync_index:
+                logger.warning(
+                    f"gs_value={gs_value} exceeds available bunches before sync "
+                    f"({sync_index}); clamping to {sync_index}"
+                )
+                gs_value = sync_index
             avg_slice = slice(sync_index - gs_value, sync_index)
-            assert avg_slice.start >= 0, "ground state start < 0"
             avg_data = np.mean(data[:, avg_slice], axis=1)
-            # print(data.shape, avg_data.shape, data[:, avg_slice].shape)
             diff = data - avg_data.reshape(-1, 1)
         else:
             raise ValueError(f"Unknown gs_method: {gs_method}")

@@ -311,6 +311,15 @@ def show_error_dialog(parent, title="Error", message="Something went wrong."):
     msg_box.exec()
 
 
+def show_warning_dialog(parent, title="Warning", message=""):
+    msg_box = QMessageBox(parent)
+    msg_box.setIcon(QMessageBox.Warning)
+    msg_box.setWindowTitle(title)
+    msg_box.setText(message)
+    msg_box.setStandardButtons(QMessageBox.Ok)
+    msg_box.exec()
+
+
 class TrXASResultTableModel(QAbstractTableModel):
     def __init__(self):
         super().__init__()

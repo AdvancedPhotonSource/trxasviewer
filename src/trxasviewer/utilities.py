@@ -290,16 +290,21 @@ def remove_outlier(xas_data_3d_input, outlier_method="MedianAbsoluteDeviation", 
     return xas_data_3d
 
 
+def pad_last_dim(data, target_size):
+    """Pad the last dimension of a 3D array with NaN to reach target_size."""
+    if data.shape[2] >= target_size:
+        return data
+    padded = np.full((*data.shape[:2], target_size), np.nan, dtype=data.dtype)
+    padded[:, :, : data.shape[2]] = data
+    return padded
+
+
 def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
     num_channel, num_orbital, num_bunch = shape
     shape_4d = (num_rows, num_channel, num_orbital, num_bunch)
-    shape_3d = (num_rows, num_channel, num_orbital * num_bunch)
 
     # pad with nan if needed, so that we can reshape to 4d for easier processing;
-    if xas_data_3d.shape[2] < num_orbital * num_bunch:
-        temp = np.full(shape_3d, np.nan)  # (rows, channel, orbital * bunch)
-        temp[:, :, : xas_data_3d.shape[2]] = xas_data_3d
-        xas_data_3d = temp
+    xas_data_3d = pad_last_dim(xas_data_3d, num_orbital * num_bunch)
 
     xas_data_4d = xas_data_3d.reshape(shape_4d)
 

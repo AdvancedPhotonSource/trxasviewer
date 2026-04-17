@@ -40,7 +40,7 @@ from .trxas_dataset import (
     create_trxas_cache_from_flist,
 )
 from .utilities import format_time
-from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog
+from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog, show_warning_dialog
 from .dtype_cache import DataTypeCache
 from .trxas_modeling import TrXASModeler
 from .trxas_result import TrXASResult
@@ -126,12 +126,24 @@ class DatasetFilterModel(QSortFilterProxyModel):
         return super().data(index, role)  # Default behavior
 
 
+class _SignalLogHandler(logging.Handler):
+    """Forwards log records at WARNING level or above to a Qt signal."""
+
+    def __init__(self, signal):
+        super().__init__()
+        self.signal = signal
+
+    def emit(self, record):
+        self.signal.emit(self.format(record))
+
+
 class AverageWorker(QObject):
     finished = Signal()
     progress = Signal(int)
     start_task = Signal()
     stop_worker = Signal()
     error = Signal(str)
+    warning = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -149,6 +161,10 @@ class AverageWorker(QObject):
     def run(self):
         t0 = time.perf_counter()
         self.dset_manager.update_flist(self.flist)
+        _handler = _SignalLogHandler(self.warning)
+        _handler.setLevel(logging.WARNING)
+        _dset_logger = logging.getLogger("trxasviewer.trxas_dataset")
+        _dset_logger.addHandler(_handler)
         try:
             self.results = self.dset_manager.get_energy_vs_time(
                 progress=self.progress, **self.kwargs
@@ -158,6 +174,8 @@ class AverageWorker(QObject):
             logger.error(f"Error in AverageWorker.run: {e}")
             self.results = None
             self.error.emit(str(e))
+        finally:
+            _dset_logger.removeHandler(_handler)
         self.finished.emit()
         t1 = time.perf_counter()
         logger.info(
@@ -292,6 +310,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker.progress.connect(self.update_progress_bar)
         self.avg_worker.finished.connect(self.plot_results)
         self.avg_worker.error.connect(self.show_status)
+        self.avg_worker.warning.connect(self._on_worker_warning)
         self.progressBar.setValue(0)
         self.avg_worker.moveToThread(self.thread)
         self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
@@ -452,6 +471,10 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
     def show_status(self, msg, level=logging.INFO, timeout=5000):
         logger.error(level, msg)
         self.statusBar().showMessage(msg, timeout)
+
+    def _on_worker_warning(self, msg):
+        self.show_status(msg, timeout=8000)
+        show_warning_dialog(self, title="Warning", message=msg)
         # show_error_dialog(self, "Error", msg)
 
     def update_kinetics_signal(self):
