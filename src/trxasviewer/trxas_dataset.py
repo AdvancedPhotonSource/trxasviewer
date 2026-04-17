@@ -147,8 +147,9 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
     if not compute_kinetics_errorbar:
         return data_avg
     else:
+        nan_row = np.full(data_avg.shape[1], np.nan)
         if num_dsets < 2:
-            return data_avg, None
+            return np.vstack([data_avg, nan_row]), None
         # get the kinetics profile row and compute the error bar
         # using the standard error of the mean as the error bar
         errorbar = np.nanstd(data_full[:, 1], axis=0) / np.sqrt(num_dsets)
@@ -214,7 +215,7 @@ class TrXASDatasetManager:
         # save settings in human readable format
         TrXASDataset.save_as_json(folder / "settings.json", results)
 
-    def get_energy_vs_time(self, progress=None, **kwargs):
+    def get_energy_vs_time(self, progress=None, use_cache=False, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
@@ -225,7 +226,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(fname)
+            dset = create_trxas_dataset(fname, use_cache=use_cache)
             if dset is None:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
@@ -246,7 +247,7 @@ class TrXASDatasetManager:
                         kinetics_dict[key].append(results["kinetics"][key]["profile"])
 
         good_idx = 0  # np.argmax(shapes[:, 0])
-        good_dset = create_trxas_dataset(self.flist[good_idx])
+        good_dset = create_trxas_dataset(self.flist[good_idx], use_cache=use_cache)
         if good_dset is None:
             logger.error(f"Failed to load dataset from {self.flist[good_idx]}")
             return None
@@ -277,13 +278,13 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname):
+def create_trxas_dataset(fname, use_cache=False):
     fname = Path(fname)
-    if not fname.exists():  # or not is_sample_data(fname):
+    if not fname.exists():
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname)
+        return TrXASDataset(fname, use_cache=use_cache)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()
@@ -315,7 +316,7 @@ def create_trxas_cache(fname):
 
 
 class TrXASDataset:
-    def __init__(self, fname):
+    def __init__(self, fname, use_cache=False):
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname)
         self.dset_attributes = [
@@ -330,8 +331,13 @@ class TrXASDataset:
             "xas_data_norm",
         ]
         self.curr_preprocessing_kwargs = {"outlier_method": None}
-        self.init_from_file(fname, self.curr_preprocessing_kwargs)
         self.xas_data = None
+        if use_cache and cache_exists:
+            self._load_npz(self.cache_name)
+        else:
+            self.init_from_file(fname, self.curr_preprocessing_kwargs)
+            if use_cache:
+                self.save_to_cache()
 
     @staticmethod
     def check_cache(fname):
@@ -339,6 +345,14 @@ class TrXASDataset:
         cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
+
+    def _load_npz(self, path):
+        data = np.load(path, allow_pickle=True)
+        self.dset_attributes = list(data.files)
+        for attr in self.dset_attributes:
+            setattr(self, attr, data[attr])
+        self.dset_type = str(self.dset_type)
+        logger.info(f"Loaded from cache {path}")
 
     def save_to_cache(self, fname=None):
         """Save this dataset to an npz cache file.
@@ -374,12 +388,7 @@ class TrXASDataset:
         obj.cache_name = fname
         obj.curr_preprocessing_kwargs = {"outlier_method": None}
         obj.xas_data = None
-        data = np.load(fname, allow_pickle=True)
-        obj.dset_attributes = list(data.files)
-        for attr in obj.dset_attributes:
-            setattr(obj, attr, data[attr])
-        obj.dset_type = str(obj.dset_type)
-        logger.info(f"Dataset loaded from cache {fname}")
+        obj._load_npz(fname)
         return obj
 
     def _setup_metadata(self, raw_table, labels, labels_mask, dset_type):

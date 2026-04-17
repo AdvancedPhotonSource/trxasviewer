@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
 from .trxas_dataset import (
     TrXASDatasetManager,
     create_trxas_cache_from_flist,
+    CACHE_PATH,
 )
 from .utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog, show_warning_dialog
@@ -97,6 +98,8 @@ class DatasetFilterModel(QSortFilterProxyModel):
         if not index.isValid():
             return False
         full_path = model.filePath(index)
+        if Path(full_path).name == CACHE_PATH:
+            return False
         scan_type = self.get_scan_type(full_path)
         return scan_type != "invalid"
 
@@ -230,7 +233,7 @@ class CacheWorker(QThread):
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
     def __init__(
-        self, rawfolder=None, syncbunch=None, autoload=False, reset_cache=False
+        self, rawfolder=None, syncbunch=None, autoload=False, reset_cache=False, use_cache=False
     ):
         super(TrXASViewer, self).__init__()
         self.setupUi(self)
@@ -242,6 +245,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.kinetics_roi = {}
         self.is_processing = False
         self.reset_cache = reset_cache
+        self.use_cache = use_cache
         self.modeler = None
         self.setWindowTitle(f"TrXASViewer v{__version__}")
 
@@ -792,6 +796,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         kwargs["norm_kwargs"] = self.get_normalization_subgs_kwargs()
         kwargs["binning_kwargs"] = self.get_binning_kwargs()
         kwargs["kinetics_kwargs"] = self.get_kinetics_kwargs()
+        kwargs["use_cache"] = self.use_cache
 
         if kwargs["target"] in ["normalized-GS", "normalized"]:
             self.comboBox_channel_num.setEnabled(False)
@@ -1014,13 +1019,14 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         event.accept()  # Allow closing
 
 
-def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False):
+def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False, use_cache=False):
     app = QApplication(sys.argv)
     window = TrXASViewer(
         rawfolder=rawfolder,
         syncbunch=syncbunch,
         autoload=autoload,
         reset_cache=reset_cache,
+        use_cache=use_cache,
     )
     window.show()
     sys.exit(app.exec())
