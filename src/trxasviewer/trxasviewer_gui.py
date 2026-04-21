@@ -130,14 +130,15 @@ class DatasetFilterModel(QSortFilterProxyModel):
 
 
 class _SignalLogHandler(logging.Handler):
-    """Forwards WARNING-level log records to a Qt signal (excludes errors)."""
+    """Forwards log records matching exactly one level to a Qt signal."""
 
-    def __init__(self, signal):
+    def __init__(self, signal, level):
         super().__init__()
         self.signal = signal
+        self._level = level
 
     def emit(self, record):
-        if record.levelno == logging.WARNING:
+        if record.levelno == self._level:
             self.signal.emit(self.format(record))
 
 
@@ -148,6 +149,7 @@ class AverageWorker(QObject):
     stop_worker = Signal()
     error = Signal(str)
     warning = Signal(str)
+    error_log = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -165,10 +167,11 @@ class AverageWorker(QObject):
     def run(self):
         t0 = time.perf_counter()
         self.dset_manager.update_flist(self.flist)
-        _handler = _SignalLogHandler(self.warning)
-        _handler.setLevel(logging.WARNING)
+        _warn_handler = _SignalLogHandler(self.warning, logging.WARNING)
+        _err_handler = _SignalLogHandler(self.error_log, logging.ERROR)
         _dset_logger = logging.getLogger("trxasviewer.trxas_dataset")
-        _dset_logger.addHandler(_handler)
+        _dset_logger.addHandler(_warn_handler)
+        _dset_logger.addHandler(_err_handler)
         try:
             self.results = self.dset_manager.get_energy_vs_time(
                 progress=self.progress, **self.kwargs
@@ -179,7 +182,8 @@ class AverageWorker(QObject):
             self.results = None
             self.error.emit(str(e))
         finally:
-            _dset_logger.removeHandler(_handler)
+            _dset_logger.removeHandler(_warn_handler)
+            _dset_logger.removeHandler(_err_handler)
         self.finished.emit()
         t1 = time.perf_counter()
         logger.info(
@@ -316,6 +320,7 @@ class TrXASViewer(QMainWindow, Ui_MainWindow):
         self.avg_worker.finished.connect(self.plot_results)
         self.avg_worker.error.connect(self.show_status)
         self.avg_worker.warning.connect(self._on_worker_warning)
+        self.avg_worker.error_log.connect(lambda msg: self.show_status(msg, level=logging.ERROR))
         self.progressBar.setValue(0)
         self.avg_worker.moveToThread(self.thread)
         self.thread.started.connect(lambda: logger.info("Starting AverageWorker..."))
