@@ -104,8 +104,8 @@ class ViewerController(QObject):
         file_paths = self._model.dtype_db.get_valid_filepaths()
         if file_paths:
             num_workers = min(num_workers, len(file_paths))
-            cache_worker = CacheWorker(file_paths, num_workers)
-            cache_worker.start()
+            self._cache_worker = CacheWorker(file_paths, num_workers)
+            self._cache_worker.start()
 
     def _on_worker_finished(self):
         results = self._avg_worker.get_results()
