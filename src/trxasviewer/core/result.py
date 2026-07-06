@@ -120,10 +120,6 @@ class TrXASResult:
         levels = get_levels(cdata_valid)
         return cdata, levels
 
-    def get_diff_map(self):
-        energy = self.x_axis["value"]
-        return energy, self.t_axis, self.diff
-
     def plot_diff(self):
         plt.imshow(self.diff, cmap="coolwarm", origin="lower")
         plt.colorbar()

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scienceplots
+import scienceplots  # noqa: F401  # side-effect import: registers matplotlib styles
 from scipy.ndimage import gaussian_filter1d
 
 # Disable verbose matplotlib and fontTools logging

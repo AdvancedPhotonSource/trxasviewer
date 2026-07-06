@@ -115,7 +115,6 @@ class KineticOptimizerWorker(QObject):
             best_params = None
             best_concs = None
             best_spectra = None
-            best_result = None
             best_run_id = -1
 
             with ProcessPoolExecutor() as executor:
@@ -146,7 +145,6 @@ class KineticOptimizerWorker(QObject):
                             best_params = opt_params
                             best_concs = final_concs
                             best_spectra = final_spectra
-                            best_result = res
                             best_run_id = run_id
                     except Exception as exc:
                         self.progress_queue.put(

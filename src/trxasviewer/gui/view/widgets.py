@@ -5,7 +5,6 @@ import pandas as pd
 import pyqtgraph as pg
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, Qt, QSortFilterProxyModel, Slot
 from PySide6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QDialog,
     QDialogButtonBox,
@@ -13,10 +12,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMainWindow,
     QMessageBox,
     QPushButton,
-    QTableView,
     QVBoxLayout,
 )
 
