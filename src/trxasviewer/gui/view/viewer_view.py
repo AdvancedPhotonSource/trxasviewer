@@ -690,7 +690,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             "radioButton_sync_bunch",
             "spinBox_syncbunch_number",
             "comboBox_groundstate_method",
-            "spinBox_orbitals_number",
+            "spinBox_groundstate_number",
             "spinBox_binning_linnum",
             "spinBox_binning_lognum",
             "radioButton_selection_by_mouse",
