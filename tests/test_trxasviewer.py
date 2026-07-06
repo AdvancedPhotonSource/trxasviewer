@@ -60,3 +60,9 @@ def test_viewer_model_signals(qtbot):
     model.folder_changed.connect(lambda p: received.append(p))
     model.set_folder(Path("/tmp"))
     assert received == [Path("/tmp")]
+
+
+def test_workers_importable():
+    from trxasviewer.gui.control.workers import AverageWorker, CacheWorker
+    assert issubclass(AverageWorker, object)
+    assert issubclass(CacheWorker, object)

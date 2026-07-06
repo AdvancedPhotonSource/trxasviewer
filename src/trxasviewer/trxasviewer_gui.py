@@ -6,14 +6,10 @@ import json
 import pyqtgraph as pg
 from pathlib import Path
 import traceback
-from multiprocessing import Process
 from .gui.view.generated_ui import Ui_MainWindow
 from PySide6.QtCore import (
     QDir,
     Qt,
-    Signal,
-    Slot,
-    QObject,
     QThread,
     QTimer,
     QByteArray,
@@ -34,16 +30,13 @@ from PySide6.QtWidgets import (
     QMainWindow,
 )
 
-from .core.dataset import (
-    TrXASDatasetManager,
-    create_trxas_cache_from_flist,
-    CACHE_PATH,
-)
+from .core.dataset import CACHE_PATH
 from .core.utilities import format_time
 from .gui.view.widgets import (
     VlockedRectROI, SaveOptionsDialog, show_error_dialog, show_warning_dialog,
-    DatasetFilterModel, _SignalLogHandler,
+    DatasetFilterModel,
 )
+from .gui.control.workers import AverageWorker, CacheWorker
 from .core.dtype_cache import DataTypeCache
 from .modeling_gui.trxas_modeling import TrXASModeler
 from .core.result import TrXASResult
@@ -68,100 +61,6 @@ pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 pg.setConfigOptions(antialias=True)
 pg.setConfigOptions(imageAxisOrder="row-major")
-
-
-class AverageWorker(QObject):
-    finished = Signal()
-    progress = Signal(int)
-    start_task = Signal()
-    stop_worker = Signal()
-    error = Signal(str)
-    warning = Signal(str)
-    error_log = Signal(str)
-
-    def __init__(self):
-        super().__init__()
-        self.dset_manager = TrXASDatasetManager()
-        self.flist = None
-        self.kwargs = None
-        self.results = None
-        self.start_task.connect(self.run)
-
-    def set_kwargs(self, flist, **kwargs):
-        self.flist = flist
-        self.kwargs = kwargs
-
-    @Slot()
-    def run(self):
-        t0 = time.perf_counter()
-        self.dset_manager.update_flist(self.flist)
-        _warn_handler = _SignalLogHandler(self.warning, logging.WARNING)
-        _err_handler = _SignalLogHandler(self.error_log, logging.ERROR)
-        _dset_logger = logging.getLogger("trxasviewer.trxas_dataset")
-        _dset_logger.addHandler(_warn_handler)
-        _dset_logger.addHandler(_err_handler)
-        try:
-            self.results = self.dset_manager.get_energy_vs_time(
-                progress=self.progress, **self.kwargs
-            )
-        except Exception as e:
-            traceback.print_exc()
-            logger.error(f"Error in AverageWorker.run: {e}")
-            self.results = None
-            self.error.emit(str(e))
-        finally:
-            _dset_logger.removeHandler(_warn_handler)
-            _dset_logger.removeHandler(_err_handler)
-        self.finished.emit()
-        t1 = time.perf_counter()
-        logger.info(
-            f"AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files"
-        )
-
-    def get_results(self):
-        # data, energy, delta_t_ns
-        return self.results
-
-    def quit(self):
-        self.stop_worker.emit()
-
-
-class CacheWorker(QThread):
-    """Manages multiple processes for cache generation"""
-
-    # progress = Signal(int)
-    finished = Signal()
-
-    def __init__(self, file_list, number_of_processes=4):
-        super().__init__()
-        self.file_list = file_list
-        self.processes = []
-        self.number_of_processes = number_of_processes
-        self.is_done = False
-
-    def run(self):
-        t0 = time.perf_counter()
-        k, m = divmod(len(self.file_list), self.number_of_processes)
-        flist_parts = [
-            self.file_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
-            for i in range(self.number_of_processes)
-        ]
-        logger.info(
-            f"Starting CacheWorker with {self.number_of_processes} processes to prepare {len(self.file_list)} datasets."
-        )
-
-        for part in flist_parts:
-            process = Process(target=create_trxas_cache_from_flist, args=(part,))
-            process.start()
-            self.processes.append(process)
-
-        for process in self.processes:
-            process.join()  # Wait for each process to finish (in background thread)
-
-        self.finished.emit()
-        self.is_done = True
-        t1 = time.perf_counter()
-        logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
 
 
 class TrXASViewer(QMainWindow, Ui_MainWindow):
