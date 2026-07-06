@@ -12,7 +12,7 @@ try:
 except PackageNotFoundError:
     __version__ = "0.1.0"  # Fallback if package is not installed
 
-from .trxasviewer_gui import main_gui
+from .gui.view.viewer_view import main_gui
 from .modeling_gui.trxas_modeling import main_modeling_gui
 from .core.dataset import TrXASDataset
 

@@ -71,3 +71,8 @@ def test_workers_importable():
 def test_controller_importable():
     from trxasviewer.gui.control.viewer_controller import ViewerController
     assert callable(ViewerController)
+
+
+def test_viewer_view_importable():
+    from trxasviewer.gui.view.viewer_view import ViewerView
+    assert callable(ViewerView)
