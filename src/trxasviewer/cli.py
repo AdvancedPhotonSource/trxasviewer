@@ -40,7 +40,7 @@ def create_argparser():
         default=False,
     )
     view_parser.add_argument(
-        "--cache-folder", "-c",
+        "--cachefolder", "-c",
         type=str,
         default=None,
         help="Folder for preprocessed dataset cache (NPZ files). If not set, caching is disabled.",
@@ -61,7 +61,7 @@ def run_view(args):
             syncbunch=args.syncbunch,
             autoload=(not args.disable_autoload),
             reset_cache=args.reset_dtype_cache,
-            cache_folder=args.cache_folder,
+            cache_folder=args.cachefolder,
         )
     )
 
