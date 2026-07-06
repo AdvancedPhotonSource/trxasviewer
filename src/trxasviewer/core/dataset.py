@@ -195,7 +195,7 @@ class TrXASDatasetManager:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
 
-            logger.info(f"{dset.num_rows} rows in {fname}")
+            logger.debug(f"{dset.num_rows} rows in {fname}")
             if dset_type is None:
                 dset_type = dset.dset_type
             elif dset_type != dset.dset_type:
@@ -443,7 +443,7 @@ class TrXASDataset:
             preprocessing_kwargs = {}
         reprocess_flag = self.curr_preprocessing_kwargs != preprocessing_kwargs
         if reprocess_flag:
-            logger.info(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
+            logger.debug(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
             self.curr_preprocessing_kwargs = preprocessing_kwargs
 
         if target == "raw" or self.xas_data is None or reprocess_flag:

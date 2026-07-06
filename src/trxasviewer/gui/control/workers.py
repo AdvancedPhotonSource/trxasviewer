@@ -67,9 +67,8 @@ class AverageWorker(QObject):
             _dset_logger.removeHandler(_err_handler)
         self.finished.emit()
         t1 = time.perf_counter()
-        logger.info(
-            f"AverageWorker.run finished in {t1 - t0:.3f} seconds on {len(self.flist)} files"
-        )
+        n = len(self.flist)
+        logger.info(f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s")
 
     def get_results(self):
         return self.results
