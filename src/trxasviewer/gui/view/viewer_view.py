@@ -1,13 +1,11 @@
-import os
 import sys
-import time
 import json
 import logging
 from pathlib import Path
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import QByteArray, QDir, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QByteArray, QDir, QTimer, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -25,7 +23,6 @@ from PySide6.QtWidgets import (
 
 from trxasviewer import __version__
 from trxasviewer.core.utilities import format_time
-from trxasviewer.core.dataset import CACHE_PATH
 from trxasviewer.gui.view.generated_ui import Ui_MainWindow
 from trxasviewer.gui.view.widgets import (
     VlockedRectROI,
@@ -89,7 +86,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.spinBox_roiy.valueChanged.connect(self.update_roi)
         self.comboBox_channel_num.currentIndexChanged.connect(self.replot_requested.emit)
         self.comboBox_target.currentIndexChanged.connect(self.replot_requested.emit)
-        self.pushButton_replot.clicked.connect(self.replot_requested.emit)
+        self.pushButton_replot.clicked.connect(self._on_replot_clicked)
         self.pushButton_select_savefname.clicked.connect(self._on_save_clicked)
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
         self.toolButton_refresh.clicked.connect(self.reload_rawfolder)
@@ -337,6 +334,12 @@ class ViewerView(QMainWindow, Ui_MainWindow):
 
     def _on_modeler_closed(self):
         self.modeler = None
+
+    def _on_replot_clicked(self):
+        if self.radioButton_selection_by_index.isChecked():
+            self.process_range()
+        else:
+            self.replot_requested.emit()
 
     def _on_sync_param_changed(self):
         self.replot_requested.emit()
@@ -744,26 +747,6 @@ class ViewerView(QMainWindow, Ui_MainWindow):
                         widget.setCurrentIndex(value)
             else:
                 logger.error(f"Configuration file [{CONFIG_FILE}] not found.")
-
-    def update_sync_timing_parameters(self):
-        """Internal helper: kept for backward compatibility with spinbox/radio-button wiring.
-
-        In the new MVC architecture the sync-param spinboxes/radio-buttons emit
-        ``replot_requested`` via ``_on_sync_param_changed``.  This method is no
-        longer wired to those widgets; it is kept so that any call-sites that
-        reference it by name continue to work.
-        """
-        if self.results is None:
-            return
-        self._update_sync_timing_display(self.results)
-        kwargs = self.get_normalization_subgs_kwargs()
-        stype, sval = kwargs["sync_type"], kwargs["sync_value"]
-        if stype == "time":
-            sync_bunch = int(sval / self.results["delta_t_s"])
-            self.spinBox_syncbunch_number.setValue(sync_bunch)
-        elif stype == "bunch":
-            sync_time = sval * self.results["delta_t_s"] * 1e6  # s to us
-            self.doubleSpinBox_sync_time_us.setValue(sync_time)
 
     def closeEvent(self, event):
         if self.is_processing:
