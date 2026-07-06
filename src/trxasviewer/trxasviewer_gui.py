@@ -43,7 +43,7 @@ from .core.dataset import (
 from .core.utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog, show_warning_dialog
 from .core.dtype_cache import DataTypeCache
-from .trxas_modeling import TrXASModeler
+from .modeling_gui.trxas_modeling import TrXASModeler
 from .core.result import TrXASResult
 from .pg_plot import plot_kinetics_profile, plot_kinetics_error
 import logging

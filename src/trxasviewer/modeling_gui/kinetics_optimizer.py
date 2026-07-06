@@ -4,7 +4,7 @@ from PySide6.QtCore import QObject, Signal, Slot, QTimer
 
 # Multiprocessing Manager for shared queue
 from multiprocessing import Manager
-from .core.fitting import run_single_optimization
+from trxasviewer.core.fitting import run_single_optimization
 
 
 class KineticOptimizerWorker(QObject):

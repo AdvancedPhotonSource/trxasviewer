@@ -20,15 +20,15 @@ from PySide6.QtWidgets import (
     QFileDialog,
 )
 
-from . import __version__
-from .core.constants import TIME_SCALES
-from .core.fitting import run_single_optimization
-from .generated_modeling_ui import Ui_MainWindow
-from .pg_plot import plot_kinetics_profile
-from .core.graph import draw_decay_graph_with_top_nodes
-from .core.result import TrXASResult
-from .core.utilities import NumpyEncoder
-from .widgets import (
+from trxasviewer import __version__
+from trxasviewer.core.constants import TIME_SCALES
+from trxasviewer.core.fitting import run_single_optimization
+from trxasviewer.modeling_gui.generated_modeling_ui import Ui_MainWindow
+from trxasviewer.pg_plot import plot_kinetics_profile
+from trxasviewer.core.graph import draw_decay_graph_with_top_nodes
+from trxasviewer.core.result import TrXASResult
+from trxasviewer.core.utilities import NumpyEncoder
+from trxasviewer.widgets import (
     ParameterTableModel,
     TrXASResultTableModel,
     show_error_dialog,
