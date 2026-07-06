@@ -1,8 +1,9 @@
+import logging
 from pathlib import Path
 import pandas as pd
 
 import pyqtgraph as pg
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, Qt, Slot
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, Qt, QSortFilterProxyModel, Slot
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -18,6 +19,9 @@ from PySide6.QtWidgets import (
     QTableView,
     QVBoxLayout,
 )
+
+from trxasviewer.core.dtype_cache import DataTypeCache
+from trxasviewer.core.dataset import CACHE_PATH
 
 
 class SaveOptionsDialog(QDialog):
@@ -454,3 +458,77 @@ class ParameterTableModel(QAbstractTableModel):
             | Qt.ItemFlag.ItemIsEnabled
             | Qt.ItemFlag.ItemIsEditable
         )
+
+
+def get_human_readable_size(full_path):
+    """
+    Get the size of a file in a human-readable format.
+    """
+    size = Path(full_path).stat().st_size
+    if size <= 0:
+        return "0 B"
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} PB"  # fallback for extremely large files
+
+
+class DatasetFilterModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.dtype_db = None
+
+    def update_cache_db(self, dtype_db):
+        self.dtype_db = dtype_db
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        """Override this method to filter out non-dataset files."""
+        model = self.sourceModel()
+        index = model.index(source_row, 0, source_parent)
+
+        if not index.isValid():
+            return False
+        full_path = model.filePath(index)
+        if Path(full_path).name == CACHE_PATH:
+            return False
+        scan_type = self.get_scan_type(full_path)
+        return scan_type != "invalid"
+
+    def get_scan_type(self, full_path):
+        if self.dtype_db is None:
+            scan_type = DataTypeCache.get_scan_type(full_path)
+        else:
+            scan_type = self.dtype_db.get_record(full_path)
+        return scan_type
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        # Check if the requested column is the "Type" column (column 2 in QFileSystemModel)
+        if index.column() == 2 and role == Qt.DisplayRole:
+            source_index = self.mapToSource(index)
+            full_path = self.sourceModel().filePath(source_index)  # Get full path
+            return self.get_scan_type(full_path)
+
+        if role == Qt.DisplayRole and index.column() == 1:  # Size column
+            source_index = self.mapToSource(index)
+            full_path = self.sourceModel().filePath(source_index)
+            try:
+                return get_human_readable_size(full_path)
+            except OSError:
+                return 0
+        return super().data(index, role)  # Default behavior
+
+
+class _SignalLogHandler(logging.Handler):
+    """Forwards log records matching exactly one level to a Qt signal."""
+
+    def __init__(self, signal, level):
+        super().__init__()
+        self.signal = signal
+        self._level = level
+
+    def emit(self, record):
+        if record.levelno == self._level:
+            self.signal.emit(self.format(record))

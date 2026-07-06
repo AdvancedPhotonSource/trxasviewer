@@ -24,11 +24,11 @@ from trxasviewer import __version__
 from trxasviewer.core.constants import TIME_SCALES
 from trxasviewer.core.fitting import run_single_optimization
 from trxasviewer.modeling_gui.generated_modeling_ui import Ui_MainWindow
-from trxasviewer.pg_plot import plot_kinetics_profile
+from trxasviewer.gui.view.pg_plot import plot_kinetics_profile
 from trxasviewer.core.graph import draw_decay_graph_with_top_nodes
 from trxasviewer.core.result import TrXASResult
 from trxasviewer.core.utilities import NumpyEncoder
-from trxasviewer.widgets import (
+from trxasviewer.gui.view.widgets import (
     ParameterTableModel,
     TrXASResultTableModel,
     show_error_dialog,

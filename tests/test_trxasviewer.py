@@ -41,3 +41,12 @@ def test_io_importable():
 def test_result_importable():
     from trxasviewer.core.result import TrXASResult, convert_npz_obj, get_levels
     assert callable(TrXASResult)
+
+
+def test_view_assets_importable():
+    from trxasviewer.gui.view.generated_ui import Ui_MainWindow
+    from trxasviewer.gui.view.widgets import (
+        VlockedRectROI, SaveOptionsDialog, DatasetFilterModel, _SignalLogHandler
+    )
+    from trxasviewer.gui.view.pg_plot import plot_kinetics_profile, plot_kinetics_error
+    assert callable(plot_kinetics_profile)
