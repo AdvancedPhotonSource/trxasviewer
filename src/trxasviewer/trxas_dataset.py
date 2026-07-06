@@ -9,7 +9,7 @@ import datetime
 import shutil
 import h5py
 import traceback
-from .utilities import (
+from .core.utilities import (
     prepare_binning_matrix,
     is_recently_modified,
     preprocess_xas_data,

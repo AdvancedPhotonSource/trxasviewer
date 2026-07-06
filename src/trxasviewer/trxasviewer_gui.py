@@ -40,9 +40,9 @@ from .trxas_dataset import (
     create_trxas_cache_from_flist,
     CACHE_PATH,
 )
-from .utilities import format_time
+from .core.utilities import format_time
 from .widgets import VlockedRectROI, SaveOptionsDialog, show_error_dialog, show_warning_dialog
-from .dtype_cache import DataTypeCache
+from .core.dtype_cache import DataTypeCache
 from .trxas_modeling import TrXASModeler
 from .trxas_result import TrXASResult
 from .pg_plot import plot_kinetics_profile, plot_kinetics_error

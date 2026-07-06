@@ -3,7 +3,7 @@ from pathlib import Path
 import logging
 import json
 from .utilities import get_scan_type, compare_versions
-from . import __version__
+from trxasviewer import __version__
 import atexit
 
 

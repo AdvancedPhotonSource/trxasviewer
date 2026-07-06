@@ -7,7 +7,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize
 
-from .trxas_graph import create_initial_state_array
+from .graph import create_initial_state_array
 
 logger = logging.getLogger(__name__)  # Create a logger for this module
 

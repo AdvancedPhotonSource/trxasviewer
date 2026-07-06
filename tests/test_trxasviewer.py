@@ -19,3 +19,12 @@ class TestTrxasviewer(unittest.TestCase):
 
     def test_000_something(self):
         """Test something."""
+
+
+def test_core_modules_importable():
+    from trxasviewer.core import constants, utilities, dtype_cache, fitting, graph
+    assert hasattr(constants, "TIME_SCALES")
+    assert hasattr(utilities, "format_time")
+    assert hasattr(dtype_cache, "DataTypeCache")
+    assert hasattr(fitting, "global_fit_kinetic_model")
+    assert hasattr(graph, "draw_decay_graph_with_top_nodes")
