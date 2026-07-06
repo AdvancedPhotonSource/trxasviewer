@@ -75,8 +75,8 @@ class AverageWorker(QObject):
             dtype = r.get("dset_type", "?")
             names = ", ".join(f.name if hasattr(f, "name") else str(f).split("/")[-1] for f in self.flist)
             logger.info(
-                f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s | "
-                f"{dtype} | ch={ch} orb={orb} bunch={bunch} | {names}"
+                f"{names} | {dtype} | ch={ch} orb={orb} bunch={bunch} | "
+                f"{n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s"
             )
         else:
             logger.info(f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s | no result")
