@@ -55,7 +55,7 @@ dependencies = [
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff"]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
@@ -72,6 +72,11 @@ local_scheme = "node-and-timestamp"
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+# Ruff
+[tool.ruff]
+line-length = 120
+target-version = "py310"
 
 # Mypy
 [tool.mypy]

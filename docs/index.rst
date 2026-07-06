@@ -9,8 +9,6 @@ Welcome to TrXASViewer's documentation!
    installation
    usage
    modules
-   contributing
-   history
 
 Indices and tables
 ==================
