@@ -66,3 +66,8 @@ def test_workers_importable():
     from trxasviewer.gui.control.workers import AverageWorker, CacheWorker
     assert issubclass(AverageWorker, object)
     assert issubclass(CacheWorker, object)
+
+
+def test_controller_importable():
+    from trxasviewer.gui.control.viewer_controller import ViewerController
+    assert callable(ViewerController)
