@@ -157,6 +157,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         if not self.kinetics_roi:
             self.create_kinetics_ROIs()
         self.mouse_clicked()
+        self.update_groundstate_label()
 
     def update_kinetics(self, results: dict):
         if not results or not results.get("kinetics"):
@@ -371,16 +372,27 @@ class ViewerView(QMainWindow, Ui_MainWindow):
 
     def update_groundstate_label(self):
         text = self.comboBox_groundstate_method.currentText()
+        sync_is_bunch = self.radioButton_sync_bunch.isChecked()
+        sync_bunch_val = self.spinBox_syncbunch_number.value()
         if text == "orbital-average":
             self.label_groundstate_num.setText("Number of orbitals:")
-            self.spinBox_groundstate_number.setMaximum(999999)
+            if sync_is_bunch and self.results is not None:
+                num_bunches = self.results.get("bunch_mode", None)
+                if num_bunches:
+                    max_orbitals = max(1, sync_bunch_val // num_bunches)
+                    self.spinBox_groundstate_number.setMaximum(max_orbitals)
+                    if self.spinBox_groundstate_number.value() > max_orbitals:
+                        self.spinBox_groundstate_number.setValue(max_orbitals)
+                else:
+                    self.spinBox_groundstate_number.setMaximum(999999)
+            else:
+                self.spinBox_groundstate_number.setMaximum(999999)
         elif text == "bunch-average":
             self.label_groundstate_num.setText("Number of bunches:")
-            if self.radioButton_sync_bunch.isChecked():
-                max_bunches = self.spinBox_syncbunch_number.value()
-                self.spinBox_groundstate_number.setMaximum(max_bunches)
-                if self.spinBox_groundstate_number.value() > max_bunches:
-                    self.spinBox_groundstate_number.setValue(max_bunches)
+            if sync_is_bunch:
+                self.spinBox_groundstate_number.setMaximum(sync_bunch_val)
+                if self.spinBox_groundstate_number.value() > sync_bunch_val:
+                    self.spinBox_groundstate_number.setValue(sync_bunch_val)
 
     def reload_rawfolder(self):
         raw_folder = self.lineEdit_rawfolder.text()
