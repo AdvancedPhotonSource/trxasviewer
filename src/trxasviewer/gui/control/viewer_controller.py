@@ -50,7 +50,6 @@ class ViewerController(QObject):
         # Model → View (data updates)
         self._model.result_ready.connect(self._view.update_image)
         self._model.result_ready.connect(self._view.update_kinetics)
-        self._model.result_ready.connect(self._view.update_sync_timing)
         self._model.result_cleared.connect(self._view.clear_display)
         self._model.loading_started.connect(lambda: self._view.set_loading(True))
         self._model.loading_finished.connect(lambda: self._view.set_loading(False))
@@ -121,6 +120,5 @@ class ViewerController(QObject):
 
     def shutdown(self):
         self._avg_worker.quit()
-        self._avg_worker.stop_worker.emit()
         self._thread.quit()
         self._thread.wait()

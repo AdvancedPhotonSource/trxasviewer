@@ -55,7 +55,7 @@ dependencies = [
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine"]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]

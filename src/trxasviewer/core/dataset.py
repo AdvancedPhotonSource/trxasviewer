@@ -178,10 +178,6 @@ class TrXASDatasetManager:
             flist.sort()
             self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
 
-    def save_results(self, results, **kwargs):
-        from trxasviewer.core.io import save_results
-        save_results(results, **kwargs)
-
     def get_energy_vs_time(self, progress=None, use_cache=False, **kwargs):
         if len(self.flist) == 0:
             return None, None, None

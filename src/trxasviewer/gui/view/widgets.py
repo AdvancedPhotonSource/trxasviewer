@@ -1,6 +1,6 @@
-import logging
 from pathlib import Path
 import pandas as pd
+from trxasviewer.gui.control.workers import _SignalLogHandler  # noqa: F401 — re-exported for backward compat
 
 import pyqtgraph as pg
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QPointF, Qt, QSortFilterProxyModel, Slot
@@ -516,16 +516,3 @@ class DatasetFilterModel(QSortFilterProxyModel):
             except OSError:
                 return 0
         return super().data(index, role)  # Default behavior
-
-
-class _SignalLogHandler(logging.Handler):
-    """Forwards log records matching exactly one level to a Qt signal."""
-
-    def __init__(self, signal, level):
-        super().__init__()
-        self.signal = signal
-        self._level = level
-
-    def emit(self, record):
-        if record.levelno == self._level:
-            self.signal.emit(self.format(record))
