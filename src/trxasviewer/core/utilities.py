@@ -311,11 +311,12 @@ def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
     # ch0 is background; ch1 and ch2 are signals
     orbital_mean_ch0 = np.nanmean(xas_data_4d[:, 0], axis=1)  # rows x [orbital] x bunch
 
-    # it's (num_rows, total_bunches); ch1/ch2 may be absent in background-only scans
+    # it's (num_rows, total_bunches)
+    # Suppress numpy RuntimeWarning: NaN-padded bunches from incomplete acquisitions
+    # produce all-NaN slices, which nanmean handles correctly by returning NaN.
     signal_channels = xas_data_3d[:, 1:3]
-    if signal_channels.shape[1] == 0:
-        logger.warning("No signal channels (ch1/ch2) found; norm_data will be NaN")
-    norm_data = np.nanmean(signal_channels, axis=(1,))
+    with np.errstate(all="ignore"):
+        norm_data = np.nanmean(signal_channels, axis=(1,))
     cycle_indices = np.arange(norm_data.shape[1]) % num_bunch
     norm_data /= orbital_mean_ch0[:, cycle_indices]
     return norm_data
