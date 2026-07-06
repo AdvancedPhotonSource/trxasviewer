@@ -50,3 +50,13 @@ def test_view_assets_importable():
     )
     from trxasviewer.gui.view.pg_plot import plot_kinetics_profile, plot_kinetics_error
     assert callable(plot_kinetics_profile)
+
+
+def test_viewer_model_signals(qtbot):
+    from trxasviewer.gui.model.viewer_model import ViewerModel
+    from pathlib import Path
+    model = ViewerModel()
+    received = []
+    model.folder_changed.connect(lambda p: received.append(p))
+    model.set_folder(Path("/tmp"))
+    assert received == [Path("/tmp")]
