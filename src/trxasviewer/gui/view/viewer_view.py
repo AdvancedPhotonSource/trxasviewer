@@ -92,6 +92,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.comboBox_fileindex_prefix.currentIndexChanged.connect(self.update_fileindex)
         self.toolButton_refresh.clicked.connect(self.reload_rawfolder)
         self.spinBox_syncbunch_number.valueChanged.connect(self._on_sync_param_changed)
+        self.spinBox_syncbunch_number.valueChanged.connect(lambda _: self.update_groundstate_label())
         self.doubleSpinBox_sync_time_us.valueChanged.connect(self._on_sync_param_changed)
         self.radioButton_sync_time.toggled.connect(self._on_sync_param_changed)
         self.pushButton_select_savefname.setDisabled(True)
@@ -372,8 +373,14 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         text = self.comboBox_groundstate_method.currentText()
         if text == "orbital-average":
             self.label_groundstate_num.setText("Number of orbitals:")
+            self.spinBox_groundstate_number.setMaximum(999999)
         elif text == "bunch-average":
             self.label_groundstate_num.setText("Number of bunches:")
+            if self.radioButton_sync_bunch.isChecked():
+                max_bunches = self.spinBox_syncbunch_number.value()
+                self.spinBox_groundstate_number.setMaximum(max_bunches)
+                if self.spinBox_groundstate_number.value() > max_bunches:
+                    self.spinBox_groundstate_number.setValue(max_bunches)
 
     def reload_rawfolder(self):
         raw_folder = self.lineEdit_rawfolder.text()
