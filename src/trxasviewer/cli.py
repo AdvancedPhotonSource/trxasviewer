@@ -40,10 +40,10 @@ def create_argparser():
         default=False,
     )
     view_parser.add_argument(
-        "--use-cache",
-        action="store_true",
-        help="Load preprocessed data from cache when available; save to cache after parsing.",
-        default=False,
+        "--cache-folder", "-c",
+        type=str,
+        default=None,
+        help="Folder for preprocessed dataset cache (NPZ files). If not set, caching is disabled.",
     )
     view_parser.set_defaults(func=run_view)
 
@@ -61,7 +61,7 @@ def run_view(args):
             syncbunch=args.syncbunch,
             autoload=(not args.disable_autoload),
             reset_cache=args.reset_dtype_cache,
-            use_cache=args.use_cache,
+            cache_folder=args.cache_folder,
         )
     )
 

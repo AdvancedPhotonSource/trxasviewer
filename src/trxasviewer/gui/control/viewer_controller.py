@@ -93,18 +93,20 @@ class ViewerController(QObject):
             "norm_kwargs": self._view.get_normalization_subgs_kwargs(),
             "binning_kwargs": self._view.get_binning_kwargs(),
             "kinetics_kwargs": self._view.get_kinetics_kwargs(),
-            "use_cache": self._model.use_cache,
+            "cache_folder": self._model.cache_folder,
         }
         self._model.loading_started.emit()
         self._avg_worker.set_kwargs(self._model.file_list, **kwargs)
         self._avg_worker.start_task.emit()
 
     def _build_cache(self):
+        if self._model.cache_folder is None:
+            return
         num_workers = max(2, os.cpu_count() // 2)
         file_paths = self._model.dtype_db.get_valid_filepaths()
         if file_paths:
             num_workers = min(num_workers, len(file_paths))
-            self._cache_worker = CacheWorker(file_paths, num_workers)
+            self._cache_worker = CacheWorker(file_paths, num_workers, self._model.cache_folder)
             self._cache_worker.start()
 
     def _on_worker_finished(self):

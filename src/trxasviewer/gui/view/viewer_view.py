@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import logging
@@ -758,12 +759,22 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         event.accept()
 
 
-def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False, use_cache=False):
+def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False, cache_folder=None):
     from trxasviewer.gui.model.viewer_model import ViewerModel
     from trxasviewer.gui.control.viewer_controller import ViewerController
 
+    if cache_folder is not None:
+        cache_folder = Path(cache_folder)
+        try:
+            cache_folder.mkdir(parents=True, exist_ok=True)
+            if not os.access(cache_folder, os.W_OK):
+                raise PermissionError(f"no write permission on {cache_folder}")
+        except Exception as e:
+            logger.warning(f"Cache folder {cache_folder} is not usable ({e}); caching disabled.")
+            cache_folder = None
+
     app = QApplication.instance() or QApplication(sys.argv)
-    model = ViewerModel(reset_cache=reset_cache, use_cache=use_cache)
+    model = ViewerModel(reset_cache=reset_cache, cache_folder=cache_folder)
     view = ViewerView(syncbunch=syncbunch, autoload=autoload)
     controller = ViewerController(model, view)
     view._controller = controller

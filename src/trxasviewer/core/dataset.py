@@ -178,7 +178,7 @@ class TrXASDatasetManager:
             flist.sort()
             self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
 
-    def get_energy_vs_time(self, progress=None, use_cache=False, **kwargs):
+    def get_energy_vs_time(self, progress=None, cache_folder=None, **kwargs):
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
@@ -190,7 +190,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(fname, use_cache=use_cache)
+            dset = create_trxas_dataset(fname, cache_folder=cache_folder)
             if dset is None:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
@@ -239,36 +239,36 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname, use_cache=False):
+def create_trxas_dataset(fname, cache_folder=None):
     fname = Path(fname)
     if not fname.exists():
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname, use_cache=use_cache)
+        return TrXASDataset(fname, cache_folder=cache_folder)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()
         return None
 
 
-def create_trxas_cache_from_flist(flist):
+def create_trxas_cache_from_flist(flist, cache_folder):
     for fname in flist:
-        create_trxas_cache(fname)
+        create_trxas_cache(fname, cache_folder)
 
 
-def create_trxas_cache(fname):
+def create_trxas_cache(fname, cache_folder):
     fname = Path(fname)
-    if not fname.exists():  # or not is_sample_data(fname):
+    if not fname.exists():
         logger.error(f"check dataset file: {fname}")
         return None
     if is_recently_modified(fname):
         logger.warning(f"{fname} is recently modified, skip caching")
         return None
     try:
-        cache_name, cache_exists = TrXASDataset.check_cache(fname)
+        cache_name, cache_exists = TrXASDataset.check_cache(fname, cache_folder)
         if not cache_exists:
-            TrXASDataset(fname)
+            TrXASDataset(fname, cache_folder=cache_folder)
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -277,9 +277,9 @@ def create_trxas_cache(fname):
 
 
 class TrXASDataset:
-    def __init__(self, fname, use_cache=False):
+    def __init__(self, fname, cache_folder=None):
         self.fname = Path(fname)
-        self.cache_name, cache_exists = self.check_cache(fname)
+        self.cache_name, cache_exists = self.check_cache(fname, cache_folder)
         self.dset_attributes = [
             "energy",
             "laserd",
@@ -293,17 +293,19 @@ class TrXASDataset:
         ]
         self.curr_preprocessing_kwargs = {"outlier_method": None}
         self.xas_data = None
-        if use_cache and cache_exists:
+        if cache_folder is not None and cache_exists:
             self._load_npz(self.cache_name)
         else:
             self.init_from_file(fname, self.curr_preprocessing_kwargs)
-            if use_cache:
+            if cache_folder is not None:
                 self.save_to_cache()
 
     @staticmethod
-    def check_cache(fname):
+    def check_cache(fname, cache_folder=None):
+        if cache_folder is None:
+            return None, False
         fname = Path(fname)
-        cache_name = fname.parent / CACHE_PATH / f"{fname.stem}.npz"
+        cache_name = Path(cache_folder) / f"{fname.stem}.npz"
         flag_exist = cache_name.exists()
         return cache_name, flag_exist
 
@@ -324,6 +326,8 @@ class TrXASDataset:
             Destination path. Defaults to ``self.cache_name``.
         """
         dest = Path(fname) if fname is not None else self.cache_name
+        if dest is None:
+            return
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".tmp.npz")
         np.savez_compressed(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
