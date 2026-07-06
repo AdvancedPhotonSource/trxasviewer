@@ -4,18 +4,14 @@ from functools import lru_cache
 from pathlib import Path
 import numpy as np
 import logging
-import json
 import datetime
-import shutil
-import h5py
 import traceback
-from .core.utilities import (
+from .utilities import (
     prepare_binning_matrix,
     is_recently_modified,
     preprocess_xas_data,
     pad_last_dim,
 )
-from .plot import plot_results
 
 
 logger = logging.getLogger(__name__)
@@ -182,38 +178,9 @@ class TrXASDatasetManager:
             flist.sort()
             self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
 
-    def save_results(
-        self,
-        results,
-        directory=None,
-        subdirectory="Avg",
-        save_image=True,
-        save_numpy=True,
-        save_hdf=True,
-        save_origin=True,
-    ):
-        folder = Path(directory) / subdirectory
-        folder.mkdir(parents=True, exist_ok=True)
-        if save_numpy:
-            np.savez_compressed(folder / "results.npz", **results)
-            # copy plot scripts to the result folder for users to edit
-            package_path = Path(__file__).parent
-            shutil.copy(package_path / "plot.py", folder / "load_and_plot.py")
-
-        if save_image:
-            img_folder = folder / "images"
-            img_folder.mkdir(parents=True, exist_ok=True)
-            TrXASDataset.plot_results(results, img_folder)
-
-        if save_origin:
-            o_folder = folder / "origin"
-            o_folder.mkdir(parents=True, exist_ok=True)
-            TrXASDataset.save_as_origin_format(o_folder, results)
-
-        if save_hdf:
-            TrXASDataset.save_as_hdf5(folder / "results.hdf", results)
-        # save settings in human readable format
-        TrXASDataset.save_as_json(folder / "settings.json", results)
+    def save_results(self, results, **kwargs):
+        from trxasviewer.core.io import save_results
+        save_results(results, **kwargs)
 
     def get_energy_vs_time(self, progress=None, use_cache=False, **kwargs):
         if len(self.flist) == 0:
@@ -506,70 +473,6 @@ class TrXASDataset:
         bunch = index % self.shape[0]
         orbital = index // self.shape[0]
         return (orbital, bunch)
-
-    @staticmethod
-    def plot_results(results, save_name):
-        plot_results(results, folder=save_name)
-
-    @staticmethod
-    def save_as_origin_format(origin_folder, results):
-        # save diff and non-groundstate subtracted data
-        for key, label in zip(("data", "diff"), ("data_full", "data_diff")):
-            temp = results[key]
-            shape = temp.shape
-            data_full = np.zeros(np.array(shape) + 1, dtype=np.float32)
-            data_full[1:, 1:] = temp
-            data_full[1:, 0] = results["x_axis"]["value"]
-            data_full[0, 1:] = results["t_axis"]
-            data_full = data_full.astype(object)
-            # add header
-            if results["dset_type"] == "EXAFS":
-                data_full[0, 0] = "Energy(keV)/Time(s)"
-            else:
-                data_full[0, 0] = "Delay(s)/Time(s)"
-            np.savetxt(
-                origin_folder / f"{label}.txt", data_full, fmt="%s", delimiter=","
-            )
-
-        for key, value in results["kinetics"].items():
-            np.savetxt(
-                origin_folder / f"kinetics_{key}.txt",
-                value["profile"]["main"].T,
-                fmt="%.7e",
-                delimiter=",",
-                header="Delay(s),Intensity,Error",
-                comments="",  # remove '#' so header is raw and easy to parse
-            )
-
-    @staticmethod
-    def save_as_json(fname, results):
-        with open(fname, "w") as f:
-            json.dump(results["analysis_kwargs"], f, indent=4)
-
-    @staticmethod
-    def save_as_hdf5(fname, results_raw):
-        results = results_raw.copy()
-
-        def save_recursively(group, data):
-            for key, value in data.items():
-                if value is None:
-                    continue
-                if isinstance(value, dict):
-                    subgroup = group.create_group(key)
-                    save_recursively(subgroup, value)
-                else:
-                    if isinstance(value, str):
-                        string_dt = h5py.string_dtype(encoding="utf-8")
-                        group.create_dataset(key, data=value, dtype=string_dt)
-                    else:
-                        compression = None
-                        if isinstance(value, np.ndarray):
-                            value = np.ascontiguousarray(value)
-                            compression = "gzip" if value.size > 4096 else None
-                        group.create_dataset(key, data=value, compression=compression)
-
-        with h5py.File(fname, "w") as f:
-            save_recursively(f, results)
 
     def subtract_groundstate(
         self,

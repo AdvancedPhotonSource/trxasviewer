@@ -26,7 +26,7 @@ from .core.fitting import run_single_optimization
 from .generated_modeling_ui import Ui_MainWindow
 from .pg_plot import plot_kinetics_profile
 from .core.graph import draw_decay_graph_with_top_nodes
-from .trxas_result import TrXASResult
+from .core.result import TrXASResult
 from .core.utilities import NumpyEncoder
 from .widgets import (
     ParameterTableModel,

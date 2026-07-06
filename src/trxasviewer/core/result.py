@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from .core.utilities import format_time
+from .utilities import format_time
 import logging
 import copy
 

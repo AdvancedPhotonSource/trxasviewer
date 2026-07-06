@@ -15,7 +15,7 @@ ruff check src/
 pytest tests/
 
 # Run the viewer GUI (default subcommand is 'view')
-trxasviewer view --rawfolder /path/to/data --syncbunch 4334
+trxasviewer view --rawfolder /home/beams/MQICHU/Datasets/trxas_datasets/Dugan_2024_3_saveddata --syncbunch 4334
 trxasviewer model
 ```
 
@@ -24,7 +24,11 @@ Version is managed by `setuptools_scm` — do not set it manually.
 
 ## Conda environment
 
-use /home/beams/MQICHU/miniforge3/envs/d2602_trxasviewer when on linux
+Always use `/home/beams/MQICHU/miniforge3/envs/d2602_trxasviewer` when debugging or implementing new features on Linux:
+
+```bash
+conda activate /home/beams/MQICHU/miniforge3/envs/d2602_trxasviewer
+```
 
 
 ## Architecture

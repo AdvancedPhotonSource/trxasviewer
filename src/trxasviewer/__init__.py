@@ -14,6 +14,6 @@ except PackageNotFoundError:
 
 from .trxasviewer_gui import main_gui
 from .trxas_modeling import main_modeling_gui
-from .trxas_dataset import TrXASDataset
+from .core.dataset import TrXASDataset
 
 __all__ = ["main_gui", "TrXASDataset", "main_modeling_gui"]

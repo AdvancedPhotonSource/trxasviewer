@@ -28,3 +28,16 @@ def test_core_modules_importable():
     assert hasattr(dtype_cache, "DataTypeCache")
     assert hasattr(fitting, "global_fit_kinetic_model")
     assert hasattr(graph, "draw_decay_graph_with_top_nodes")
+
+
+def test_io_importable():
+    from trxasviewer.core.io import save_as_hdf5, save_as_json, save_as_origin_format, save_results
+    assert callable(save_as_hdf5)
+    assert callable(save_as_json)
+    assert callable(save_as_origin_format)
+    assert callable(save_results)
+
+
+def test_result_importable():
+    from trxasviewer.core.result import TrXASResult, convert_npz_obj, get_levels
+    assert callable(TrXASResult)
