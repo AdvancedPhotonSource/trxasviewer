@@ -5,8 +5,6 @@
 
 import unittest
 
-from trxasviewer import trxasviewer_gui
-
 
 class TestTrxasviewer(unittest.TestCase):
     """Tests for `trxasviewer` package."""
