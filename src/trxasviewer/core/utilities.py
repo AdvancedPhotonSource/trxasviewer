@@ -1,4 +1,5 @@
 import re
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 import time
@@ -316,7 +317,8 @@ def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
     # Suppress numpy RuntimeWarning: NaN-padded bunches from incomplete acquisitions
     # produce all-NaN slices, which nanmean handles correctly by returning NaN.
     signal_channels = xas_data_3d[:, 1:3]
-    with np.errstate(all="ignore"):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
         norm_data = np.nanmean(signal_channels, axis=(1,))
     cycle_indices = np.arange(norm_data.shape[1]) % num_bunch
     norm_data /= orbital_mean_ch0[:, cycle_indices]
