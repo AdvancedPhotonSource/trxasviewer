@@ -68,7 +68,18 @@ class AverageWorker(QObject):
         self.finished.emit()
         t1 = time.perf_counter()
         n = len(self.flist)
-        logger.info(f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s")
+        if self.results is not None:
+            r = self.results
+            shape = r.get("shape", [])
+            ch, orb, bunch = (int(x) for x in shape) if len(shape) == 3 else (0, 0, 0)
+            dtype = r.get("dset_type", "?")
+            names = ", ".join(f.name if hasattr(f, "name") else str(f).split("/")[-1] for f in self.flist)
+            logger.info(
+                f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s | "
+                f"{dtype} | ch={ch} orb={orb} bunch={bunch} | {names}"
+            )
+        else:
+            logger.info(f"Processed {n} file{'s' if n != 1 else ''} in {t1 - t0:.3f}s | no result")
 
     def get_results(self):
         return self.results
