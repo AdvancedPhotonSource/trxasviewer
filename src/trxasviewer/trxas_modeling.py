@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
 )
 
-from trxasviewer import __version__
+from . import __version__
 from .core.constants import TIME_SCALES
 from .core.fitting import run_single_optimization
 from .generated_modeling_ui import Ui_MainWindow

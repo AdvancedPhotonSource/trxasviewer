@@ -1,8 +1,10 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
 from PySide6.QtCore import QObject, Signal, Slot, QTimer
 
 # Multiprocessing Manager for shared queue
 from multiprocessing import Manager
-from .fitting import run_parallel_optimizations
+from .core.fitting import run_single_optimization
 
 
 class KineticOptimizerWorker(QObject):
@@ -28,6 +30,7 @@ class KineticOptimizerWorker(QObject):
         num_runs,
         tol,
         method,
+        fit_trange=None,
         parent=None,
     ):
         super().__init__(parent)
@@ -38,6 +41,8 @@ class KineticOptimizerWorker(QObject):
         self.num_runs = num_runs
         self.tol = tol
         self.method = method
+        # Default fit_trange spans the full time axis
+        self.fit_trange = fit_trange if fit_trange is not None else (t_eval.min(), t_eval.max())
 
         self._is_running = False
         self.completed_runs = 0
@@ -77,11 +82,6 @@ class KineticOptimizerWorker(QObject):
                     self.error_occurred.emit(
                         f"Error in run {message.get('run_id')}: {message.get('message')}"
                     )
-                elif msg_type == "all_completed":
-                    # This message signals that run_parallel_optimizations has finished all its internal tasks
-                    # The final results will be emitted directly from the `run_optimization` method
-                    # after run_parallel_optimizations returns.
-                    pass
             except Exception as e:
                 self.error_occurred.emit(f"Error processing queue message: {e}")
                 # Break to prevent an infinite loop on a bad message
@@ -111,34 +111,59 @@ class KineticOptimizerWorker(QObject):
         self.queue_monitor_timer.start()  # Start monitoring the progress queue
 
         try:
-            # Call the function that orchestrates parallel execution.
-            # This call will block *this QThread* until all optimization runs
-            # in the ProcessPoolExecutor are complete.
-            (
-                best_loss_found,
-                best_params_found,
-                final_concs_best_run,
-                final_spectra_best_run,
-                best_result_object,
-                best_run_id,
-            ) = run_parallel_optimizations(
-                num_runs=self.num_runs,
-                t_eval=self.t_eval,
-                experimental_data=self.experimental_data,
-                adj_matrix=self.adj_matrix,
-                bounds=self.bounds,
-                progress_queue=self.progress_queue,  # Pass the queue for inter-process communication
-                tol=self.tol,
-                method=self.method,
-            )
+            best_loss = float("inf")
+            best_params = None
+            best_concs = None
+            best_spectra = None
+            best_result = None
+            best_run_id = -1
 
-            # Emit final results to the GUI (happens after all runs are done and this thread unblocks)
+            with ProcessPoolExecutor() as executor:
+                futures = {
+                    executor.submit(
+                        run_single_optimization,
+                        self.t_eval,
+                        self.experimental_data,
+                        self.adj_matrix,
+                        self.bounds,
+                        self.fit_trange,
+                        self.tol,
+                        self.method,
+                        run_id,
+                    ): run_id
+                    for run_id in range(self.num_runs)
+                }
+
+                for future in as_completed(futures):
+                    run_id = futures[future]
+                    try:
+                        loss, opt_params, final_concs, final_spectra, res = future.result()
+                        self.progress_queue.put(
+                            {"type": "run_completed", "run_id": run_id, "loss": loss}
+                        )
+                        if loss < best_loss:
+                            best_loss = loss
+                            best_params = opt_params
+                            best_concs = final_concs
+                            best_spectra = final_spectra
+                            best_result = res
+                            best_run_id = run_id
+                    except Exception as exc:
+                        self.progress_queue.put(
+                            {
+                                "type": "error",
+                                "run_id": run_id,
+                                "message": str(exc),
+                            }
+                        )
+
+            # Emit final results to the GUI (happens after all runs are done)
             self.optimization_finished.emit(
                 (
-                    best_params_found,
-                    final_concs_best_run,
-                    final_spectra_best_run,
-                    best_loss_found,
+                    best_params,
+                    best_concs,
+                    best_spectra,
+                    best_loss,
                     best_run_id,
                 )
             )
