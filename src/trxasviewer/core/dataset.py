@@ -176,7 +176,7 @@ class TrXASDatasetManager:
             self.label = f"result_{Path(flist[0]).name}"
         else:
             flist.sort()
-            self.label = f"result_{Path(flist[0]).name}-{flist[-1][-5:]}"
+            self.label = f"result_{Path(flist[0]).name}-{Path(flist[-1]).name[-5:]}"
 
     def get_energy_vs_time(self, progress=None, cache_folder=None, **kwargs):
         if len(self.flist) == 0:
