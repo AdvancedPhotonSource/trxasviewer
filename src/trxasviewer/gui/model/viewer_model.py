@@ -14,13 +14,11 @@ class ViewerModel(QObject):
     error_occurred = Signal(str, str)   # title, message
     warning_occurred = Signal(str, str)
 
-    def __init__(self, reset_cache=False, cache_folder=None, parent=None):
+    def __init__(self, cache_folder=None, parent=None):
         super().__init__(parent)
         self.raw_folder: Path | None = None
         self.file_list: list[Path] = []
-        self.dtype_db = None
         self.result: dict | None = None
-        self.reset_cache: bool = reset_cache
         self.cache_folder: Path | None = cache_folder
 
     def set_folder(self, path: Path) -> None:

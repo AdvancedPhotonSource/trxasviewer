@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QObject, QThread
 
 from trxasviewer.core.io import save_results
-from trxasviewer.core.dtype_cache import DataTypeCache
+from trxasviewer.core.utilities import scan_data_folder
 from trxasviewer.gui.control.workers import AverageWorker, CacheWorker
 from trxasviewer.gui.model.viewer_model import ViewerModel
 
@@ -27,6 +27,7 @@ class ViewerController(QObject):
         self._avg_worker.moveToThread(self._thread)
         self._thread.start()
 
+        self._folder_index = None
         self._connect()
 
     def _connect(self):
@@ -63,10 +64,9 @@ class ViewerController(QObject):
     def on_folder_selected(self, path: Path):
         if path.is_file():
             path = path.parent
-        self._model.dtype_db = DataTypeCache(str(path), reset_cache=self._model.reset_cache)
-        self._model.reset_cache = False
-        combos = self._model.dtype_db.get_experiment_types()
-        self._view.update_folder_ui(path, combos, self._model.dtype_db)
+        self._folder_index = scan_data_folder(path)
+        combos = self._folder_index.get_experiment_types()
+        self._view.update_folder_ui(path, combos, self._folder_index)
         self._model.set_folder(path)
         self._build_cache()
 
@@ -102,12 +102,11 @@ class ViewerController(QObject):
         self._avg_worker.start_task.emit()
 
     def _build_cache(self):
-        if self._model.cache_folder is None:
+        if self._model.cache_folder is None or self._folder_index is None:
             return
-        num_workers = max(2, os.cpu_count() // 2)
-        file_paths = self._model.dtype_db.get_valid_filepaths()
+        file_paths = self._folder_index.get_valid_filepaths()
         if file_paths:
-            num_workers = min(num_workers, len(file_paths))
+            num_workers = min(max(2, os.cpu_count() // 2), len(file_paths))
             self._cache_worker = CacheWorker(file_paths, num_workers, self._model.cache_folder)
             self._cache_worker.start()
 

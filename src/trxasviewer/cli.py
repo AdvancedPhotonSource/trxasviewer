@@ -34,12 +34,6 @@ def create_argparser():
         default=False,
     )
     view_parser.add_argument(
-        "--reset-dtype-cache",
-        action="store_true",
-        help="Invalidate previous cache.",
-        default=False,
-    )
-    view_parser.add_argument(
         "--cachefolder", "-c",
         type=str,
         default=None,
@@ -60,7 +54,6 @@ def run_view(args):
             rawfolder=args.rawfolder,
             syncbunch=args.syncbunch,
             autoload=(not args.disable_autoload),
-            reset_cache=args.reset_dtype_cache,
             cache_folder=args.cachefolder,
         )
     )

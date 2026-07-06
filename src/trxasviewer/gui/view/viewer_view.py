@@ -62,7 +62,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.results = None
         self.last_position = None
         self.roi = None
-        self.dtype_db = None
+        self.folder_index = None
         self.kinetics_roi = {}
         self.is_processing = False
         self.modeler = None
@@ -202,10 +202,10 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         show_warning_dialog(self, title, message)
         self.update_status(message, timeout=8000)
 
-    def update_folder_ui(self, path: Path, combos: list, dtype_db):
+    def update_folder_ui(self, path: Path, combos: list, folder_index):
         self.lineEdit_rawfolder.setText(str(path))
-        self.dtype_db = dtype_db
-        self.proxy_model.update_cache_db(dtype_db)
+        self.folder_index = folder_index
+        self.proxy_model.update_type_db(folder_index.type_db)
         self.comboBox_fileindex_prefix.clear()
         self.comboBox_fileindex_prefix.addItems(combos)
         self.comboBox_fileindex_prefix.setCurrentIndex(0)
@@ -660,9 +660,9 @@ class ViewerView(QMainWindow, Ui_MainWindow):
 
     def update_fileindex(self):
         selection = self.comboBox_fileindex_prefix.currentText()
-        if selection and self.dtype_db is not None:
+        if selection and self.folder_index is not None:
             current_prefix, scan_type = selection.split("@")
-            vbeg, vend = self.dtype_db.get_index_range(current_prefix, scan_type)
+            vbeg, vend = self.folder_index.get_index_range(current_prefix, scan_type)
             self.spinBox_fileindex_min.setValue(vbeg)
             self.spinBox_fileindex_max.setValue(vend)
 
@@ -673,8 +673,10 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         idx_min = self.spinBox_fileindex_min.value()
         idx_max = self.spinBox_fileindex_max.value()
         selection = self.comboBox_fileindex_prefix.currentText()
+        if not selection or self.folder_index is None:
+            return
         current_prefix, scan_type = selection.split("@")
-        file_paths = self.dtype_db.get_valid_filepaths_with_condition(
+        file_paths = self.folder_index.get_valid_filepaths_with_condition(
             current_prefix, scan_type, idx_min, idx_max
         )
         if file_paths:
@@ -778,7 +780,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         event.accept()
 
 
-def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False, cache_folder=None):
+def main_gui(rawfolder=None, syncbunch=None, autoload=True, cache_folder=None):
     from trxasviewer.gui.model.viewer_model import ViewerModel
     from trxasviewer.gui.control.viewer_controller import ViewerController
 
@@ -793,7 +795,7 @@ def main_gui(rawfolder=None, syncbunch=None, autoload=True, reset_cache=False, c
             cache_folder = None
 
     app = QApplication.instance() or QApplication(sys.argv)
-    model = ViewerModel(reset_cache=reset_cache, cache_folder=cache_folder)
+    model = ViewerModel(cache_folder=cache_folder)
     view = ViewerView(syncbunch=syncbunch, autoload=autoload)
     controller = ViewerController(model, view)
     view._controller = controller

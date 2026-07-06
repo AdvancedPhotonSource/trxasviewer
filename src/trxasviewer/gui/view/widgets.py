@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from trxasviewer.core.dtype_cache import DataTypeCache
+from trxasviewer.core.utilities import get_scan_type as _get_scan_type
 from trxasviewer.core.dataset import CACHE_PATH
 
 
@@ -474,10 +474,10 @@ def get_human_readable_size(full_path):
 class DatasetFilterModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.dtype_db = None
+        self._type_db: dict = {}
 
-    def update_cache_db(self, dtype_db):
-        self.dtype_db = dtype_db
+    def update_type_db(self, type_db: dict):
+        self._type_db = type_db
 
     def filterAcceptsRow(self, source_row, source_parent):
         """Override this method to filter out non-dataset files."""
@@ -493,11 +493,7 @@ class DatasetFilterModel(QSortFilterProxyModel):
         return scan_type != "invalid"
 
     def get_scan_type(self, full_path):
-        if self.dtype_db is None:
-            scan_type = DataTypeCache.get_scan_type(full_path)
-        else:
-            scan_type = self.dtype_db.get_record(full_path)
-        return scan_type
+        return self._type_db.get(full_path) or _get_scan_type(full_path)
 
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():

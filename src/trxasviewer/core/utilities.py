@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 from pathlib import Path
 import time
 from packaging.version import Version
@@ -365,3 +366,60 @@ class NumpyEncoder(json.JSONEncoder):
             return bool(obj)
         # Let the base class default method raise the TypeError
         return super(NumpyEncoder, self).default(obj)
+
+
+# ---------------------------------------------------------------------------
+# Folder scanning (replaces DataTypeCache)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FolderIndex:
+    folder: Path
+    prefix_db: dict   # {prefix: {"exafs": [idx, ...], "laserd": [idx, ...]}}
+    type_db: dict     # {str(filepath): scan_type}
+
+    def get_experiment_types(self) -> list:
+        combos = []
+        for prefix, types in self.prefix_db.items():
+            for scan_type in ("exafs", "laserd"):
+                if types.get(scan_type):
+                    combos.append(f"{prefix}@{scan_type}")
+        return combos
+
+    def get_index_range(self, prefix: str, scan_type: str) -> tuple:
+        indices = self.prefix_db.get(prefix, {}).get(scan_type, [])
+        return (min(indices), max(indices)) if indices else (0, 1)
+
+    def get_valid_filepaths(self) -> list:
+        return [p for p, t in self.type_db.items() if t in ("exafs", "laserd")]
+
+    def get_valid_filepaths_with_condition(self, prefix, scan_type, idx_min, idx_max) -> list:
+        valid = set(self.prefix_db.get(prefix, {}).get(scan_type, []))
+        return [
+            str(self.folder / f"{prefix}{idx:05d}")
+            for idx in range(idx_min, idx_max + 1)
+            if idx in valid
+        ]
+
+
+def scan_data_folder(folder: Path) -> FolderIndex:
+    """Scan folder once and build in-memory type and prefix-index maps."""
+    prefix_db: dict = {}
+    type_db: dict = {}
+    for entry in sorted(folder.iterdir(), key=lambda x: x.name):
+        if entry.is_dir():
+            continue
+        if len(entry.name) < 10:
+            continue
+        scan_type = get_scan_type(entry)
+        type_db[str(entry)] = scan_type
+        if scan_type in ("exafs", "laserd"):
+            try:
+                index = int(entry.name[-5:])
+                prefix = entry.name[:-5]
+            except ValueError:
+                continue
+            if prefix not in prefix_db:
+                prefix_db[prefix] = {"exafs": [], "laserd": []}
+            prefix_db[prefix][scan_type].append(index)
+    return FolderIndex(folder=folder, prefix_db=prefix_db, type_db=type_db)
