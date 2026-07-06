@@ -61,6 +61,8 @@ class ViewerController(QObject):
     # --- View event handlers ---
 
     def on_folder_selected(self, path: Path):
+        if path.is_file():
+            path = path.parent
         self._model.dtype_db = DataTypeCache(str(path), reset_cache=self._model.reset_cache)
         self._model.reset_cache = False
         combos = self._model.dtype_db.get_experiment_types()
