@@ -18,29 +18,23 @@ logger = logging.getLogger(__name__)
 # @lru_cache(maxsize=1024)
 def get_scan_type(fname):
     """
-    Determines the scan type from a file's first 10 lines.
+    Determines the scan type from a file's first 12 lines.
 
-    - If a line starts with "#S XXX exafs_scan", returns "exafs".
-    - If a line starts with "#S XXX rscan laserd", returns "laserd".
-    - If the file has less than 12 lines, returns "invalid".
-    - Otherwise, or on exception, returns "invalid".
+    Returns "exafs", "laserd", "directory", or "invalid".
+    Returns "invalid" if the file has fewer than 12 lines (header not yet complete).
     """
     fname = Path(fname)
     if fname.is_dir():
         return "directory"
-
     if len(str(fname.name)) < 10:
         return "invalid"
-    elif is_recently_modified(fname):
-        return "writing"
 
     try:
         pattern_exafs = re.compile(r"^#S\s+\d+\s+exafs_?scan")
-        # pattern_laserd = re.compile(r"^#S\s+\d+\s+rscan\s+laserd")
         pattern_laserd = re.compile(r"^#S\s+\d+\s+\S*scan\S*\s+laserd")
         pattern_dutd = re.compile(r"^#S\s+\d+\s+\S*scan\S*\s+dutd")
         line_count = 0
-        scan_type = "invalid"  # Move this outside the loop
+        scan_type = "invalid"
         matched = False
         with open(fname, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
@@ -52,20 +46,14 @@ def get_scan_type(fname):
                     elif pattern_laserd.match(line) or pattern_dutd.match(line):
                         scan_type = "laserd"
                         matched = True
-                if line_count >= 12:  # Stop reading after 12 lines
+                if line_count >= 12:
                     break
 
-        if scan_type == "invalid":
-            logger.debug(f"Invalid scan type. {matched=}/{fname=}")
+        if line_count < 12 or not matched:
             return "invalid"
-        if line_count >= 12:
-            return scan_type
-        if line_count < 12:
-            logger.debug(f"Line count < 12 and writing done. {fname=}")
-            return "invalid"
-        return "writing"
+        return scan_type
 
-    except Exception:  # Catch all exceptions
+    except Exception:
         return "invalid"
 
 
