@@ -1,4 +1,9 @@
+import ctypes
+import ctypes.util
+import os
 import re
+import struct
+import sys
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -391,6 +396,21 @@ class FolderIndex:
             if idx in valid
         ]
 
+    def add_entry(self, entry: Path, scan_type: str) -> None:
+        """Register a newly discovered file incrementally (no full rescan)."""
+        self.type_db[str(entry)] = scan_type
+        if scan_type not in ("exafs", "laserd"):
+            return
+        try:
+            index = int(entry.name[-5:])
+            prefix = entry.name[:-5]
+        except ValueError:
+            return
+        if prefix not in self.prefix_db:
+            self.prefix_db[prefix] = {"exafs": [], "laserd": []}
+        if index not in self.prefix_db[prefix][scan_type]:
+            self.prefix_db[prefix][scan_type].append(index)
+
 
 def scan_data_folder(folder: Path) -> FolderIndex:
     """Scan folder once and build in-memory type and prefix-index maps."""
@@ -413,3 +433,57 @@ def scan_data_folder(folder: Path) -> FolderIndex:
                 prefix_db[prefix] = {"exafs": [], "laserd": []}
             prefix_db[prefix][scan_type].append(index)
     return FolderIndex(folder=folder, prefix_db=prefix_db, type_db=type_db)
+
+
+# ---------------------------------------------------------------------------
+# NFS-safe stat helpers (bypass kernel attribute cache via AT_STATX_FORCE_SYNC)
+# ---------------------------------------------------------------------------
+
+_AT_FDCWD = -100
+_AT_STATX_FORCE_SYNC = 0x2000
+_STATX_SIZE = 0x00000200
+_STATX_SIZE_OFFSET = 40          # byte offset of stx_size in struct statx
+
+
+def _statx_get_size(path: str) -> int:
+    """Return file size via statx(AT_STATX_FORCE_SYNC), bypassing the NFS
+    attribute cache. Falls back to os.stat() on non-Linux or error."""
+    if sys.platform != "linux":
+        return os.stat(path).st_size
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        buf = (ctypes.c_char * 256)()
+        ret = libc.statx(
+            ctypes.c_int(_AT_FDCWD),
+            ctypes.c_char_p(path.encode()),
+            ctypes.c_int(_AT_STATX_FORCE_SYNC),
+            ctypes.c_uint(_STATX_SIZE),
+            buf,
+        )
+        if ret != 0:
+            errno = ctypes.get_errno()
+            raise OSError(errno, os.strerror(errno), path)
+        return struct.unpack_from("<Q", buf, _STATX_SIZE_OFFSET)[0]
+    except Exception:
+        return os.stat(path).st_size
+
+
+def _statx_sync_dir(folder: Path) -> None:
+    """Force the NFS client to fetch fresh directory attributes via
+    statx(AT_STATX_FORCE_SYNC). If the directory mtime changed on the server,
+    the kernel invalidates the dentry cache so iterdir() returns fresh entries.
+    Falls back silently on non-Linux or error."""
+    if sys.platform != "linux":
+        return
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        buf = (ctypes.c_char * 256)()
+        libc.statx(
+            ctypes.c_int(_AT_FDCWD),
+            ctypes.c_char_p(str(folder).encode()),
+            ctypes.c_int(_AT_STATX_FORCE_SYNC),
+            ctypes.c_uint(0),
+            buf,
+        )
+    except Exception:
+        pass

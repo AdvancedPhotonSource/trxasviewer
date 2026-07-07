@@ -214,6 +214,14 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.treeView_fs.setRootIndex(proxy_new_root)
         self.treeView_fs.sortByColumn(0, Qt.AscendingOrder)
 
+    def refresh_prefix_combos(self, combos: list):
+        """Update prefix combobox when new scan prefixes are discovered."""
+        current = self.comboBox_fileindex_prefix.currentText()
+        self.comboBox_fileindex_prefix.clear()
+        self.comboBox_fileindex_prefix.addItems(combos)
+        idx = self.comboBox_fileindex_prefix.findText(current)
+        self.comboBox_fileindex_prefix.setCurrentIndex(max(0, idx))
+
     # -------------------------------------------------------------------------
     # Widget-state reader methods — called by controller to build kwargs
     # -------------------------------------------------------------------------
