@@ -444,26 +444,28 @@ _AT_STATX_FORCE_SYNC = 0x2000
 _STATX_SIZE = 0x00000200
 _STATX_SIZE_OFFSET = 40          # byte offset of stx_size in struct statx
 
+# Module-level cache: libc handle and reusable buffer (avoids per-call overhead)
+_libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True) if sys.platform == "linux" else None
+_statx_buf = (ctypes.c_char * 256)()
+
 
 def _statx_get_size(path: str) -> int:
     """Return file size via statx(AT_STATX_FORCE_SYNC), bypassing the NFS
     attribute cache. Falls back to os.stat() on non-Linux or error."""
-    if sys.platform != "linux":
+    if _libc is None:
         return os.stat(path).st_size
     try:
-        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-        buf = (ctypes.c_char * 256)()
-        ret = libc.statx(
+        ret = _libc.statx(
             ctypes.c_int(_AT_FDCWD),
             ctypes.c_char_p(path.encode()),
             ctypes.c_int(_AT_STATX_FORCE_SYNC),
             ctypes.c_uint(_STATX_SIZE),
-            buf,
+            _statx_buf,
         )
         if ret != 0:
             errno = ctypes.get_errno()
             raise OSError(errno, os.strerror(errno), path)
-        return struct.unpack_from("<Q", buf, _STATX_SIZE_OFFSET)[0]
+        return struct.unpack_from("<Q", _statx_buf, _STATX_SIZE_OFFSET)[0]
     except Exception:
         return os.stat(path).st_size
 
@@ -473,17 +475,15 @@ def _statx_sync_dir(folder: Path) -> None:
     statx(AT_STATX_FORCE_SYNC). If the directory mtime changed on the server,
     the kernel invalidates the dentry cache so iterdir() returns fresh entries.
     Falls back silently on non-Linux or error."""
-    if sys.platform != "linux":
+    if _libc is None:
         return
     try:
-        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-        buf = (ctypes.c_char * 256)()
-        libc.statx(
+        _libc.statx(
             ctypes.c_int(_AT_FDCWD),
             ctypes.c_char_p(str(folder).encode()),
             ctypes.c_int(_AT_STATX_FORCE_SYNC),
             ctypes.c_uint(0),
-            buf,
+            _statx_buf,
         )
     except Exception:
         pass
