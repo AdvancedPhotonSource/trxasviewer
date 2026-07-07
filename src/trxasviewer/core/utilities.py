@@ -29,6 +29,25 @@ def prepare_binning_matrix(
     lengths=None,
     fraction=0.25,
 ):
+    """Build a binning index map that converts raw bunch indices to time bins.
+
+    Args:
+        size: Total number of bunch indices in the data.
+        sync_index: Bunch index at which the laser fires (0-based).
+        method: Binning strategy. One of ``"Linear"``, ``"Log"``, or ``"Manual"``.
+        lin_num: Bunches per bin for linear binning.
+        log_num: Logarithmic base for log binning (e.g. 1.2 means each bin is
+            1.2× wider than the previous).
+        anchors: Tuple of 5 anchor bunch indices for manual binning levels.
+        lengths: Tuple of 5 bin counts per manual level (−1 disables that level
+            and beyond; 0 = no binning of laser-adjacent bunches).
+        fraction: Fraction of the post-laser range used for log binning.
+
+    Returns:
+        Tuple of (idx_mask, nobin_laserd_idx) where idx_mask is a 1-D integer array
+        mapping each bunch index to a bin (0 = excluded), and nobin_laserd_idx is a
+        list of bunch indices in the un-binned single-bunch region.
+    """
     assert method in ("Manual", "Linear", "Log")
     begin = (sync_index + lin_num - 1) // lin_num * lin_num - sync_index
     idx_mask = np.arange(begin, begin + size)
@@ -142,25 +161,19 @@ def format_time(input_time, as_string=True):
 
 
 def remove_outlier(xas_data_3d_input, outlier_method="MedianAbsoluteDeviation", outlier_threshold=1):
-    """
-    Remove outliers from XAS data using median absolute deviation.
+    """Remove outlier shots from the background channel (ch0) of XAS data.
 
-    Outliers are detected in the background channel (channel 0) and replaced
-    with the average of neighboring values in all channels.
+    Identifies rows where the background signal deviates beyond the threshold and
+    replaces them with NaN across all channels.
 
-    Parameters
-    ----------
-    xas_data : ndarray
-        XAS data array of shape (num_energy, num_channel, num_bunches).
-    method : str, default="MedianAbsoluteDeviation"
-        Outlier detection method: "MedianAbsoluteDeviation" or "StandardDeviation".
-    threshold : float, default=1
-        Number of MAD/std units beyond which a point is considered an outlier.
+    Args:
+        xas_data_3d_input: Shape ``(num_rows, num_channel, total_bunches)`` float32 array.
+        outlier_method: Detection algorithm. One of ``"MedianAbsoluteDeviation"`` or
+            ``"StandardDeviation"``.
+        outlier_threshold: Rejection threshold in units of MAD or σ. Default 1.
 
-    Returns
-    -------
-    xas_data : ndarray
-        Corrected XAS data with outliers replaced.
+    Returns:
+        Copy of xas_data_3d_input with outlier rows set to NaN.
     """
     if outlier_method is None:
         return xas_data_3d_input
@@ -203,6 +216,7 @@ class NumpyEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
+        """Serialize NumPy scalar and array types to JSON-compatible Python types."""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.integer):

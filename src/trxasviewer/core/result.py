@@ -56,8 +56,14 @@ def convert_npz_obj(loaded_npz):
 
 
 def get_levels(data, percentile=(0.2, 99.8)):
-    """
-    Calculates the levels for plotting based on given percentile,
+    """Compute symmetric color-scale bounds from percentiles of the data.
+
+    Args:
+        data: Array from which to compute levels.
+        percentile: ``(low, high)`` percentile pair. Default ``(0.2, 99.8)``.
+
+    Returns:
+        Tuple ``(-vmax, vmax)`` where vmax is the larger absolute percentile value.
     """
     levels = np.percentile(data[~np.isnan(data)], percentile)
     vmax = np.max(np.abs(levels))
@@ -66,7 +72,23 @@ def get_levels(data, percentile=(0.2, 99.8)):
 
 
 class TrXASResult:
+    """Container for a processed TrXAS result.
+
+    Provides convenience accessors for the difference map, kinetics profiles,
+    SVD decomposition, and fitting results.
+    """
+
     def __init__(self, npz_obj):
+        """Load a result from an NPZ archive or a plain dict.
+
+        The ``diff`` array is transposed on load so that axis 0 is time and axis 1 is
+        energy/delay.
+
+        Args:
+            npz_obj: Either a :class:`numpy.lib.npyio.NpzFile` object or a plain dict
+                with the same keys (as returned by
+                :meth:`TrXASDatasetManager.get_energy_vs_time`).
+        """
         data = convert_npz_obj(npz_obj)
         # transpose diff data so: axis 0: time, axis 1: energy/delay
         data["diff"] = data["diff"].T
@@ -77,10 +99,11 @@ class TrXASResult:
         self.fitting_results = {}
 
     def __getitem__(self, key):
-        # add class["member"] access
+        """Allow dict-style attribute access via ``result["key"]``."""
         return self.__dict__[key]
 
     def describe(self):
+        """Print a human-readable summary of the result's shape and axis ranges."""
         msg = "TrXASResult object with the following attributes:\n"
         msg += f"  - Energy: {self.energy.shape}, {np.min(self.energy)} - {np.max(self.energy)} keV\n"
         msg += f"  - Time axis: {self.t_axis.shape}, {np.min(self.t_axis)} - {np.max(self.t_axis)} s\n"
@@ -89,9 +112,16 @@ class TrXASResult:
         return
 
     def get_levels(self, percentile=(0.2, 99.2)):
+        """Return symmetric color-scale bounds using the stored difference map."""
         return get_levels(self.diff, percentile=percentile)
 
     def get_time_range_and_unit(self):
+        """Return the time axis range in human-readable units.
+
+        Returns:
+            Tuple ``(tmin, tmax, unit_string)`` where tmin and tmax are expressed in
+            the auto-selected unit (ns, µs, ms, or s).
+        """
         tmin, tmax = np.min(self.t_axis), np.max(self.t_axis)
         _, tunit, scale = format_time(np.max(np.abs([tmin, tmax])), as_string=False)
         return tmin / scale, tmax / scale, tunit
@@ -121,6 +151,7 @@ class TrXASResult:
         return cdata, levels
 
     def plot_diff(self):
+        """Plot the difference map to the current matplotlib figure."""
         plt.imshow(self.diff, cmap="coolwarm", origin="lower")
         plt.colorbar()
         plt.show()
@@ -128,19 +159,34 @@ class TrXASResult:
 
     @property
     def svd(self):
+        """Singular-value decomposition of the difference map, computed on first access.
+
+        Returns:
+            Tuple ``(U, S, Vt)`` from :func:`numpy.linalg.svd`.
+        """
         if self._svd is None:
             self._svd = self._compute_svd()
         return self._svd
 
     def _compute_svd(self):
+        """Compute the SVD of the trimmed difference map and cache it."""
         begin_idx = np.where(self.t_axis >= 0)[0][0]
         u, s, v = np.linalg.svd(self.diff[begin_idx:], full_matrices=False)
         return (u, s, v)
 
     def get_svd_spectrum(self):
+        """Return the right singular vectors (spectral components) from the SVD."""
         return self.svd[1]
 
     def get_low_rank_approximation(self, rank=3):
+        """Return a rank-reduced reconstruction of the difference map.
+
+        Args:
+            rank: Number of singular components to retain. Default 3.
+
+        Returns:
+            Reconstructed difference map of the same shape as ``self.diff``.
+        """
         u, s, v = self.svd
         up = u[0:, :rank]
         sp = np.diag(s[0:rank])
@@ -148,6 +194,7 @@ class TrXASResult:
         return up @ sp @ vp
 
     def get_diff_map(self):
+        """Return the difference map array (time × energy)."""
         payload = {
             "t_axis": self.t_axis,  # N_time,
             "diff": self.diff,  # N_time X N_energy
@@ -156,6 +203,14 @@ class TrXASResult:
         return {"global": payload}
 
     def get_kinetic_profile(self, label):
+        """Return the kinetics profile for a given ROI label.
+
+        Args:
+            label: ROI label string (e.g. ``"ROI1"``).
+
+        Returns:
+            Dict with keys ``"profile"`` and optionally ``"err"``.
+        """
         t_axis, diff, err = self.kinetics[label]["profile"]["main"]
         payload = {
             "t_axis": t_axis,
@@ -171,6 +226,17 @@ class TrXASResult:
         fit_method="IndividualFit",
         **kwargs,
     ):
+        """Prepare kinetics data for fitting.
+
+        Args:
+            bsl_trange: Time range for baseline subtraction (seconds). If None, disabled.
+            bsl_mode: Baseline correction mode. Default ``"Disabled"``.
+            fit_method: ``"IndividualFit"`` or ``"JointFit"``.
+            **kwargs: Additional fit configuration options.
+
+        Returns:
+            Dict containing the formatted kinetics data and metadata for the fitter.
+        """
         # assemble fitting data
         all_data = {}
         all_data.update(self.get_diff_map())
@@ -211,9 +277,17 @@ class TrXASResult:
         return fit_pack
 
     def reset_fitting_result(self):
+        """Clear all stored fitting results."""
         self.fitting_results = {}
 
     def append_fitting_result(self, key, fit_result: dict, fit_pack: dict):
+        """Store the output of a kinetic fit.
+
+        Args:
+            key: ROI label (e.g. ``"ROI1"``).
+            fit_result: Dict returned by :func:`global_fit_kinetic_model`.
+            fit_pack: Dict describing the fit configuration (method, slices, labels).
+        """
         fit_method = fit_pack["fit_method"]
         if fit_method == "IndividualFit":
             self.fitting_results.update({key: fit_result})
@@ -231,6 +305,11 @@ class TrXASResult:
             self.fitting_results.update(named_results)
 
     def get_fitted_kinetic_profiles(self):
+        """Return fitted kinetics curves for all ROIs.
+
+        Returns:
+            Dict mapping each ROI label to a ``(2, N)`` array of ``[time, fitted_signal]``.
+        """
         result = {}
         for key in self.kinetic_labels:
             x = self.t_axis.flatten()

@@ -11,6 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 def construct_transform_mat(idx_mask, weights):
+    """Build a sparse count-and-weight transform matrix.
+
+    Args:
+        idx_mask: 1-D integer array of output bin indices for each input element.
+        weights: 1-D float array of weights, same length as idx_mask.
+
+    Returns:
+        scipy.sparse.coo_array of shape ``(n_inputs, n_bins)``.
+    """
     num_ins = idx_mask.size
     num_outs = np.max(idx_mask) + 1  # idx = 0 is reserved for BAD data
     row = np.arange(num_ins)
@@ -19,7 +28,16 @@ def construct_transform_mat(idx_mask, weights):
 
 
 def pad_last_dim(data, target_size):
-    """Pad the last dimension of a 3D array with NaN to reach target_size."""
+    """Pad the last dimension of a 3D array with NaN to reach target_size.
+
+    Args:
+        data: Input array of shape ``(a, b, n)`` where ``n <= target_size``.
+        target_size: Desired size of the last dimension.
+
+    Returns:
+        Array of shape ``(a, b, target_size)``.
+        If ``n == target_size``, returns the input array unchanged.
+    """
     if data.shape[2] >= target_size:
         return data
     padded = np.full((*data.shape[:2], target_size), np.nan, dtype=data.dtype)
@@ -28,6 +46,19 @@ def pad_last_dim(data, target_size):
 
 
 def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
+    """Normalize XAS signal channels by the per-orbital background mean.
+
+    Background channel (ch0) is averaged over each orbital to obtain a per-bunch
+    normalization factor. Signal channels (ch1, ch2) are divided by this factor.
+
+    Args:
+        xas_data_3d: Shape ``(num_rows, num_channel, total_bunches)`` float32 array.
+        shape: ``(num_channel, num_orbital, num_bunch)`` tuple from the file header.
+        num_rows: Number of energy/delay rows.
+
+    Returns:
+        norm_data: Shape ``(num_rows, total_bunches)`` normalized float32 array.
+    """
     num_channel, num_orbital, num_bunch = shape
     shape_4d = (num_rows, num_channel, num_orbital, num_bunch)
 
@@ -52,24 +83,19 @@ def normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows):
 
 
 def preprocess_xas_data(xas_data_3d, shape, num_rows, **outlier_kwargs):
-    """
-    Preprocess XAS data by removing outliers and normalizing by bunch mean.
+    """Remove outliers from the background channel and normalize XAS data.
 
-    Parameters
-    ----------
-    xas_data : ndarray
-        Raw XAS data array of shape (num_energy, num_channel, num_bunches).
-    shape : tuple
-        Shape of the XAS data (num_channel, num_orbital, num_bunch).
-    num_rows : int
-        Number of rows in the dataset.
-    outlier_kwargs : dict
-        Additional keyword arguments for outlier removal.
+    Args:
+        xas_data_3d: Shape ``(num_rows, num_channel, total_bunches)`` float32 array.
+        shape: ``(num_channel, num_orbital, num_bunch)`` tuple from the file header.
+        num_rows: Number of energy/delay rows.
+        **outlier_kwargs: Forwarded to :func:`remove_outlier`
+            (``outlier_method``, ``outlier_threshold``).
 
-    Returns
-    -------
-    norm_data : ndarray
-        Preprocessed XAS data normalized by bunch mean and background.
+    Returns:
+        Tuple of (xas_data_corrected, norm_data).  xas_data_corrected has the same
+        shape as the input with outlier rows set to NaN; norm_data has shape
+        ``(num_rows, total_bunches)``.
     """
     xas_data_3d = remove_outlier(xas_data_3d, **outlier_kwargs)
     norm_data = normalize_by_orbitalmean_and_background(xas_data_3d, shape, num_rows)

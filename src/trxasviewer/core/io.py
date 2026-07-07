@@ -6,6 +6,16 @@ from pathlib import Path
 
 
 def save_as_origin_format(origin_folder, results):
+    """Save difference map and kinetics as OriginLab-compatible CSV files.
+
+    Writes two 2-D arrays (``data_full.txt``, ``data_diff.txt``) where the first
+    row holds the time axis and the first column holds the energy/delay axis.
+    One kinetics file per ROI label is also written.
+
+    Args:
+        origin_folder: Destination directory (must already exist).
+        results: Processed results dict from :class:`TrXASDatasetManager`.
+    """
     for key, label in zip(("data", "diff"), ("data_full", "data_diff")):
         temp = results[key]
         shape = temp.shape
@@ -33,11 +43,27 @@ def save_as_origin_format(origin_folder, results):
 
 
 def save_as_json(fname, results):
+    """Save the analysis settings from a results dict to a JSON file.
+
+    Args:
+        fname: Destination file path.
+        results: Processed results dict; only ``results["analysis_kwargs"]`` is saved.
+    """
     with open(fname, "w") as f:
         json.dump(results["analysis_kwargs"], f, indent=4)
 
 
 def save_as_hdf5(fname, results_raw):
+    """Save a results dict to an HDF5 file, recursively mirroring its structure.
+
+    Dicts become HDF5 groups. Numeric numpy arrays larger than 4 KiB are stored
+    with gzip compression. Object-dtype arrays and lists are stored as UTF-8 string
+    datasets.
+
+    Args:
+        fname: Destination ``.hdf`` file path.
+        results_raw: Processed results dict from :class:`TrXASDatasetManager`.
+    """
     results = results_raw.copy()
 
     def save_recursively(group, data):

@@ -136,8 +136,16 @@ def parse_header(fname):
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):
-    """
-    Compute the mean of a list of datasets, handling None values and computing error bars if needed.
+    """Compute the element-wise mean of a list of arrays, ignoring None entries.
+
+    Args:
+        data_list: List of numpy arrays of identical shape, or None placeholders.
+        compute_kinetics_errorbar: If True, also return the per-element standard
+            deviation across the list. Default False.
+
+    Returns:
+        Mean array if compute_kinetics_errorbar is False; tuple (mean, std) otherwise.
+        Returns None if data_list is empty or contains only None entries.
     """
     if any(item is None for item in data_list):
         return None
@@ -189,11 +197,18 @@ def safe_mean(data_list, compute_kinetics_errorbar=False):
 
 
 class TrXASDatasetManager:
+    """Aggregate multiple TrXASDataset files and compute their average."""
+
     def __init__(self):
         self.flist = []
         self.label = None
 
     def update_flist(self, flist):
+        """Set the list of files to process and generate a result label.
+
+        Args:
+            flist: List of path-like objects pointing to raw scan files.
+        """
         self.flist = flist
         if len(flist) == 1:
             self.label = f"result_{Path(flist[0]).name}"
@@ -202,6 +217,19 @@ class TrXASDatasetManager:
             self.label = f"result_{Path(flist[0]).name}-{Path(flist[-1]).name[-5:]}"
 
     def get_energy_vs_time(self, progress=None, cache_folder=None, **kwargs):
+        """Load, process, and average all datasets in the file list.
+
+        Args:
+            progress: Optional callable accepting an int (0–100) for progress updates
+                (typically a Qt signal).
+            cache_folder: If provided, load from / save to NPZ cache files at this path.
+            **kwargs: Forwarded to :meth:`TrXASDataset.get_energy_vs_time`
+                (``channel``, ``target``, ``preprocessing_kwargs``, ``norm_kwargs``,
+                ``binning_kwargs``, ``kinetics_kwargs``).
+
+        Returns:
+            Averaged results dict, or ``None`` if no files could be loaded.
+        """
         if len(self.flist) == 0:
             return None, None, None
         data_list = []
@@ -263,6 +291,15 @@ class TrXASDatasetManager:
 
 # @lru_cache(maxsize=512)
 def create_trxas_dataset(fname, cache_folder=None):
+    """Load a single scan file and return a TrXASDataset, or None on failure.
+
+    Args:
+        fname: Path to the raw SPEC-format data file.
+        cache_folder: Directory for NPZ cache files. Pass ``None`` to disable caching.
+
+    Returns:
+        A :class:`TrXASDataset` instance, or ``None`` if loading fails.
+    """
     fname = Path(fname)
     if not fname.exists():
         logger.error(f"check dataset file: {fname}")
@@ -276,11 +313,28 @@ def create_trxas_dataset(fname, cache_folder=None):
 
 
 def create_trxas_cache_from_flist(flist, cache_folder):
+    """Pre-compute NPZ caches for a list of scan files.
+
+    Args:
+        flist: Iterable of file paths to process.
+        cache_folder: Directory where NPZ cache files will be written.
+    """
     for fname in flist:
         create_trxas_cache(fname, cache_folder)
 
 
 def create_trxas_cache(fname, cache_folder):
+    """Pre-compute the NPZ cache for a single scan file.
+
+    Skips files that are too recently modified (likely still being written).
+
+    Args:
+        fname: Path to the raw scan file.
+        cache_folder: Directory for the NPZ cache file.
+
+    Returns:
+        Path to the written cache file, or ``None`` if skipped or failed.
+    """
     fname = Path(fname)
     if not fname.exists():
         logger.error(f"check dataset file: {fname}")
@@ -300,7 +354,20 @@ def create_trxas_cache(fname, cache_folder):
 
 
 class TrXASDataset:
+    """Load and process a single raw SPEC-format TrXAS scan file.
+
+    Data is read via :func:`numpy.loadtxt`. Preprocessing (outlier removal,
+    normalization, ground-state subtraction, binning) is applied on demand.
+    Processed data can be cached as an NPZ file for faster subsequent access.
+    """
+
     def __init__(self, fname, cache_folder=None):
+        """Initialize from a raw scan file, loading from cache when available.
+
+        Args:
+            fname: Path to the raw SPEC-format data file.
+            cache_folder: Directory for NPZ cache files. If ``None``, caching is disabled.
+        """
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname, cache_folder)
         self.dset_attributes = [
@@ -325,6 +392,15 @@ class TrXASDataset:
 
     @staticmethod
     def check_cache(fname, cache_folder=None):
+        """Return the cache file path and whether it already exists.
+
+        Args:
+            fname: Path to the raw scan file.
+            cache_folder: Cache directory. If ``None``, returns ``(None, False)``.
+
+        Returns:
+            Tuple ``(cache_path, exists)`` where cache_path is a Path or None.
+        """
         if cache_folder is None:
             return None, False
         fname = Path(fname)
@@ -333,6 +409,7 @@ class TrXASDataset:
         return cache_name, flag_exist
 
     def _load_npz(self, path):
+        """Populate dataset attributes from a pre-existing NPZ cache file."""
         data = np.load(path, allow_pickle=True)
         self.dset_attributes = list(data.files)
         for attr in self.dset_attributes:
@@ -431,6 +508,12 @@ class TrXASDataset:
         return np.concatenate(raw_parts, axis=2), np.hstack(norm_parts)
 
     def init_from_file(self, fname, preprocessing_kwargs=None):
+        """Parse the raw scan file and run initial preprocessing.
+
+        Args:
+            fname: Path to the raw SPEC-format data file.
+            preprocessing_kwargs: Forwarded to :func:`preprocess_xas_data`.
+        """
         if preprocessing_kwargs is None:
             preprocessing_kwargs = {}
 
@@ -462,6 +545,19 @@ class TrXASDataset:
         binning_kwargs=None,
         kinetics_kwargs=None,
     ):
+        """Extract and process XAS data for the requested output target.
+
+        Args:
+            channel: Detector channel index (0 = background, 1 or 2 = sample signal).
+            target: Processing level: ``"raw"``, ``"normalized"``, or ``"normalized-GS"``.
+            preprocessing_kwargs: Forwarded to :func:`preprocess_xas_data`.
+            norm_kwargs: Forwarded to :meth:`subtract_groundstate`.
+            binning_kwargs: Forwarded to :meth:`apply_binning`.
+            kinetics_kwargs: Forwarded to :meth:`extract_kenetics`.
+
+        Returns:
+            Results dict as produced by :meth:`compile_results`.
+        """
         if preprocessing_kwargs is None:
             preprocessing_kwargs = {}
         reprocess_flag = self.curr_preprocessing_kwargs != preprocessing_kwargs
@@ -489,10 +585,26 @@ class TrXASDataset:
             raise ValueError("Unknown target")
 
     def get(self, label):
+        """Return the metadata column matching the given label.
+
+        Args:
+            label: Column label string (e.g. ``"Energy"`` or ``"laserd"``).
+
+        Returns:
+            1-D array of values for that column across all rows.
+        """
         index = self.labels.index(label)
         return self.meta_data[:, index]
 
     def get_temporal_coordinates(self, index):
+        """Return the (orbital, bunch) coordinates for a linear bunch index.
+
+        Args:
+            index: Linear bunch index within the orbit.
+
+        Returns:
+            Tuple ``(orbital, bunch)``.
+        """
         bunch = index % self.shape[0]
         orbital = index // self.shape[0]
         return (orbital, bunch)
@@ -504,6 +616,18 @@ class TrXASDataset:
         gs_method="per_bunch",
         gs_value=5,
     ):
+        """Subtract the pre-laser ground state from normalized XAS data.
+
+        Args:
+            sync_type: Interpretation of sync_value: ``"time"`` (seconds) or ``"bunch"`` (index).
+            sync_value: Laser fire time in seconds or bunch index, depending on sync_type.
+            gs_method: Averaging method: ``"bunch-average"`` or ``"orbital-average"``.
+            gs_value: Number of bunches or orbitals used to compute the ground state.
+
+        Returns:
+            Tuple ``(data, diff, sync_index)`` where data is the normalized XAS array,
+            diff is the difference signal, and sync_index is the resolved bunch index.
+        """
         data = self.xas_data_norm  # (num_energys, total_bunches)
         num_bunches = self.shape[2]
 
@@ -544,6 +668,12 @@ class TrXASDataset:
         return data, diff, sync_index
 
     def compile_results(self, target, data, diff, t_axis, kinetics=None):
+        """Assemble a standardized results dict from processed arrays.
+
+        Returns:
+            Dict with keys: ``target``, ``data``, ``diff``, ``t_axis``, ``x_axis``,
+            ``kinetics``, ``bunch_mode``, ``delta_t_s``, ``shape``, ``dset_type``.
+        """
         if self.dset_type == "EXAFS":
             x_axis = {"value": self.energy, "label": "Energy", "unit": "keV"}
         elif self.dset_type == "LASERD":
@@ -565,6 +695,18 @@ class TrXASDataset:
         return results
 
     def apply_binning(self, data, diff, t_axis_raw, sync_index, **binning_kwargs):
+        """Apply time binning to the difference map and raw data.
+
+        Args:
+            data: Normalized XAS array of shape ``(num_energy, total_bunches)``.
+            diff: Difference signal array of the same shape as data.
+            t_axis_raw: 1-D array of raw bunch times in seconds.
+            sync_index: Resolved laser bunch index.
+            **binning_kwargs: Forwarded to :func:`prepare_binning_matrix`.
+
+        Returns:
+            Tuple ``(binned_data, binned_diff, t_axis_binned)``.
+        """
         size = diff.shape[1]
         binning_mat, nobin_laserd_idx = prepare_binning_matrix(
             size, sync_index, **binning_kwargs
@@ -581,6 +723,19 @@ class TrXASDataset:
     def extract_single_kinetics(
         self, avg, t_axis, center_energy, delta_energy, label, enabled=True
     ):
+        """Extract one kinetics trace for a single energy ROI.
+
+        Args:
+            avg: Difference map of shape ``(num_energy, num_time)``.
+            t_axis: 1-D time axis array (seconds).
+            center_energy: ROI center in keV.
+            delta_energy: ROI half-width in keV.
+            label: String label for this ROI (e.g. ``"ROI1"``).
+            enabled: If False, returns an empty placeholder dict. Default True.
+
+        Returns:
+            Dict with key ``"profile"`` containing the kinetics trace array.
+        """
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         if not enabled:
             return None
@@ -598,6 +753,16 @@ class TrXASDataset:
         return single_result
 
     def extract_kenetics(self, avg, t_axis, kwargs_all):
+        """Extract kinetics traces for all enabled ROIs.
+
+        Args:
+            avg: Difference map of shape ``(num_energy, num_time)``.
+            t_axis: 1-D time axis array (seconds).
+            kwargs_all: Dict of ROI configurations keyed by label (``"ROI1"``–``"ROI4"``).
+
+        Returns:
+            Dict mapping ROI label to its kinetics profile dict.
+        """
         results = {}
         if not kwargs_all:
             return results
@@ -613,6 +778,16 @@ class TrXASDataset:
         binning_kwargs,
         kinetics_kwargs,
     ):
+        """Full normalized-GS pipeline for EXAFS (energy-axis) datasets.
+
+        Args:
+            norm_kwargs: Forwarded to :meth:`subtract_groundstate`.
+            binning_kwargs: Forwarded to :meth:`apply_binning`.
+            kinetics_kwargs: Forwarded to :meth:`extract_kenetics`.
+
+        Returns:
+            Results dict from :meth:`compile_results`.
+        """
         assert self.dset_type == "EXAFS", "Not an EXAFS scan"
         data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
@@ -629,6 +804,15 @@ class TrXASDataset:
         norm_kwargs,
         binning_kwargs,
     ):
+        """Full normalized-GS pipeline for LASERD (delay-axis) datasets.
+
+        Args:
+            norm_kwargs: Forwarded to :meth:`subtract_groundstate`.
+            binning_kwargs: Forwarded to :meth:`apply_binning`.
+
+        Returns:
+            Results dict from :meth:`compile_results`.
+        """
         assert self.dset_type == "LASERD", "Not a LASERD scan"
         data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s

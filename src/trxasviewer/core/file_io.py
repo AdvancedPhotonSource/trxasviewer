@@ -82,11 +82,25 @@ def is_recently_modified(fname, threshold=45):
 
 @dataclass
 class FolderIndex:
+    """In-memory index of a raw data folder built by :func:`scan_data_folder`.
+
+    Attributes:
+        folder: Path to the scanned directory.
+        prefix_db: Mapping of scan prefix → ``{"exafs": [indices], "laserd": [indices]}``.
+        type_db: Mapping of ``str(filepath)`` → scan type string.
+    """
+
     folder: Path
     prefix_db: dict   # {prefix: {"exafs": [idx, ...], "laserd": [idx, ...]}}
     type_db: dict     # {str(filepath): scan_type}
 
     def get_experiment_types(self) -> list:
+        """Return all (prefix, scan_type) combinations present in the folder.
+
+        Returns:
+            List of strings in the form ``"<prefix>@<scan_type>"``
+            (e.g. ``["setup-full@laserd", "setup-full@exafs"]``).
+        """
         combos = []
         for prefix, types in self.prefix_db.items():
             for scan_type in ("exafs", "laserd"):
@@ -95,13 +109,34 @@ class FolderIndex:
         return combos
 
     def get_index_range(self, prefix: str, scan_type: str) -> tuple:
+        """Return the min and max file indices for a given prefix and scan type.
+
+        Args:
+            prefix: Filename prefix (e.g. ``"setup-full"``).
+            scan_type: ``"exafs"`` or ``"laserd"``.
+
+        Returns:
+            Tuple ``(min_index, max_index)``. Returns ``(0, 1)`` if no files found.
+        """
         indices = self.prefix_db.get(prefix, {}).get(scan_type, [])
         return (min(indices), max(indices)) if indices else (0, 1)
 
     def get_valid_filepaths(self) -> list:
+        """Return absolute paths of all files classified as exafs or laserd."""
         return [p for p, t in self.type_db.items() if t in ("exafs", "laserd")]
 
     def get_valid_filepaths_with_condition(self, prefix, scan_type, idx_min, idx_max) -> list:
+        """Return file paths matching a prefix, scan type, and index range.
+
+        Args:
+            prefix: Filename prefix.
+            scan_type: ``"exafs"`` or ``"laserd"``.
+            idx_min: Inclusive lower bound of the file index range.
+            idx_max: Inclusive upper bound of the file index range.
+
+        Returns:
+            List of absolute path strings for matching files within ``[idx_min, idx_max]``.
+        """
         valid = set(self.prefix_db.get(prefix, {}).get(scan_type, []))
         return [
             str(self.folder / f"{prefix}{idx:05d}")
