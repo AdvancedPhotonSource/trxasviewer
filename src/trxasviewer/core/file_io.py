@@ -150,14 +150,24 @@ class FolderIndex:
         if scan_type not in ("exafs", "laserd"):
             return
         try:
-            index = int(entry.name[-5:])
-            prefix = entry.name[:-5]
+            prefix, index = _parse_name_parts(entry.name)
         except ValueError:
             return
         if prefix not in self.prefix_db:
             self.prefix_db[prefix] = {"exafs": [], "laserd": []}
         if index not in self.prefix_db[prefix][scan_type]:
             self.prefix_db[prefix][scan_type].append(index)
+
+
+def _parse_name_parts(name: str):
+    """Split a scan filename into (prefix, index).
+
+    Expects the last 5 characters to be a zero-padded integer index.
+
+    Returns:
+        Tuple ``(prefix, index)`` or raises ``ValueError`` if unparseable.
+    """
+    return name[:-5], int(name[-5:])
 
 
 def scan_data_folder(folder: Path) -> FolderIndex:
@@ -173,8 +183,7 @@ def scan_data_folder(folder: Path) -> FolderIndex:
         type_db[str(entry)] = scan_type
         if scan_type in ("exafs", "laserd"):
             try:
-                index = int(entry.name[-5:])
-                prefix = entry.name[:-5]
+                prefix, index = _parse_name_parts(entry.name)
             except ValueError:
                 continue
             if prefix not in prefix_db:
@@ -214,7 +223,7 @@ def _statx_get_size(path: str) -> int:
             errno = ctypes.get_errno()
             raise OSError(errno, os.strerror(errno), path)
         return struct.unpack_from("<Q", _statx_buf, _STATX_SIZE_OFFSET)[0]
-    except Exception:
+    except OSError:
         return os.stat(path).st_size
 
 
@@ -233,5 +242,5 @@ def _statx_sync_dir(folder: Path) -> None:
             ctypes.c_uint(0),
             _statx_buf,
         )
-    except Exception:
+    except OSError:
         pass

@@ -65,13 +65,6 @@ def prepare_binning_matrix(
             start = end  # Removed redundant else statement
             if start == size:
                 break
-        # index_end = idx_mask[-1]
-        # # apply cutoff since log binning only have a few points after sync
-        # cutoff = max(0, index_start - (index_end - index_start) * fraction)
-        # cutoff = int(cutoff)
-        # idx_mask[idx_mask < cutoff] = cutoff
-        # idx_mask -= cutoff  # offset everything to start from 0, which means BAD
-
     elif method == "Manual":
         start = sync_index
         idx_offset = idx_mask[sync_index]
@@ -94,9 +87,7 @@ def prepare_binning_matrix(
             idx_offset = temp[-1] + 1  # number of unique values in temp
             if start == size:
                 break
-        # apply cutoff to reduce the pre-trigger bunches for better visualization
-        # bunch_start = max(0, sync_index - int((end - sync_index) * fraction))
-        bunch_start = 0
+        bunch_start = 0  # pre-trigger bunches always start from 0
         cutoff = idx_mask[bunch_start]
         idx_mask[idx_mask < cutoff] = cutoff
         idx_mask -= cutoff  # offset everything to start from 0, which means BAD

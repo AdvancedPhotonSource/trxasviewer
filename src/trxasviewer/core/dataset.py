@@ -85,7 +85,8 @@ def _parse_header_line(header_line: str, is_double: bool = False):
     c_min, o_min, b_min = record.min(axis=0)
     c_max, o_max, b_max = record.max(axis=0)
 
-    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
+    if c_min != 0 or o_min != 0 or b_min != 0:
+        raise ValueError(f"Column indices must start at 0; got c_min={c_min}, o_min={o_min}, b_min={b_min}")
     shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
     return dset_type, shape, labels, labels_mask, is_double
 
@@ -518,7 +519,8 @@ class TrXASDataset:
             preprocessing_kwargs = {}
 
         dset_type, shape, labels, labels_mask, is_double = parse_header(fname)
-        assert shape[0] == 3, f"only support 3 channels, but got {shape[0]}"
+        if shape[0] != 3:
+            raise ValueError(f"Only 3-channel datasets are supported; got {shape[0]} channels in {fname}")
 
         raw_table = np.loadtxt(fname, comments="#", dtype=np.float64, delimiter="\t")
         if raw_table.size == 0:
@@ -736,7 +738,8 @@ class TrXASDataset:
         Returns:
             Dict with key ``"profile"`` containing the kinetics trace array.
         """
-        assert self.dset_type == "EXAFS", "Not an EXAFS scan"
+        if self.dset_type != "EXAFS":
+            raise ValueError(f"Expected EXAFS scan; got {self.dset_type}")
         if not enabled:
             return None
         e0, e1 = center_energy - delta_energy, center_energy + delta_energy
@@ -788,7 +791,8 @@ class TrXASDataset:
         Returns:
             Results dict from :meth:`compile_results`.
         """
-        assert self.dset_type == "EXAFS", "Not an EXAFS scan"
+        if self.dset_type != "EXAFS":
+            raise ValueError(f"Expected EXAFS scan; got {self.dset_type}")
         data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_axis_raw = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         b_data, b_diff, t_axis, _ = self.apply_binning(
@@ -813,7 +817,8 @@ class TrXASDataset:
         Returns:
             Results dict from :meth:`compile_results`.
         """
-        assert self.dset_type == "LASERD", "Not a LASERD scan"
+        if self.dset_type != "LASERD":
+            raise ValueError(f"Expected LASERD scan; got {self.dset_type}")
         data, diff, sync_index = self.subtract_groundstate(**norm_kwargs)
         t_mat = (np.arange(diff.shape[1]) - sync_index) * self.delta_t_s
         # append a non-delayed time axis to the begining for display
@@ -827,10 +832,11 @@ class TrXASDataset:
         t_mat2 = t_mat2[1:]
 
         # assemble kinetics
+        nobin_set = set(nobin_idx)
         sval = []
         tval = []
         for n in range(b_diff.shape[1]):
-            if n in nobin_idx:
+            if n in nobin_set:
                 sval.extend(b_diff[:, n].tolist())
                 tval.extend(t_mat2[:, n].tolist())
             else:

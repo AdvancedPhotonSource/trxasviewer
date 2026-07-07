@@ -2,29 +2,11 @@ import warnings
 import logging
 
 import numpy as np
-from scipy.sparse import coo_array
 
 from .utilities import remove_outlier
 
 
 logger = logging.getLogger(__name__)
-
-
-def construct_transform_mat(idx_mask, weights):
-    """Build a sparse count-and-weight transform matrix.
-
-    Args:
-        idx_mask: 1-D integer array of output bin indices for each input element.
-        weights: 1-D float array of weights, same length as idx_mask.
-
-    Returns:
-        scipy.sparse.coo_array of shape ``(n_inputs, n_bins)``.
-    """
-    num_ins = idx_mask.size
-    num_outs = np.max(idx_mask) + 1  # idx = 0 is reserved for BAD data
-    row = np.arange(num_ins)
-    mat = coo_array((weights, (row, idx_mask)), shape=(num_ins, num_outs)).tocsr()
-    return mat
 
 
 def pad_last_dim(data, target_size):

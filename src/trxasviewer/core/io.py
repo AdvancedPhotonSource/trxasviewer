@@ -16,6 +16,7 @@ def save_as_origin_format(origin_folder, results):
         origin_folder: Destination directory (must already exist).
         results: Processed results dict from :class:`TrXASDatasetManager`.
     """
+    corner_label = "Energy(keV)/Time(s)" if results["dset_type"] == "EXAFS" else "Delay(s)/Time(s)"
     for key, label in zip(("data", "diff"), ("data_full", "data_diff")):
         temp = results[key]
         shape = temp.shape
@@ -24,10 +25,7 @@ def save_as_origin_format(origin_folder, results):
         data_full[1:, 0] = results["x_axis"]["value"]
         data_full[0, 1:] = results["t_axis"]
         data_full = data_full.astype(object)
-        if results["dset_type"] == "EXAFS":
-            data_full[0, 0] = "Energy(keV)/Time(s)"
-        else:
-            data_full[0, 0] = "Delay(s)/Time(s)"
+        data_full[0, 0] = corner_label
         np.savetxt(
             origin_folder / f"{label}.txt", data_full, fmt="%s", delimiter=","
         )

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 from trxasviewer.core.array_ops import (
-    pad_last_dim, construct_transform_mat,
-    normalize_by_orbitalmean_and_background, preprocess_xas_data,
+    pad_last_dim, normalize_by_orbitalmean_and_background, preprocess_xas_data,
 )
+from trxasviewer.core.utilities import construct_transform_mat
 
 
 def test_pad_last_dim_already_correct_size():

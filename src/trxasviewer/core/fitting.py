@@ -10,27 +10,19 @@ logger = logging.getLogger(__name__)  # Create a logger for this module
 
 
 def _get_initial_state_indices(adj_matrix):
-    """
-    Helper function to find the indices of all initial states.
+    """Return the indices of states with no incoming transitions from other states.
 
-    An initial state is one with no incoming transitions from other states.
-
-    Parameters:
-    - adj_matrix: 2D list representing adjacency (1 at [i][j] means j → i)
+    Args:
+        adj_matrix: 2-D array-like adjacency matrix where ``adj_matrix[i][j] = 1``
+            means a transition from state j to state i.
 
     Returns:
-    - A list of integer indices for the initial states.
+        List of integer indices for the initial (source) states.
     """
-    num_states = len(adj_matrix)
-    initial_indices = []
-    for i in range(num_states):
-        # Sum the values in the row `i` to count incoming edges from other states.
-        # We exclude the diagonal element `adj_matrix[i][i]`, which represents a self-loop.
-        num_parents = sum(adj_matrix[i][j] for j in range(num_states) if i != j)
-
-        if num_parents == 0:
-            initial_indices.append(i)
-    return initial_indices
+    mat = np.asarray(adj_matrix)
+    # adj[i][j]=1 means j→i; row sum = total incoming to state i
+    incoming = mat.sum(axis=1) - np.diag(mat)
+    return list(np.where(incoming == 0)[0])
 
 
 def find_initial_states(adj_matrix):
@@ -75,17 +67,9 @@ def create_initial_state_array(adj_matrix):
     num_states = len(adj_matrix)
     if num_states == 0:
         return []
-
-    initial_array = [0] * num_states
-
-    # Use the helper function to get the indices of initial states
-    initial_indices = _get_initial_state_indices(adj_matrix)
-
-    # Set the value to 1 for each initial state index
-    for i in initial_indices:
-        initial_array[i] = 1
-
-    return initial_array
+    initial_array = np.zeros(num_states, dtype=int)
+    initial_array[_get_initial_state_indices(adj_matrix)] = 1
+    return initial_array.tolist()
 
 
 def create_q_matrix(adj_matrix, params):
