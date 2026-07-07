@@ -174,6 +174,7 @@ class ViewerController(QObject):
         except OSError:
             return
         new_valid = False
+        newly_completed: list = []  # files whose next-higher index just appeared
         for entry in entries:
             if entry.is_dir() or len(entry.name) < 10:
                 continue
@@ -184,9 +185,29 @@ class ViewerController(QObject):
             self._folder_index.add_entry(entry, scan_type)
             if scan_type in ("exafs", "laserd"):
                 new_valid = True
+                # A new scan N appeared → the previous latest (N-1) is now complete.
+                # Find and cache it if a cache folder is configured.
+                if self._model.cache_folder is not None:
+                    try:
+                        prefix, index = entry.name[:-5], int(entry.name[-5:])
+                        prev_path = folder / f"{prefix}{index - 1:05d}"
+                        if prev_path.exists():
+                            newly_completed.append(str(prev_path))
+                    except (ValueError, IndexError):
+                        pass
         if new_valid:
             self._view.proxy_model.update_type_db(self._folder_index.type_db)
             self._view.refresh_prefix_combos(self._folder_index.get_experiment_types())
+        # Cache the now-complete predecessor files in the background (daemon threads).
+        if newly_completed:
+            import threading
+            from trxasviewer.core.dataset import create_trxas_cache
+            for path in newly_completed:
+                threading.Thread(
+                    target=create_trxas_cache,
+                    args=(path, self._model.cache_folder),
+                    daemon=True,
+                ).start()
 
     def _check_selected_file_sizes(self):
         if self._is_loading or not self._model.file_list:

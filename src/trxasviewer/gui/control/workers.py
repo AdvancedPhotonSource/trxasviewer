@@ -1,7 +1,9 @@
 import logging
 import time
 import traceback
+from collections import defaultdict
 from multiprocessing import Process
+from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 
@@ -88,6 +90,31 @@ class AverageWorker(QObject):
         self.stop_worker.emit()
 
 
+def _exclude_latest_per_prefix(file_list: list) -> list:
+    """Remove the highest-index file for each scan prefix.
+
+    The highest-index file in each series may still be actively written to by
+    the acquisition system. Caching it would capture incomplete data. Once the
+    next scan file appears (N+1), file N is guaranteed immutable and will be
+    cached by the watch-timer logic.
+    """
+    prefix_max: dict = defaultdict(lambda: (-1, None))
+    for f in file_list:
+        name = Path(f).name
+        try:
+            prefix, index = name[:-5], int(name[-5:])
+        except (ValueError, IndexError):
+            continue
+        if index > prefix_max[prefix][0]:
+            prefix_max[prefix] = (index, f)
+    excluded = {item[1] for item in prefix_max.values() if item[1] is not None}
+    filtered = [f for f in file_list if f not in excluded]
+    if excluded:
+        logger.debug(f"CacheWorker: skipping {len(excluded)} latest file(s) (may be ongoing): "
+                     f"{[Path(f).name for f in excluded]}")
+    return filtered
+
+
 class CacheWorker(QThread):
     """Manages multiple processes for cache generation"""
 
@@ -103,14 +130,16 @@ class CacheWorker(QThread):
 
     def run(self):
         t0 = time.perf_counter()
-        k, m = divmod(len(self.file_list), self.number_of_processes)
+        # Never cache the highest-index file per prefix — it may still be growing.
+        file_list = _exclude_latest_per_prefix(self.file_list)
+        k, m = divmod(len(file_list), self.number_of_processes)
         flist_parts = [
-            self.file_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
+            file_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
             for i in range(self.number_of_processes)
         ]
         logger.info(
             f"Starting CacheWorker with {self.number_of_processes} processes "
-            f"to prepare {len(self.file_list)} datasets."
+            f"to prepare {len(file_list)} datasets."
         )
         for part in flist_parts:
             process = Process(target=create_trxas_cache_from_flist,
