@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from .utilities import format_time
 import logging
 import copy
@@ -152,6 +151,7 @@ class TrXASResult:
 
     def plot_diff(self):
         """Plot the difference map to the current matplotlib figure."""
+        import matplotlib.pyplot as plt
         plt.imshow(self.diff, cmap="coolwarm", origin="lower")
         plt.colorbar()
         plt.show()

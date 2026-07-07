@@ -2,24 +2,35 @@ import logging
 from itertools import cycle
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import scienceplots  # noqa: F401  # side-effect import: registers matplotlib styles
 from scipy.ndimage import gaussian_filter1d
 
-# Disable verbose matplotlib and fontTools logging
 logging.getLogger("fontTools.subset").setLevel(logging.WARNING)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
-
-# Plot style and settings
-plt.rcParams["pdf.fonttype"] = 42  # TrueType fonts for Illustrator compatibility
-plt.rcParams["font.size"] = 7
-plt.rcParams["font.sans-serif"] = "Arial"
 
 FIG_WIDTH = 4.8  # inches
 FIG_HEIGHT = FIG_WIDTH / 1.618033988749
 FIG_TYPES = (".png", ".pdf")
 SAVE_DPI = 600
+
+_MPL_CONFIGURED = False
+
+
+def _configure_matplotlib():
+    """Import and configure matplotlib on first use (safe for headless environments)."""
+    global _MPL_CONFIGURED
+    if _MPL_CONFIGURED:
+        return
+    import matplotlib.pyplot as plt
+    try:
+        import scienceplots  # noqa: F401 — registers matplotlib styles
+        plt.style.use(["science", "no-latex"])
+    except ImportError:
+        pass
+    plt.rcParams["pdf.fonttype"] = 42  # TrueType fonts for Illustrator compatibility
+    plt.rcParams["font.size"] = 7
+    plt.rcParams["font.sans-serif"] = "Arial"
+    _MPL_CONFIGURED = True
 
 
 def convert_time_array_human_readable(time_array, prefix="Time"):
@@ -75,6 +86,7 @@ def plot_results(results, folder=None):
     -------
     None
     """
+    _configure_matplotlib()
     if folder is None:
         folder = Path(".")
     else:
@@ -115,6 +127,8 @@ def plot_2d_scan(save_name, diff, x_axis_obj, t_axis, title=None, force_symmetry
     -------
     None
     """
+    _configure_matplotlib()
+    import matplotlib.pyplot as plt
     t_axis, ylabel = convert_time_array_human_readable(t_axis, "Time")
     x_axis = x_axis_obj["value"]
     data = np.flipud(diff.T)
@@ -181,6 +195,8 @@ def plot_2d_scan_equal_energy(
     -------
     None
     """
+    _configure_matplotlib()
+    import matplotlib.pyplot as plt
     t_axis, ylabel = convert_time_array_human_readable(t_axis, "Time")
     x_axis = x_axis_obj["value"]
 
@@ -225,6 +241,8 @@ def plot_kinetics(save_name, data_list):
     -------
     None
     """
+    _configure_matplotlib()
+    import matplotlib.pyplot as plt
     markers = cycle(["o", "s", "D", "^", "v", "*", "P", "X"])
     colors = cycle(plt.cm.tab10.colors)
 
@@ -361,6 +379,7 @@ def load_and_plot(result_file_name):
     -------
     None
     """
+    _configure_matplotlib()
     results = load_npz_as_dict(result_file_name)
     describe_structure(results)
     plot_results(results, "images")
