@@ -152,7 +152,7 @@ class ViewerController(QObject):
     def _on_worker_finished(self):
         results = self._avg_worker.get_results()
         self._model.loading_finished.emit()
-        if results is not None:
+        if isinstance(results, dict):
             self._model.set_result(results)
         else:
             self._model.clear_result()

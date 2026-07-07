@@ -126,7 +126,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     # -------------------------------------------------------------------------
 
     def update_image(self, results: dict):
-        if results is None:
+        if not isinstance(results, dict):
             return
         if results.get("target") == "normalized-GS":
             self.pushButton_select_savefname.setEnabled(True)
