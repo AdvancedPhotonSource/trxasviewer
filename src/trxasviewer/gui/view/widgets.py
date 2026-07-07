@@ -55,6 +55,11 @@ class SaveOptionsDialog(QDialog):
         self.cb_origin.setChecked(True)
         self.cb_hdf.setChecked(True)
 
+        # Overwrite warning
+        self.overwrite_label = QLabel("⚠ This folder already contains results and will be overwritten.")
+        self.overwrite_label.setStyleSheet("color: orange;")
+        self.overwrite_label.setVisible(False)
+
         # Standard Buttons (OK, Cancel)
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -80,14 +85,16 @@ class SaveOptionsDialog(QDialog):
         cb_layout.addWidget(self.cb_hdf)
         # Add widgets to main layout
         main_layout.addWidget(self.instruction_label)
-        main_layout.addLayout(dir_layout)  # Add the horizontal layout
+        main_layout.addLayout(dir_layout)
         main_layout.addLayout(prefix_layout)
+        main_layout.addWidget(self.overwrite_label)
         main_layout.addLayout(cb_layout)
         main_layout.addWidget(self.button_box)
         # --- Connections ---
         self.browse_button.clicked.connect(self.select_directory)
-        self.button_box.accepted.connect(self.accept)  # Connect OK to accept
-        self.button_box.rejected.connect(self.reject)  # Connect Cancel to reject
+        self.prefix_edit.textChanged.connect(self._check_overwrite)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
 
         # --- Initial State ---
         # Disable OK button until a directory is selected
@@ -95,22 +102,26 @@ class SaveOptionsDialog(QDialog):
         if ok_button:
             ok_button.setEnabled(False)
 
-    @Slot()  # Decorator indicating this is a slot
+    @Slot()
     def select_directory(self):
-        """
-        Opens a QFileDialog to select a directory and updates the line edit.
-        """
         directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select Save Directory",
-            str(Path.home()),
+            self, "Select Save Directory", str(Path.home()),
         )
-        if directory:  # If a directory was selected (not cancelled)
+        if directory:
             self.path_edit.setText(directory)
-            # Enable the OK button now that a path is selected
             ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
             if ok_button:
                 ok_button.setEnabled(True)
+            self._check_overwrite()
+
+    def _check_overwrite(self):
+        directory = self.path_edit.text()
+        subdirectory = self.prefix_edit.text()
+        if directory and subdirectory:
+            dest = Path(directory) / subdirectory / "results.npz"
+            self.overwrite_label.setVisible(dest.exists())
+        else:
+            self.overwrite_label.setVisible(False)
 
     def get_selected_options(self):
         """

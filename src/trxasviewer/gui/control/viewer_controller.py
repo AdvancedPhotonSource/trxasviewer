@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, QThread, QTimer
 
-from trxasviewer.core.io import save_results
 from trxasviewer.core.utilities import (
     scan_data_folder, get_scan_type, _statx_get_size, _statx_sync_dir,
 )
-from trxasviewer.gui.control.workers import AverageWorker, CacheWorker
+from trxasviewer.gui.control.workers import AverageWorker, CacheWorker, SaveWorker
 from trxasviewer.gui.model.viewer_model import ViewerModel
 
 if TYPE_CHECKING:
@@ -28,6 +27,11 @@ class ViewerController(QObject):
         self._avg_worker = AverageWorker()
         self._avg_worker.moveToThread(self._thread)
         self._thread.start()
+
+        self._save_thread = QThread()
+        self._save_worker = SaveWorker()
+        self._save_worker.moveToThread(self._save_thread)
+        self._save_thread.start()
 
         self._folder_index = None
         self._file_sizes: dict = {}
@@ -71,6 +75,13 @@ class ViewerController(QObject):
         self._model.status_message.connect(self._view.update_status)
         self._model.save_completed.connect(self._view.show_save_confirmation)
 
+        # Save worker
+        self._save_worker.finished.connect(self._on_save_finished)
+        self._save_worker.progress.connect(self._model.status_message.emit)
+        self._save_worker.error.connect(
+            lambda msg: self._model.error_occurred.emit("Save Error", msg)
+        )
+
     # --- View event handlers ---
 
     def on_folder_selected(self, path: Path):
@@ -101,12 +112,17 @@ class ViewerController(QObject):
             self._start_average()
 
     def on_save(self, kwargs: dict):
-        if self._model.result is not None:
-            save_results(self._model.result, **kwargs)
-            from pathlib import Path as _Path
-            dest = str(_Path(kwargs.get("directory", "")) / kwargs.get("subdirectory", "Avg"))
-            self._model.status_message.emit(f"Saved to {dest}")
-            self._model.save_completed.emit(dest)
+        if self._model.result is None:
+            return
+        self._save_worker.setup(self._model.result, kwargs)
+        self._view.set_save_in_progress(True)
+        self._save_worker.start_save.emit()
+
+    def _on_save_finished(self):
+        self._view.set_save_in_progress(False)
+        kwargs = self._save_worker.kwargs or {}
+        dest = str(Path(kwargs.get("directory", "")) / kwargs.get("subdirectory", "Avg"))
+        self._model.save_completed.emit(dest)
 
     # --- Internal ---
 
@@ -193,3 +209,5 @@ class ViewerController(QObject):
         self._avg_worker.quit()
         self._thread.quit()
         self._thread.wait()
+        self._save_thread.quit()
+        self._save_thread.wait()

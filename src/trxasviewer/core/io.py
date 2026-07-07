@@ -79,6 +79,58 @@ def save_as_hdf5(fname, results_raw):
         save_recursively(f, results)
 
 
+def save_results_with_progress(results, kwargs, progress=None):
+    """Save results to disk, emitting progress strings at each step.
+
+    Args:
+        results: raw results dict from TrXASDatasetManager
+        kwargs: save options (directory, subdirectory, save_image, save_numpy, save_hdf, save_origin)
+        progress: optional callable(str) for status updates
+    """
+    from trxasviewer.core.plot import plot_results  # deferred to avoid circular import
+
+    directory = kwargs.get("directory")
+    subdirectory = kwargs.get("subdirectory", "Avg")
+    save_image = kwargs.get("save_image", True)
+    save_numpy = kwargs.get("save_numpy", True)
+    save_hdf = kwargs.get("save_hdf", True)
+    save_origin = kwargs.get("save_origin", True)
+
+    def emit(msg):
+        if progress:
+            progress(msg)
+
+    folder = Path(directory) / subdirectory
+    folder.mkdir(parents=True, exist_ok=True)
+
+    if save_numpy:
+        emit("Saving NPZ…")
+        tmp = folder / "results.tmp.npz"
+        np.savez_compressed(tmp, **results)
+        tmp.replace(folder / "results.npz")          # atomic rename
+        shutil.copy(Path(__file__).parent / "plot.py", folder / "load_and_plot.py")
+
+    if save_image:
+        emit("Saving images…")
+        img_folder = folder / "images"
+        img_folder.mkdir(parents=True, exist_ok=True)
+        plot_results(results, folder=img_folder)
+
+    if save_origin:
+        emit("Saving Origin format…")
+        o_folder = folder / "origin"
+        o_folder.mkdir(parents=True, exist_ok=True)
+        save_as_origin_format(o_folder, results)
+
+    if save_hdf:
+        emit("Saving HDF5…")
+        save_as_hdf5(folder / "results.hdf", results)
+
+    emit("Saving settings…")
+    save_as_json(folder / "settings.json", results)
+    emit("Saved.")
+
+
 def save_results(
     results,
     directory=None,
@@ -88,27 +140,12 @@ def save_results(
     save_hdf=True,
     save_origin=True,
 ):
-    from trxasviewer.core.plot import plot_results  # imported here to avoid circular import
-
-    folder = Path(directory) / subdirectory
-    folder.mkdir(parents=True, exist_ok=True)
-
-    if save_numpy:
-        np.savez_compressed(folder / "results.npz", **results)
-        package_path = Path(__file__).parent
-        shutil.copy(package_path / "plot.py", folder / "load_and_plot.py")
-
-    if save_image:
-        img_folder = folder / "images"
-        img_folder.mkdir(parents=True, exist_ok=True)
-        plot_results(results, folder=img_folder)
-
-    if save_origin:
-        o_folder = folder / "origin"
-        o_folder.mkdir(parents=True, exist_ok=True)
-        save_as_origin_format(o_folder, results)
-
-    if save_hdf:
-        save_as_hdf5(folder / "results.hdf", results)
-
-    save_as_json(folder / "settings.json", results)
+    """Backward-compatible wrapper around save_results_with_progress."""
+    save_results_with_progress(results, {
+        "directory": directory,
+        "subdirectory": subdirectory,
+        "save_image": save_image,
+        "save_numpy": save_numpy,
+        "save_hdf": save_hdf,
+        "save_origin": save_origin,
+    })

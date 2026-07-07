@@ -196,6 +196,11 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     def update_status(self, msg: str, timeout: int = 5000):
         self.statusBar().showMessage(msg, timeout)
 
+    def set_save_in_progress(self, saving: bool):
+        self.pushButton_select_savefname.setEnabled(not saving)
+        if saving:
+            self.update_status("Saving…")
+
     def show_save_confirmation(self, dest: str):
         QMessageBox.information(self, "Saved", f"Results saved to:\n{dest}")
 

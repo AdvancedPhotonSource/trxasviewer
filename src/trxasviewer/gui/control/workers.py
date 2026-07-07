@@ -122,3 +122,33 @@ class CacheWorker(QThread):
         self.is_done = True
         t1 = time.perf_counter()
         logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
+
+
+class SaveWorker(QObject):
+    """Saves analysis results to disk in a background thread."""
+
+    finished = Signal()
+    progress = Signal(str)   # step description for status bar
+    error = Signal(str)      # error message on failure
+    start_save = Signal()
+
+    def __init__(self):
+        super().__init__()
+        self.results = None
+        self.kwargs = None
+        self.start_save.connect(self.run)
+
+    def setup(self, results: dict, kwargs: dict):
+        self.results = results
+        self.kwargs = kwargs
+
+    @Slot()
+    def run(self):
+        try:
+            from trxasviewer.core.io import save_results_with_progress
+            save_results_with_progress(self.results, self.kwargs, self.progress.emit)
+        except Exception as e:
+            logger.error(f"Save failed: {e}")
+            self.error.emit(str(e))
+        finally:
+            self.finished.emit()
