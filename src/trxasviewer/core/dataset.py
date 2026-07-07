@@ -431,7 +431,8 @@ class TrXASDataset:
             return
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".tmp.npz")
-        np.savez_compressed(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
+        # Uncompressed save: faster to read on NFS; ~3-4× larger than savez_compressed
+        np.savez(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
         tmp.replace(dest)
         logger.info(f"Cache saved to {dest}")
 
