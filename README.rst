@@ -67,6 +67,29 @@ Usage
 See ``trxasviewer view --help`` for the full list of options.
 
 
+Scripting / Jupyter
+-------------------
+
+The ``trxasviewer.core`` module is fully Qt-free and can be imported in
+plain Python scripts or Jupyter notebooks without launching the GUI:
+
+.. code-block:: python
+
+    from trxasviewer.core import TrXASDataset, TrXASDatasetManager, save_results
+
+    dset = TrXASDataset("/path/to/setup-full-00178")
+    results = dset.get_energy_vs_time(
+        target="normalized-GS",
+        norm_kwargs={"sync_type": "bunch", "sync_value": 1820,
+                     "gs_method": "bunch-average", "gs_value": 5},
+        binning_kwargs={"method": "Linear", "lin_num": 5},
+    )
+    print(results["diff"].shape)   # (n_energy, n_time)
+
+A full worked example covering single-file loading, multi-file averaging,
+SVD, plotting, and saving is in ``examples/analyze_trxas.py``.
+
+
 Development
 -----------
 
