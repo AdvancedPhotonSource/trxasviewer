@@ -146,10 +146,7 @@ class ViewerController(QObject):
         file_paths = self._folder_index.get_valid_filepaths()
         if file_paths:
             num_workers = min(max(2, os.cpu_count() // 2), len(file_paths))
-            preprocessing_kwargs = self._view.get_preprocessing_kwargs()
-            self._cache_worker = CacheWorker(
-                file_paths, num_workers, self._model.cache_folder, preprocessing_kwargs
-            )
+            self._cache_worker = CacheWorker(file_paths, num_workers, self._model.cache_folder)
             self._cache_worker.start()
 
     def _on_worker_finished(self):

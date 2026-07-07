@@ -1,4 +1,3 @@
-import json
 import re
 import time
 from functools import lru_cache
@@ -243,8 +242,7 @@ class TrXASDatasetManager:
         for n, fname in enumerate(self.flist):
             if progress is not None:
                 progress.emit(int(100 * (n + 1) / len(self.flist)))
-            dset = create_trxas_dataset(fname, cache_folder=cache_folder,
-                                        preprocessing_kwargs=kwargs.get("preprocessing_kwargs"))
+            dset = create_trxas_dataset(fname, cache_folder=cache_folder)
             if dset is None:
                 logger.error(f"Failed to load dataset from {fname}")
                 continue
@@ -293,13 +291,12 @@ class TrXASDatasetManager:
 
 
 # @lru_cache(maxsize=512)
-def create_trxas_dataset(fname, cache_folder=None, preprocessing_kwargs=None):
+def create_trxas_dataset(fname, cache_folder=None):
     """Load a single scan file and return a TrXASDataset, or None on failure.
 
     Args:
         fname: Path to the raw SPEC-format data file.
         cache_folder: Directory for NPZ cache files. Pass ``None`` to disable caching.
-        preprocessing_kwargs: Outlier-removal settings forwarded to :class:`TrXASDataset`.
 
     Returns:
         A :class:`TrXASDataset` instance, or ``None`` if loading fails.
@@ -309,35 +306,34 @@ def create_trxas_dataset(fname, cache_folder=None, preprocessing_kwargs=None):
         logger.error(f"check dataset file: {fname}")
         return None
     try:
-        return TrXASDataset(fname, cache_folder=cache_folder,
-                            preprocessing_kwargs=preprocessing_kwargs)
+        return TrXASDataset(fname, cache_folder=cache_folder)
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
         traceback.print_exc()
         return None
 
 
-def create_trxas_cache_from_flist(flist, cache_folder, preprocessing_kwargs=None):
+def create_trxas_cache_from_flist(flist, cache_folder):
     """Pre-compute NPZ caches for a list of scan files.
 
     Args:
         flist: Iterable of file paths to process.
         cache_folder: Directory where NPZ cache files will be written.
-        preprocessing_kwargs: Outlier-removal settings applied before caching.
     """
     for fname in flist:
-        create_trxas_cache(fname, cache_folder, preprocessing_kwargs)
+        create_trxas_cache(fname, cache_folder)
 
 
-def create_trxas_cache(fname, cache_folder, preprocessing_kwargs=None):
+def create_trxas_cache(fname, cache_folder):
     """Pre-compute the NPZ cache for a single scan file.
 
     Skips files that are too recently modified (likely still being written).
+    The cache stores the raw 3-channel array (no outlier removal); outlier
+    removal is applied in memory on each use.
 
     Args:
         fname: Path to the raw scan file.
         cache_folder: Directory for the NPZ cache file.
-        preprocessing_kwargs: Outlier-removal settings applied before caching.
 
     Returns:
         Path to the written cache file, or ``None`` if skipped or failed.
@@ -352,8 +348,7 @@ def create_trxas_cache(fname, cache_folder, preprocessing_kwargs=None):
     try:
         cache_name, cache_exists = TrXASDataset.check_cache(fname, cache_folder)
         if not cache_exists:
-            TrXASDataset(fname, cache_folder=cache_folder,
-                         preprocessing_kwargs=preprocessing_kwargs)
+            TrXASDataset(fname, cache_folder=cache_folder)
             return cache_name
     except Exception as e:
         logger.error(f"Failed to load TrXASDataset from {fname}: {e}")
@@ -380,17 +375,17 @@ class TrXASDataset:
     Processed data can be cached as an NPZ file for faster subsequent access.
     """
 
-    def __init__(self, fname, cache_folder=None, preprocessing_kwargs=None):
+    def __init__(self, fname, cache_folder=None):
         """Initialize from a raw scan file, loading from cache when available.
 
         Args:
             fname: Path to the raw SPEC-format data file.
             cache_folder: Directory for NPZ cache files. If ``None``, caching is disabled.
-            preprocessing_kwargs: Outlier-removal settings used when building the cache.
-                Passed to :func:`preprocess_xas_data`. If ``None``, no outlier removal.
         """
         self.fname = Path(fname)
         self.cache_name, cache_exists = self.check_cache(fname, cache_folder)
+        # xas_data: raw 3-channel array before outlier removal (float32, cached)
+        # xas_data_norm: computed on demand from xas_data with current settings
         self.dset_attributes = [
             "energy",
             "laserd",
@@ -400,18 +395,15 @@ class TrXASDataset:
             "dset_type",
             "shape",
             "delta_t_s",
-            "xas_data_norm",
-            "cached_preprocessing_kwargs_json",  # stores kwargs used at cache-build time
+            "xas_data",
         ]
-        if preprocessing_kwargs is None:
-            preprocessing_kwargs = {"outlier_method": None}
-        self.curr_preprocessing_kwargs = preprocessing_kwargs
-        self.cached_preprocessing_kwargs_json = np.array(json.dumps(preprocessing_kwargs))
+        self.curr_preprocessing_kwargs = {"outlier_method": None}
         self.xas_data = None
+        self.xas_data_norm = None
         if cache_folder is not None and cache_exists:
             self._load_npz(self.cache_name)
         else:
-            self.init_from_file(fname, self.curr_preprocessing_kwargs)
+            self.init_from_file(fname, {"outlier_method": None})
             if cache_folder is not None:
                 self.save_to_cache()
 
@@ -440,15 +432,8 @@ class TrXASDataset:
         for attr in self.dset_attributes:
             setattr(self, attr, data[attr])
         self.dset_type = str(self.dset_type)
-        # Restore preprocessing kwargs used at cache-build time so get_energy_vs_time
-        # can compare them against the current settings.
-        if "cached_preprocessing_kwargs_json" in data.files:
-            self.curr_preprocessing_kwargs = json.loads(
-                str(self.cached_preprocessing_kwargs_json)
-            )
-        else:
-            # Old cache without stored kwargs; assume no outlier removal.
-            self.curr_preprocessing_kwargs = {"outlier_method": None}
+        # xas_data loaded; xas_data_norm computed on demand in get_energy_vs_time
+        self.xas_data_norm = None
         logger.info(f"Loaded from cache {path}")
 
     def save_to_cache(self, fname=None):
@@ -464,8 +449,14 @@ class TrXASDataset:
             return
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".tmp.npz")
-        # Uncompressed save: faster to read on NFS; ~3-4× larger than savez_compressed
-        np.savez(tmp, **{attr: getattr(self, attr) for attr in self.dset_attributes})
+        attrs = {}
+        for attr in self.dset_attributes:
+            val = getattr(self, attr)
+            # Store xas_data as float32 to halve cache size vs float64
+            if attr == "xas_data" and isinstance(val, np.ndarray):
+                val = val.astype(np.float32)
+            attrs[attr] = val
+        np.savez(tmp, **attrs)
         tmp.replace(dest)
         logger.info(f"Cache saved to {dest}")
 
@@ -596,26 +587,21 @@ class TrXASDataset:
         """
         if preprocessing_kwargs is None:
             preprocessing_kwargs = {}
-        reprocess_flag = not _preprocessing_equals(self.curr_preprocessing_kwargs, preprocessing_kwargs)
-        if reprocess_flag:
-            logger.debug(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
-            self.curr_preprocessing_kwargs = preprocessing_kwargs
 
-        if target == "raw":
-            # raw target needs xas_data (full 3-channel array); always init if absent
-            if self.xas_data is None or reprocess_flag:
-                self.init_from_file(self.fname, preprocessing_kwargs)
-        else:
-            # normalized / normalized-GS only needs xas_data_norm; cache provides it
-            if self.xas_data_norm is None or reprocess_flag:
-                self.init_from_file(self.fname, preprocessing_kwargs)
-                # Auto-rebuild the NPZ cache with the new settings so the next
-                # session doesn't fall back to re-reading the raw file again.
-                if reprocess_flag and self.cache_name is not None:
-                    self.cached_preprocessing_kwargs_json = np.array(
-                        json.dumps(preprocessing_kwargs)
-                    )
-                    self.save_to_cache()
+        # Ensure xas_data (raw 3-channel array) is available — from cache or file.
+        if self.xas_data is None:
+            self.init_from_file(self.fname, {"outlier_method": None})
+            if self.cache_name is not None:
+                self.save_to_cache()
+
+        # Recompute xas_data_norm if settings changed or not yet computed.
+        reprocess_flag = not _preprocessing_equals(self.curr_preprocessing_kwargs, preprocessing_kwargs)
+        if reprocess_flag or self.xas_data_norm is None:
+            self.curr_preprocessing_kwargs = preprocessing_kwargs
+            # remove_outlier copies xas_data internally, so self.xas_data is preserved.
+            _, self.xas_data_norm = preprocess_xas_data(
+                self.xas_data, self.shape, self.num_rows, **preprocessing_kwargs
+            )
 
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
