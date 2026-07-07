@@ -609,6 +609,13 @@ class TrXASDataset:
             # normalized / normalized-GS only needs xas_data_norm; cache provides it
             if self.xas_data_norm is None or reprocess_flag:
                 self.init_from_file(self.fname, preprocessing_kwargs)
+                # Auto-rebuild the NPZ cache with the new settings so the next
+                # session doesn't fall back to re-reading the raw file again.
+                if reprocess_flag and self.cache_name is not None:
+                    self.cached_preprocessing_kwargs_json = np.array(
+                        json.dumps(preprocessing_kwargs)
+                    )
+                    self.save_to_cache()
 
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
