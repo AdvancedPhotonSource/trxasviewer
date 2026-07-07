@@ -69,6 +69,7 @@ class ViewerController(QObject):
         self._model.error_occurred.connect(self._view.show_error)
         self._model.warning_occurred.connect(self._view.show_warning)
         self._model.status_message.connect(self._view.update_status)
+        self._model.save_completed.connect(self._view.show_save_confirmation)
 
     # --- View event handlers ---
 
@@ -102,6 +103,10 @@ class ViewerController(QObject):
     def on_save(self, kwargs: dict):
         if self._model.result is not None:
             save_results(self._model.result, **kwargs)
+            from pathlib import Path as _Path
+            dest = str(_Path(kwargs.get("directory", "")) / kwargs.get("subdirectory", "Avg"))
+            self._model.status_message.emit(f"Saved to {dest}")
+            self._model.save_completed.emit(dest)
 
     # --- Internal ---
 

@@ -11,6 +11,7 @@ class ViewerModel(QObject):
     loading_finished = Signal()
     loading_progress = Signal(int)
     status_message = Signal(str)
+    save_completed = Signal(str)        # destination path
     error_occurred = Signal(str, str)   # title, message
     warning_occurred = Signal(str, str)
 

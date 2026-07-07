@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileSystemModel,
     QLineEdit,
     QMainWindow,
+    QMessageBox,
     QRadioButton,
     QSpinBox,
     QTabWidget,
@@ -194,6 +195,9 @@ class ViewerView(QMainWindow, Ui_MainWindow):
 
     def update_status(self, msg: str, timeout: int = 5000):
         self.statusBar().showMessage(msg, timeout)
+
+    def show_save_confirmation(self, dest: str):
+        QMessageBox.information(self, "Saved", f"Results saved to:\n{dest}")
 
     def show_error(self, title: str, message: str):
         show_error_dialog(self, title, message)
@@ -780,6 +784,15 @@ class ViewerView(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event):
         if self.is_processing:
+            event.ignore()
+            return
+        reply = QMessageBox.question(
+            self, "Quit", "Are you sure you want to quit?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            event.ignore()
             return
         if hasattr(self, "_controller"):
             self._controller.shutdown()
