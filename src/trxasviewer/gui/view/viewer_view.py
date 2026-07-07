@@ -369,22 +369,155 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     # -------------------------------------------------------------------------
 
     def setup_tooltips(self):
+        # --- existing binning tooltips ---
         self.label_binbunches.setToolTip(
-            """ Number of bunches to bin:
-            -1: disable this level and beyond.
-            0: do not bin/average the lasered/delayed branches.
-            1: bin all lasered/delayed branches into one bunch.
-            N>=2: bin all lasered delayed branches as one bunch and then
-            bin N bunches into one.
-            """
+            "Number of bunches to bin:\n"
+            "  -1: disable this level and beyond\n"
+            "   0: do not bin the lasered/delayed branches\n"
+            "   1: bin all lasered/delayed branches into one bunch\n"
+            "  N≥2: bin N bunches into one after merging all lasered branches"
         )
         self.label_anchorbunch.setToolTip(
-            """ Index of bunch to anchor:
-            Laser trigggered at bunch of 0. The binning happens between the
-            anchor of the previous level [inclusive] (0 if it's the first level)
-            and the anchor of the current level [exclusive], using the number
-            of "Bin Bunches" defined below.
-            """
+            "Index of bunch to anchor:\n"
+            "Laser fires at bunch 0. Binning occurs between the previous anchor (inclusive)\n"
+            "and this anchor (exclusive), using the 'Bin Bunches' count defined below."
+        )
+
+        # --- file browser ---
+        self.pushButton_select_rawfolder.setToolTip(
+            "Open a folder containing raw SPEC-format scan files."
+        )
+        self.toolButton_refresh.setToolTip(
+            "Force a filesystem refresh. Useful when new scans are being acquired and the file list is stale."
+        )
+
+        # --- sync timing ---
+        self.groupBox_timing.setToolTip(
+            "Defines which bunch in the orbit the laser fires at. Used to align data to the laser pulse."
+        )
+        self.radioButton_sync_bunch.setToolTip(
+            "Specify the laser sync point by bunch index within the orbit."
+        )
+        self.spinBox_syncbunch_number.setToolTip(
+            "Bunch index (0-based) at which the laser fires. Varies by beamline configuration.\n"
+            "Determines which bunches are 'before laser' (ground state) vs 'after laser' (excited state)."
+        )
+        self.radioButton_sync_time.setToolTip(
+            "Specify the laser sync point by absolute time offset (µs) instead of bunch index."
+        )
+        self.doubleSpinBox_sync_time_us.setToolTip(
+            "Laser fire time in microseconds from the start of the orbit.\n"
+            "Automatically converted to a bunch index using the bunch spacing."
+        )
+
+        # --- data target & channel ---
+        self.comboBox_target.setToolTip(
+            "Processing mode:\n"
+            "  raw            — raw detector counts, no normalization\n"
+            "  normalized     — divided by ring current (ch0), no ground-state subtraction\n"
+            "  normalized-GS  — normalized + ground-state subtracted; required for kinetics and saving"
+        )
+        self.comboBox_channel_num.setToolTip(
+            "Detector channel to display:\n"
+            "  0 — background (ring current / ion chamber)\n"
+            "  1 — sample signal channel A\n"
+            "  2 — sample signal channel B\n"
+            "Only active in 'raw' mode."
+        )
+
+        # --- ground state normalization ---
+        self.comboBox_groundstate_method.setToolTip(
+            "Method for computing the pre-laser ground-state reference:\n"
+            "  bunch-average  — average N bunches immediately before the laser pulse\n"
+            "  orbital-average — average N full orbital cycles before the laser pulse\n"
+            "orbital-average is less sensitive to single-bunch noise."
+        )
+        self.spinBox_groundstate_number.setToolTip(
+            "Number of bunches (bunch-average) or orbitals (orbital-average) used to compute the ground state.\n"
+            "Maximum is constrained by the sync bunch index."
+        )
+
+        # --- outlier removal ---
+        self.checkBox_outlier.setToolTip(
+            "Remove anomalous ring-current spikes from the background channel (ch0) before normalization.\n"
+            "Recommended for datasets with beam instability."
+        )
+        self.comboBox_outlier_method.setToolTip(
+            "Algorithm for detecting outlier shots:\n"
+            "  MedianAbsoluteDeviation — robust; better for skewed distributions\n"
+            "  StandardDeviation       — assumes Gaussian noise"
+        )
+        self.doubleSpinBox_outlier_threshold.setToolTip(
+            "Detection threshold in units of MAD or standard deviations.\n"
+            "Lower values remove more shots. Typical range: 3–6."
+        )
+
+        # --- colormap & zoom ROI ---
+        self.comboBox_cmap.setToolTip(
+            "Colormap for the 2D difference map.\n"
+            "Diverging maps (bwr, coolwarm, seismic) work best for difference data."
+        )
+        self.spinBox_roix.setToolTip(
+            "Width of the zoom-in ROI box (pixels along the energy/delay axis).\n"
+            "The zoomed view updates when you click on the 2D map."
+        )
+        self.spinBox_roiy.setToolTip(
+            "Height of the zoom-in ROI box (pixels along the time axis)."
+        )
+
+        # --- file index selection ---
+        self.radioButton_selection_by_mouse.setToolTip(
+            "Select files by clicking in the file browser tree. Ctrl+click for multiple selection."
+        )
+        self.radioButton_selection_by_index.setToolTip(
+            "Select a contiguous range of scan files by numeric index.\n"
+            "Useful for batch averaging many scans without manual clicking."
+        )
+        self.comboBox_fileindex_prefix.setToolTip(
+            "Scan prefix and type (e.g., 'setup-full@laserd').\n"
+            "The index range below applies to files matching this prefix."
+        )
+        self.spinBox_fileindex_min.setToolTip("First scan index to include in the selection.")
+        self.spinBox_fileindex_max.setToolTip("Last scan index to include in the selection.")
+
+        # --- binning tabs ---
+        self.spinBox_binning_linnum.setToolTip(
+            "Number of bunches to average together in linear binning mode.\n"
+            "Larger values improve signal-to-noise at the cost of time resolution."
+        )
+        self.spinBox_binning_lognum.setToolTip(
+            "Logarithmic base for log binning.\n"
+            "Controls how rapidly bin widths increase at later delay times. Typical range: 1.1–2.0."
+        )
+
+        # --- kinetics ROIs ---
+        for n in range(1, 5):
+            getattr(self, f"checkBox_kinetics_roi{n}").setToolTip(
+                f"Enable kinetics ROI {n}. The average ΔA within ±δE of the center energy "
+                f"is extracted and plotted as a kinetics trace."
+            )
+            getattr(self, f"doubleSpinBox_kinetics_ecenter{n}").setToolTip(
+                f"Center energy (keV) for kinetics ROI {n}.\n"
+                f"Drag the dashed rectangle on the 2D map to set this interactively."
+            )
+            getattr(self, f"doubleSpinBox_kinetics_edelta{n}").setToolTip(
+                f"Half-width (±δE in keV) of kinetics ROI {n}.\n"
+                f"Averages all energy points within [ecenter − δE, ecenter + δE]."
+            )
+        self.checkBox_kinetics_errorbar.setToolTip(
+            "Display ±1σ error bars on kinetics traces, computed from scan-to-scan variance."
+        )
+
+        # --- control buttons ---
+        self.pushButton_replot.setToolTip(
+            "Reprocess and redisplay the currently selected file(s) with the current parameter settings."
+        )
+        self.pushButton_select_savefname.setToolTip(
+            "Save results (NPZ, HDF5, OriginLab text, PNG/PDF) to a folder.\n"
+            "Only available after normalized-GS processing."
+        )
+        self.pushButton_model.setToolTip(
+            "Open the TrXAS Kinetic Modeler to fit kinetics to a rate-equation model."
         )
 
     def update_groundstate_label(self):
