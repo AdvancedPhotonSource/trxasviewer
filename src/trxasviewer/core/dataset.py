@@ -6,12 +6,9 @@ import numpy as np
 import logging
 import datetime
 import traceback
-from .utilities import (
-    prepare_binning_matrix,
-    is_recently_modified,
-    preprocess_xas_data,
-    pad_last_dim,
-)
+from .utilities import prepare_binning_matrix
+from .array_ops import preprocess_xas_data, pad_last_dim
+from .file_io import is_recently_modified
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +41,55 @@ def get_scan_type_from_header(header_line):
         return "INVALID"
 
 
+def _parse_header_line(header_line: str, is_double: bool = False):
+    """Pure: parse an ``#L`` header line into dataset metadata.
+
+    Parameters
+    ----------
+    header_line : str
+        The raw ``#L ...`` header line (including the ``#L`` prefix).
+    is_double : bool
+        Whether the file uses double-length acquisition mode.
+
+    Returns
+    -------
+    dset_type : str
+        ``"EXAFS"`` or ``"LASERD"``.
+    shape : list of int
+        ``[num_channels, num_orbitals, num_bunches]``.
+    labels : list of str
+        Column labels with XAS payload columns removed.
+    labels_mask : numpy.ndarray
+        Boolean mask — ``True`` for metadata columns, ``False`` for XAS columns.
+    is_double : bool
+        Echoes back the ``is_double`` argument (for caller convenience).
+    """
+    dset_type = get_scan_type_from_header(header_line)
+
+    header = header_line[3:].strip()
+    labels = header.split()
+    if dset_type == "LASERD" and "dutd" in labels:
+        index = labels.index("dutd")
+        labels[index] = "laserd"
+
+    labels_mask = np.ones(len(labels), dtype=bool)
+    record = []
+    matches = [TRXAS_PATTERN.match(col) for col in labels]
+    for index, match in enumerate(matches):
+        if match:
+            labels_mask[index] = False
+            record.append(tuple(map(int, match.groups())))
+    labels = [labels[n] for n in range(len(labels)) if labels_mask[n]]
+
+    record = np.array(record)
+    c_min, o_min, b_min = record.min(axis=0)
+    c_max, o_max, b_max = record.max(axis=0)
+
+    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
+    shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
+    return dset_type, shape, labels, labels_mask, is_double
+
+
 @lru_cache(maxsize=128)
 def parse_header(fname):
     """
@@ -54,8 +100,9 @@ def parse_header(fname):
 
     Parameters
     ----------
-    header_line : str
-        A header string, typically starting with `#L`, followed by column labels.
+    fname : path-like
+        Path to the data file. The ``#L`` header line and optional
+        ``doublelength`` marker are read from this file.
 
     Returns
     -------
@@ -85,31 +132,7 @@ def parse_header(fname):
                 header_line = line
                 break
 
-    dset_type = get_scan_type_from_header(header_line)
-
-    header = header_line[3:].strip()
-    labels = header.split()
-    if dset_type == "LASERD" and "dutd" in labels:
-        index = labels.index("dutd")
-        labels[index] = "laserd"
-
-    labels_mask = np.ones(len(labels), dtype=bool)
-    record = []
-    matches = [TRXAS_PATTERN.match(col) for col in labels]
-    for index, match in enumerate(matches):
-        if match:
-            labels_mask[index] = False
-            record.append(tuple(map(int, match.groups())))
-    labels = [labels[n] for n in range(len(labels)) if labels_mask[n]]
-
-    record = np.array(record)
-    # np.savetxt('record.txt', record, fmt='%d')
-    c_min, o_min, b_min = record.min(axis=0)
-    c_max, o_max, b_max = record.max(axis=0)
-
-    assert c_min == 0 and o_min == 0 and b_min == 0, "min index must be 0"
-    shape = [c_max + 1, o_max + 1, b_max + 1]  # channel, orbital, bunch
-    return dset_type, shape, labels, labels_mask, is_double_length
+    return _parse_header_line(header_line, is_double=is_double_length)
 
 
 def safe_mean(data_list, compute_kinetics_errorbar=False):

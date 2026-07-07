@@ -71,7 +71,7 @@ class TrXASResult:
         # transpose diff data so: axis 0: time, axis 1: energy/delay
         data["diff"] = data["diff"].T
         self.__dict__.update(data)
-        self.svd = self.get_svd()
+        self._svd = None
         self.kinetic_labels = list(data["kinetics"].keys())
         self.num_kinetic_profiles = len(self.kinetic_labels)
         self.fitting_results = {}
@@ -126,7 +126,13 @@ class TrXASResult:
         plt.show()
         plt.close()
 
-    def get_svd(self):
+    @property
+    def svd(self):
+        if self._svd is None:
+            self._svd = self._compute_svd()
+        return self._svd
+
+    def _compute_svd(self):
         begin_idx = np.where(self.t_axis >= 0)[0][0]
         u, s, v = np.linalg.svd(self.diff[begin_idx:], full_matrices=False)
         return (u, s, v)

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from trxasviewer.core.utilities import get_scan_type as _get_scan_type
+from trxasviewer.core.file_io import get_scan_type as _get_scan_type
 from trxasviewer.core.dataset import CACHE_PATH
 
 

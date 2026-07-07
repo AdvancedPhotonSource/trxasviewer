@@ -5,10 +5,15 @@
 
 def test_core_modules_importable():
     from trxasviewer.core import constants, utilities, fitting, graph
-    from trxasviewer.core.utilities import FolderIndex, scan_data_folder
+    from trxasviewer.core.array_ops import preprocess_xas_data
+    from trxasviewer.core.file_io import get_scan_type, FolderIndex, scan_data_folder
+    from trxasviewer.core.utilities import format_time
+    from trxasviewer.core.fitting import create_initial_state_array
     assert hasattr(constants, "TIME_SCALES")
     assert hasattr(utilities, "format_time")
     assert callable(scan_data_folder)
+    assert callable(preprocess_xas_data)
+    assert callable(create_initial_state_array)
     assert hasattr(fitting, "global_fit_kinetic_model")
     assert hasattr(graph, "draw_decay_graph_with_top_nodes")
 

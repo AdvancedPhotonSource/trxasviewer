@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, QThread, QTimer
 
-from trxasviewer.core.utilities import (
+from trxasviewer.core.file_io import (
     scan_data_folder, get_scan_type, _statx_get_size, _statx_sync_dir,
 )
 from trxasviewer.gui.control.workers import AverageWorker, CacheWorker, SaveWorker
