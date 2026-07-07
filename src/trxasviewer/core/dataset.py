@@ -354,6 +354,17 @@ def create_trxas_cache(fname, cache_folder):
         return None
 
 
+def _preprocessing_equals(a: dict, b: dict) -> bool:
+    """Semantically compare preprocessing kwargs.
+
+    When ``outlier_method`` is ``None`` in both dicts, the threshold value is
+    irrelevant (no outlier removal is applied either way).
+    """
+    if a.get("outlier_method") is None and b.get("outlier_method") is None:
+        return True
+    return a == b
+
+
 class TrXASDataset:
     """Load and process a single raw SPEC-format TrXAS scan file.
 
@@ -563,13 +574,19 @@ class TrXASDataset:
         """
         if preprocessing_kwargs is None:
             preprocessing_kwargs = {}
-        reprocess_flag = self.curr_preprocessing_kwargs != preprocessing_kwargs
+        reprocess_flag = not _preprocessing_equals(self.curr_preprocessing_kwargs, preprocessing_kwargs)
         if reprocess_flag:
             logger.debug(f"Reprocessing {self.fname} with {preprocessing_kwargs}")
             self.curr_preprocessing_kwargs = preprocessing_kwargs
 
-        if target == "raw" or self.xas_data is None or reprocess_flag:
-            self.init_from_file(self.fname, preprocessing_kwargs)
+        if target == "raw":
+            # raw target needs xas_data (full 3-channel array); always init if absent
+            if self.xas_data is None or reprocess_flag:
+                self.init_from_file(self.fname, preprocessing_kwargs)
+        else:
+            # normalized / normalized-GS only needs xas_data_norm; cache provides it
+            if self.xas_data_norm is None or reprocess_flag:
+                self.init_from_file(self.fname, preprocessing_kwargs)
 
         if target == "raw":
             t_axis = np.arange(self.xas_data.shape[2]) * self.delta_t_s
