@@ -151,7 +151,7 @@ class CacheWorker(QThread):
         self.finished.emit()
         self.is_done = True
         t1 = time.perf_counter()
-        logger.info(f"CacheWorker.run finished in {t1 - t0:.3f} seconds")
+        logger.info(f"CacheWorker: cached {len(file_list)} files in {t1 - t0:.3f}s")
 
 
 class SaveWorker(QObject):

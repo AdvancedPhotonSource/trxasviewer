@@ -434,7 +434,7 @@ class TrXASDataset:
         self.dset_type = str(self.dset_type)
         # xas_data loaded; xas_data_norm computed on demand in get_energy_vs_time
         self.xas_data_norm = None
-        logger.info(f"Loaded from cache {path}")
+        logger.debug(f"Loaded from cache {path}")
 
     def save_to_cache(self, fname=None):
         """Save this dataset to an npz cache file.
@@ -458,7 +458,7 @@ class TrXASDataset:
             attrs[attr] = val
         np.savez(tmp, **attrs)
         tmp.replace(dest)
-        logger.info(f"Cache saved to {dest}")
+        logger.debug(f"Cache saved to {dest}")
 
     @classmethod
     def load_from_cache(cls, fname):
