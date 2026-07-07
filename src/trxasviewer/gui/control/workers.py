@@ -93,12 +93,14 @@ class CacheWorker(QThread):
 
     finished = Signal()
 
-    def __init__(self, file_list, number_of_processes=4, cache_folder=None):
+    def __init__(self, file_list, number_of_processes=4, cache_folder=None,
+                 preprocessing_kwargs=None):
         super().__init__()
         self.file_list = file_list
         self.processes = []
         self.number_of_processes = number_of_processes
         self.cache_folder = cache_folder
+        self.preprocessing_kwargs = preprocessing_kwargs or {"outlier_method": None}
         self.is_done = False
 
     def run(self):
@@ -113,7 +115,8 @@ class CacheWorker(QThread):
             f"to prepare {len(self.file_list)} datasets."
         )
         for part in flist_parts:
-            process = Process(target=create_trxas_cache_from_flist, args=(part, self.cache_folder))
+            process = Process(target=create_trxas_cache_from_flist,
+                              args=(part, self.cache_folder, self.preprocessing_kwargs))
             process.start()
             self.processes.append(process)
         for process in self.processes:
