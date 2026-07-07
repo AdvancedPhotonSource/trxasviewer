@@ -51,9 +51,26 @@ def save_as_hdf5(fname, results_raw):
                 if isinstance(value, str):
                     string_dt = h5py.string_dtype(encoding="utf-8")
                     group.create_dataset(key, data=value, dtype=string_dt)
+                elif isinstance(value, (list, tuple)):
+                    # Convert lists to string arrays (e.g. flist, labels)
+                    try:
+                        arr = np.array([str(v) for v in value])
+                        string_dt = h5py.string_dtype(encoding="utf-8")
+                        group.create_dataset(key, data=arr, dtype=string_dt)
+                    except Exception:
+                        pass
                 else:
                     compression = None
                     if isinstance(value, np.ndarray):
+                        if value.dtype == object:
+                            # Convert object arrays to UTF-8 string datasets
+                            try:
+                                arr = value.astype(str)
+                                string_dt = h5py.string_dtype(encoding="utf-8")
+                                group.create_dataset(key, data=arr, dtype=string_dt)
+                                continue
+                            except Exception:
+                                continue  # skip unconvertible object arrays
                         value = np.ascontiguousarray(value)
                         compression = "gzip" if value.size > 4096 else None
                     group.create_dataset(key, data=value, compression=compression)
