@@ -155,6 +155,8 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             or self.results["dset_type"] != "EXAFS"
         ):
             self.remove_kinetics_ROIs()
+        is_exafs = self.results["dset_type"] == "EXAFS"
+        self.groupBox_6.setEnabled(is_exafs)
         if not self.kinetics_roi:
             self.create_kinetics_ROIs()
         self.mouse_clicked()
@@ -184,6 +186,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     def clear_display(self):
         self.image = None
         self.results = None
+        self.groupBox_6.setEnabled(True)  # re-enable until scan type is known
 
     def set_loading(self, loading: bool):
         self.is_processing = loading
