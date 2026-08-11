@@ -218,6 +218,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.pushButton_fit.clicked.connect(self.fit_data)
         self.spinBox_nstates.valueChanged.connect(self.change_model)
         self.tableView.doubleClicked.connect(self.mouse_select_dataset)
+        self.change_model()
         self.fit_param_model = None
         self.fit_param = None
         self.curr_dset = None
@@ -248,7 +249,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
 
                 # Update widget based on the model
                 if model in ("parallel", "sequential"):
-                    flag = state_mat[n, m]
+                    flag = bool(state_mat[n, m])
                     widget.setChecked(flag)
                     widget.setEnabled(is_enabled and flag)
                 else:  # advanced model
