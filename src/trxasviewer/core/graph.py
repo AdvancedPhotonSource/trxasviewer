@@ -1,5 +1,10 @@
+import io
 from collections import deque, defaultdict
-from graphviz import Digraph
+
+import matplotlib
+matplotlib.use("Agg")
+from matplotlib import pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 from .fitting import _get_initial_state_indices, find_initial_states, create_initial_state_array  # noqa: F401
 
@@ -51,6 +56,111 @@ def verify_decay_paths(adj_matrix):
         return False, msg
 
 
+def _compute_levels_and_edges(adjacent_matrix):
+    """
+    Derives state names, initial ("top") states, the forward edge map, and
+    contiguous BFS depth levels (grouped by level) from an adjacency matrix.
+    """
+    num_states = len(adjacent_matrix)
+    ground_index = num_states - 1
+    state_names = [f"S{i + 1}" for i in range(ground_index)] + ["GS"]
+
+    top_node_names = find_initial_states(adjacent_matrix)
+    top_nodes = set(top_node_names)
+
+    levels = defaultdict(lambda: None)
+    queue = deque()
+    for node in top_nodes:
+        levels[node] = 0
+        queue.append(node)
+
+    edges = defaultdict(list)
+    for to_idx, row in enumerate(adjacent_matrix):
+        for from_idx, val in enumerate(row):
+            if val == 1 and from_idx != to_idx:
+                edges[state_names[from_idx]].append(state_names[to_idx])
+
+    while queue:
+        current = queue.popleft()
+        current_level = levels[current]
+        for neighbor in edges[current]:
+            if levels[neighbor] is None or levels[neighbor] < current_level + 1:
+                levels[neighbor] = current_level + 1
+                queue.append(neighbor)
+
+    for state in state_names:
+        if state not in levels:
+            levels[state] = max(levels.values() or [-1]) + 1
+
+    unique_levels = sorted(set(levels.values()))
+    level_map = {lvl: i for i, lvl in enumerate(unique_levels)}
+    for k in levels:
+        levels[k] = level_map[levels[k]]
+
+    max_level = max(levels.values()) if levels else -1
+
+    by_level = defaultdict(list)
+    for state, lvl in levels.items():
+        by_level[lvl].append(state)
+
+    return top_nodes, edges, by_level, max_level
+
+
+def _count_crossings(order, edges, max_level):
+    """Counts edge-pair crossings between each pair of adjacent levels for a given node order."""
+    total = 0
+    for lvl in range(max_level):
+        pos_top = {n: i for i, n in enumerate(order[lvl])}
+        pos_bot = {n: i for i, n in enumerate(order[lvl + 1])}
+        row_edges = [
+            (pos_top[src], pos_bot[dst])
+            for src in order[lvl]
+            for dst in edges.get(src, [])
+            if dst in pos_bot
+        ]
+        for i in range(len(row_edges)):
+            for j in range(i + 1, len(row_edges)):
+                (a0, a1), (b0, b1) = row_edges[i], row_edges[j]
+                if (a0 - b0) * (a1 - b1) < 0:
+                    total += 1
+    return total
+
+
+def _order_by_barycenter(by_level, edges, max_level, iterations=4):
+    """
+    Orders nodes within each depth level to reduce edge crossings between
+    adjacent levels, using the Sugiyama-style barycenter heuristic: each
+    node is repeatedly repositioned to the average rank of its neighbors
+    in the level above/below, alternating sweep direction.
+    """
+    reverse_edges = defaultdict(list)
+    for src, dsts in edges.items():
+        for dst in dsts:
+            reverse_edges[dst].append(src)
+
+    order = {lvl: sorted(by_level[lvl]) for lvl in range(max_level + 1)}
+
+    def rank_of(lvl):
+        return {node: i for i, node in enumerate(order[lvl])}
+
+    def barycenter_sort(lvl, neighbor_map, neighbor_ranks):
+        current_rank = rank_of(lvl)
+
+        def key(node):
+            neighbor_pos = [neighbor_ranks[n] for n in neighbor_map.get(node, []) if n in neighbor_ranks]
+            return sum(neighbor_pos) / len(neighbor_pos) if neighbor_pos else current_rank[node]
+
+        order[lvl] = sorted(order[lvl], key=key)
+
+    for _ in range(iterations):
+        for lvl in range(1, max_level + 1):
+            barycenter_sort(lvl, reverse_edges, rank_of(lvl - 1))
+        for lvl in range(max_level - 1, -1, -1):
+            barycenter_sort(lvl, edges, rank_of(lvl + 1))
+
+    return order
+
+
 def draw_decay_graph_with_top_nodes(
     adjacent_matrix, filename="decay_with_top_nodes", output="bytes"
 ):
@@ -69,119 +179,69 @@ def draw_decay_graph_with_top_nodes(
     if not flag:
         return False, msg
 
-    dot = Digraph(format="png")
-    dot.attr(rankdir="TB", size="6,4!", dpi="150", ratio="fill")
+    top_nodes, edges, by_level, max_level = _compute_levels_and_edges(adjacent_matrix)
+    order = _order_by_barycenter(by_level, edges, max_level)
 
-    num_states = len(adjacent_matrix)
-    ground_index = num_states - 1
-    state_names = [f"S{i + 1}" for i in range(ground_index)] + ["GS"]
-
-    # Use our new function to find the parentless ("top") nodes
-    top_node_names = find_initial_states(adjacent_matrix)
-    top_nodes = set(top_node_names)
-
-    # Compute depth levels using a simple propagation (BFS-like)
-    levels = defaultdict(lambda: None)
-    queue = deque()
-
-    for node in top_nodes:
-        levels[node] = 0
-        queue.append(node)
-
-    # Build graph edges for lookup
-    edges = defaultdict(list)
-    for to_idx, row in enumerate(adjacent_matrix):
-        for from_idx, val in enumerate(row):
-            if val == 1 and from_idx != to_idx:
-                from_node = state_names[from_idx]
-                to_node = state_names[to_idx]
-                edges[from_node].append(to_node)
-
-    # BFS to assign depth levels
-    while queue:
-        current = queue.popleft()
-        current_level = levels[current]
-        for neighbor in edges[current]:
-            if levels[neighbor] is None or levels[neighbor] < current_level + 1:
-                levels[neighbor] = current_level + 1
-                queue.append(neighbor)
-
-    # Add any nodes missed by BFS (e.g., disconnected components) and assign a default level
-    for state in state_names:
-        if state not in levels:
-            levels[state] = max(levels.values() or [-1]) + 1
-
-    # Normalize levels to be contiguous
-    unique_levels = sorted(set(levels.values()))
-    level_map = {lvl: i for i, lvl in enumerate(unique_levels)}
-    for k in levels:
-        levels[k] = level_map[levels[k]]
-
-    max_level = max(levels.values()) if levels else -1
-
-    # Create invisible nodes and edges for level alignment.
+    pos = {}
+    max_row_width = max(len(order[lvl]) for lvl in range(max_level + 1))
     for lvl in range(max_level + 1):
-        dot.node(f"level_{lvl}", label="", shape="point", width="0")
+        row = order[lvl]
+        n = len(row)
+        for i, state in enumerate(row):
+            pos[state] = (i - (n - 1) / 2.0, -lvl)
 
-    if max_level > 0:
-        for lvl in range(max_level):
-            dot.edge(f"level_{lvl}", f"level_{lvl+1}", style="invis")
+    def color_for(state):
+        if state in top_nodes:
+            return "lightgreen"
+        elif state == "GS":
+            return "lightblue"
+        return "lightcoral"
 
-    # Group nodes by level for horizontal alignment
-    for lvl in range(max_level + 1):
-        with dot.subgraph() as s:
-            s.attr(rank="same")
-            s.node(f"level_{lvl}")
-            for state, slvl in levels.items():
-                if slvl == lvl:
-                    node_label = state
-                    # If the state is an initial state, color it green and add c0 label
-                    if state in top_nodes:
-                        # state_index = state.replace("S", "")
-                        # node_label = f"{state}\nc0_{state_index}"
-                        s.node(
-                            state,
-                            # label=node_label,
-                            shape="rectangle",
-                            style="filled",
-                            fillcolor="lightgreen",
-                        )
-                    # If the state is the ground state, color it blue
-                    elif state == "GS":
-                        s.node(
-                            state,
-                            label=node_label,
-                            shape="rectangle",
-                            style="filled",
-                            fillcolor="lightblue",
-                        )
-                    # Otherwise, it's a transient state, so color it red
-                    else:
-                        s.node(
-                            state,
-                            label=node_label,
-                            shape="rectangle",
-                            style="filled",
-                            fillcolor="lightcoral",
-                        )
+    fig, ax = plt.subplots(figsize=(max(6, max_row_width * 1.3), 4), dpi=150)
+    box_w, box_h = 0.6, 0.35
 
     # Draw actual transitions with automated, boxed labels
     for from_node, to_nodes in edges.items():
         for to_node in to_nodes:
+            x0, y0 = pos[from_node]
+            x1, y1 = pos[to_node]
+            ax.add_patch(FancyArrowPatch(
+                (x0, y0 - box_h / 2), (x1, y1 + box_h / 2),
+                arrowstyle="-|>", mutation_scale=12, color="black", zorder=1,
+            ))
+
             from_index = from_node.replace("S", "")
             to_index = to_node.replace("S", "").replace("G", "0")
             text_label = f"t_{from_index}{to_index}"
+            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+            ax.text(
+                mx, my, text_label, fontsize=8, ha="center", va="center",
+                bbox=dict(boxstyle="round,pad=0.2", fc="plum", ec="none"), zorder=3,
+            )
 
-            # Use HTML-like labels to create a colored box
-            html_label = f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD BGCOLOR="plum">{text_label}</TD></TR></TABLE>>'
-            dot.edge(from_node, to_node, label=html_label)
+    for state, (x, y) in pos.items():
+        ax.add_patch(FancyBboxPatch(
+            (x - box_w / 2, y - box_h / 2), box_w, box_h,
+            boxstyle="square,pad=0.0", fc=color_for(state), ec="black", zorder=2,
+        ))
+        ax.text(x, y, state, fontsize=10, ha="center", va="center", zorder=4)
+
+    ax.set_xlim(-max_row_width / 2 - 0.5, max_row_width / 2 + 0.5)
+    ax.set_ylim(-max_level - 1, 1)
+    ax.axis("off")
+    fig.tight_layout()
 
     # Render the graph to bytes or file
     if output == "bytes":
-        return True, dot.pipe(format="png")
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png")
+        plt.close(fig)
+        return True, buf.getvalue()
     elif output == "file":
-        dot.render(filename, view=True, cleanup=True)
-        return True, filename + ".png"
+        out_path = filename + ".png"
+        fig.savefig(out_path)
+        plt.close(fig)
+        return True, out_path
 
 
 if __name__ == "__main__":

@@ -45,7 +45,6 @@ dependencies = [
     "scipy",
     "h5py",
     "pandas",
-    "graphviz",       # install graphviz binary first
     "PySide6",
     "psutil",
 ]

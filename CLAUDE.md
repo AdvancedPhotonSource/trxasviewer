@@ -51,7 +51,7 @@ src/trxasviewer/
 │   ├── file_io.py               # get_scan_type, FolderIndex, scan_data_folder, NFS helpers
 │   ├── result.py                # TrXASResult (container with lazy SVD)
 │   ├── fitting.py               # ODE-based kinetic model, global_fit_kinetic_model
-│   ├── graph.py                 # Graphviz decay diagram rendering
+│   ├── graph.py                 # Matplotlib decay diagram rendering
 │   ├── io.py                    # save_results_with_progress, save_as_hdf5/json/origin
 │   ├── plot.py                  # Matplotlib export plots (lazy import)
 │   └── constants.py             # TIME_SCALES, SCALE_TO_TIME
