@@ -161,19 +161,20 @@ def _order_by_barycenter(by_level, edges, max_level, iterations=4):
     return order
 
 
-def draw_decay_graph_with_top_nodes(
-    adjacent_matrix, filename="decay_with_top_nodes", output="bytes"
-):
+def render_decay_graph(ax, adjacent_matrix):
     """
-    Visualize decay graph with automated labeling.
+    Draw the decay graph onto an existing matplotlib Axes, with automated labeling.
     - Initial states are colored green and labeled with c0_i.
     - Ground state is colored blue.
     - Transient states are colored red.
     - Edges are labeled with decay time t_ij inside a purple box.
 
     Parameters:
+    - ax: matplotlib Axes to draw onto (cleared and configured by this function)
     - adjacent_matrix: 2D list defining transitions (1 at [i][j] means j → i)
-    - filename: output image name (without extension)
+
+    Returns:
+    - (True, None) on success, or (False, error_message) if the matrix is invalid.
     """
     flag, msg = verify_decay_paths(adjacent_matrix)
     if not flag:
@@ -197,7 +198,7 @@ def draw_decay_graph_with_top_nodes(
             return "lightblue"
         return "lightcoral"
 
-    fig, ax = plt.subplots(figsize=(max(6, max_row_width * 1.3), 4), dpi=150)
+    ax.clear()
     box_w, box_h = 0.6, 0.35
 
     # Draw actual transitions with automated, boxed labels
@@ -229,6 +230,27 @@ def draw_decay_graph_with_top_nodes(
     ax.set_xlim(-max_row_width / 2 - 0.5, max_row_width / 2 + 0.5)
     ax.set_ylim(-max_level - 1, 1)
     ax.axis("off")
+    return True, None
+
+
+def draw_decay_graph_with_top_nodes(
+    adjacent_matrix, filename="decay_with_top_nodes", output="bytes"
+):
+    """
+    Visualize decay graph with automated labeling, rendering to a standalone
+    figure and returning PNG bytes or a saved file path. See render_decay_graph
+    for the drawing logic and adjacent_matrix format.
+    """
+    flag, msg = verify_decay_paths(adjacent_matrix)
+    if not flag:
+        return False, msg
+
+    _, _, by_level, max_level = _compute_levels_and_edges(adjacent_matrix)
+    max_row_width = max(len(by_level[lvl]) for lvl in range(max_level + 1))
+
+    fig, ax = plt.subplots(figsize=(max(6, max_row_width * 1.3), 4), dpi=600)
+    render_decay_graph(ax, adjacent_matrix)
+
     fig.tight_layout()
 
     # Render the graph to bytes or file

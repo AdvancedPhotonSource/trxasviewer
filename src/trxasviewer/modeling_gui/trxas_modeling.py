@@ -10,8 +10,9 @@ import numpy as np
 import pandas as pd
 import psutil
 import pyqtgraph as pg
-from PySide6.QtCore import QByteArray, QObject, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QPixmap
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
     QApplication,
     QHeaderView,
@@ -25,7 +26,7 @@ from trxasviewer.core.constants import TIME_SCALES
 from trxasviewer.core.fitting import run_single_optimization
 from trxasviewer.modeling_gui.generated_modeling_ui import Ui_MainWindow
 from trxasviewer.gui.view.pg_plot import plot_kinetics_profile
-from trxasviewer.core.graph import draw_decay_graph_with_top_nodes
+from trxasviewer.core.graph import render_decay_graph
 from trxasviewer.core.result import TrXASResult
 from trxasviewer.core.utilities import NumpyEncoder
 from trxasviewer.gui.view.widgets import (
@@ -196,6 +197,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         pg.setConfigOptions(antialias=True)
         pg.setConfigOptions(imageAxisOrder="row-major")
         self.setupUi(self)
+        self._init_graph_canvas()
         self.setWindowTitle(f"TrXASModeler v{__version__}")
         self.model = TrXASResultTableModel()
         self.tableView.setModel(self.model)
@@ -229,6 +231,24 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         self.closed.emit()  # Let the main window know we closed
         super().closeEvent(event)
+
+    def _init_graph_canvas(self):
+        """Replace the static label_graph placeholder with a live matplotlib canvas."""
+        self.graph_figure = Figure()
+        self.graph_ax = self.graph_figure.add_subplot(111)
+        self.graph_canvas = FigureCanvasQTAgg(self.graph_figure)
+        self.graph_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        layout = self.label_graph.parentWidget().layout()
+        layout.replaceWidget(self.label_graph, self.graph_canvas)
+        self.label_graph.deleteLater()
+        del self.label_graph
+
+        # groupBox_3 (the graph's container) and its row in gridLayout_2 default
+        # to a size-hint-based policy/stretch, so the canvas would otherwise be
+        # squeezed to a small fixed area instead of filling available space.
+        self.groupBox_3.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.gridLayout_2.setRowStretch(1, 1)
 
     def change_model(self):
         """
@@ -310,24 +330,17 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
     def draw_graph(self):
         adj_matrix = self.get_state_mat()
         self.build_parameter(adj_matrix)
-        # visualize the graph
-        flag, payload = draw_decay_graph_with_top_nodes(adj_matrix, output="bytes")
+        # visualize the graph directly onto the live canvas
+        flag, msg = render_decay_graph(self.graph_ax, adj_matrix)
         if not flag:
-            self.label_graph.clear()
-            show_error_dialog(self, title="Failed to generate graph", message=payload)
+            self.graph_ax.clear()
+            self.graph_ax.axis("off")
+            self.graph_canvas.draw_idle()
+            show_error_dialog(self, title="Failed to generate graph", message=msg)
             return
-        else:
-            graph_bytes = payload
 
-        # Convert image bytes to QPixmap
-        pixmap = QPixmap()
-        pixmap.loadFromData(QByteArray(graph_bytes), "PNG")
-        # QLabel to display image
-        self.label_graph.setPixmap(pixmap)
-        self.label_graph.setScaledContents(True)
-        # This will scale the pixmap to fit the label size
-        # Set size policy to maintain aspect ratio
-        self.label_graph.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.graph_figure.tight_layout()
+        self.graph_canvas.draw_idle()
 
     def build_parameter(self, adj_mat):
         num_states = adj_mat.shape[0]
