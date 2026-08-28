@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from PySide6.QtCore import QObject, Signal, Slot, QTimer

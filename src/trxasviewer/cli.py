@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 import argparse
 import sys
 from trxasviewer import main_gui, main_modeling_gui, __version__

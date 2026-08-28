@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 from pathlib import Path
 from PySide6.QtCore import QObject, Signal
 

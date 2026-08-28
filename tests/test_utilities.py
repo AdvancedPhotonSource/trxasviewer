@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 import numpy as np
 import pytest
 from trxasviewer.core.utilities import format_time, remove_outlier, prepare_binning_matrix

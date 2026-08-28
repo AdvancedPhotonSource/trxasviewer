@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 import pytest
 from trxasviewer.core.file_io import _classify_scan_header
 from trxasviewer.core.dataset import _parse_header_line

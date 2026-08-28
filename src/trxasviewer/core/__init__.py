@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 """
 trxasviewer.core — headless data-processing library for TrXAS datasets.
 

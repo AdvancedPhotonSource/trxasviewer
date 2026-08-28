@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 from pathlib import Path
 import pandas as pd
 from trxasviewer.gui.control.workers import _SignalLogHandler  # noqa: F401 — re-exported for backward compat

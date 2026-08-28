@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 import numpy as np
 import pytest
 from trxasviewer.core.result import TrXASResult, get_levels, convert_npz_obj

@@ -1,3 +1,5 @@
+# Copyright © UChicago Argonne LLC
+# See LICENSE file for details
 """Top-level package for TrXASViewer."""
 
 from importlib.metadata import version, PackageNotFoundError
