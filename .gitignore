@@ -77,6 +77,9 @@ dask-worker-space/
 # pyenv
 .python-version
 
+# Superpowers subagent-driven-development scratch workspace
+.superpowers/
+
 # celery beat schedule file
 celerybeat-schedule
 
