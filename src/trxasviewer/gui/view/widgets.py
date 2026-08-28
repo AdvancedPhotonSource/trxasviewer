@@ -35,6 +35,7 @@ class SaveOptionsDialog(QDialog):
         self.path_edit = QLineEdit()
         self.path_edit.setPlaceholderText("Click 'Browse...' to select a directory")
         self.path_edit.setReadOnly(True)  # Make it read-only, changed via button
+        self.path_edit.setToolTip("Selected save directory (read-only; use Browse... to change).")
 
         self.prefix_label = QLabel("Subdirectory")
         self.prefix_edit = QLineEdit()
@@ -42,13 +43,19 @@ class SaveOptionsDialog(QDialog):
             "Enter a prefix for the files. It will create a folder with this name."
         )
         self.prefix_edit.setText(prefix)
+        self.prefix_edit.setToolTip("Subfolder created under the save directory to hold this result's files.")
         self.browse_button = QPushButton("Browse...")
+        self.browse_button.setToolTip("Choose the directory to save results into.")
 
         # Checkboxes
         self.cb_image = QCheckBox("Save Image (.png)")
         self.cb_numpy = QCheckBox("Save NumPy (.npy)")
         self.cb_origin = QCheckBox("Save OriginLab (.txt)")
         self.cb_hdf = QCheckBox("Save HDF5 (.hdf)")
+        self.cb_image.setToolTip("Save the 2D map as a PNG image.")
+        self.cb_numpy.setToolTip("Save the raw result arrays as a NumPy (.npz) archive.")
+        self.cb_origin.setToolTip("Save kinetics traces as tab-delimited text for OriginLab.")
+        self.cb_hdf.setToolTip("Save the full result set as an HDF5 file.")
         # Set default checked states if desired
         self.cb_image.setChecked(True)
         self.cb_numpy.setChecked(True)

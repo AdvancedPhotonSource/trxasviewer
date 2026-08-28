@@ -886,6 +886,7 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(MainWindow)
+        self.set_tool_tips()
         self.checkBox_kinetics_roi1.toggled.connect(self.doubleSpinBox_kinetics_edelta1.setEnabled)
         self.checkBox_kinetics_roi1.toggled.connect(self.doubleSpinBox_kinetics_ecenter1.setEnabled)
         self.checkBox_kinetics_roi2.toggled.connect(self.doubleSpinBox_kinetics_edelta2.setEnabled)
@@ -991,4 +992,65 @@ class Ui_MainWindow(object):
 
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Kinetics", None))
     # retranslateUi
+
+    def set_tool_tips(self):
+        # File loading
+        self.pushButton_select_rawfolder.setToolTip(u"Choose the folder containing raw scan files.")
+        self.lineEdit_rawfolder.setToolTip(u"Path to the current raw data folder.")
+        self.toolButton_refresh.setToolTip(u"Rescan the folder for new or changed files.")
+        self.treeView_fs.setToolTip(u"Browse scan files; select one or more to load (when Mouse selection is active).")
+
+        # Sync Timing
+        self.radioButton_sync_bunch.setToolTip(u"Set time-zero using a bunch index.")
+        self.radioButton_sync_time.setToolTip(u"Set time-zero using an absolute time value.")
+        self.spinBox_syncbunch_number.setToolTip(u"Bunch index where the laser fires — the time-zero reference for all kinetics.")
+        self.doubleSpinBox_sync_time_us.setToolTip(u"Laser-fire time (time-zero reference), in μs from orbit start.")
+
+        # File Selection
+        self.radioButton_selection_by_mouse.setToolTip(u"Select scan files by clicking them in the file tree.")
+        self.radioButton_selection_by_index.setToolTip(u"Select a range of scan files by index instead of clicking.")
+        self.comboBox_fileindex_prefix.setToolTip(u"Filename prefix and scan type to select a series of scans from.")
+        self.spinBox_fileindex_min.setToolTip(u"Lowest scan index to include for the selected prefix.")
+        self.spinBox_fileindex_max.setToolTip(u"Highest scan index to include for the selected prefix.")
+
+        # Preprocessing
+        self.checkBox_outlier.setToolTip(u"Detect and replace outlier bunches in the background channel before normalization.")
+        self.comboBox_outlier_method.setToolTip(u"Outlier detection statistic: Median Absolute Deviation or Standard Deviation.")
+        self.doubleSpinBox_outlier_threshold.setToolTip(u"Number of MAD/std-dev units beyond which a bunch is flagged as an outlier.")
+
+        # Ground State Normalization and Binning
+        self.comboBox_groundstate_method.setToolTip(u"How the pre-time-zero ground state is averaged: orbital-average (whole orbits before time-zero) or bunch-average (nearby bunches).")
+        self.spinBox_groundstate_number.setToolTip(u"Number of orbits (or bunches) before time-zero to average for the ground state.")
+        self.spinBox_binning_linnum.setToolTip(u"Number of evenly spaced bins after time-zero.")
+        self.spinBox_binning_lognum.setToolTip(u"Growth factor between consecutive bins after time-zero — bin width grows geometrically with bin index.")
+        for _n in range(5):
+            getattr(self, f"spinBox_numb{_n}").setToolTip(u"Bunches merged per bin in this range (-1 disables this and later levels; 0 collapses the whole range into one point).")
+            getattr(self, f"spinBox_anchor{_n}").setToolTip(u"Bunch offset from time-zero marking the end of this binning range.")
+
+        # Kinetics-Modeling ROI
+        for _n in range(1, 5):
+            getattr(self, f"checkBox_kinetics_roi{_n}").setToolTip(f"Enable energy ROI {_n} for kinetics extraction.")
+            getattr(self, f"doubleSpinBox_kinetics_ecenter{_n}").setToolTip(f"Center energy of ROI {_n}, in keV.")
+            getattr(self, f"doubleSpinBox_kinetics_edelta{_n}").setToolTip(f"Half-width (±δE) of ROI {_n}, in keV.")
+
+        # Actions / Progress
+        self.pushButton_select_savefname.setToolTip(u"Choose a folder and file formats to save the current results.")
+        self.pushButton_replot.setToolTip(u"Process the selected scans with the current settings.")
+        self.pushButton_model.setToolTip(u"Open the kinetic modeler on the current results.")
+        self.progressBar.setToolTip(u"Progress of the current processing or save operation.")
+
+        # Rawdata / Plot Display
+        self.comboBox_target.setToolTip(u"Data to display: raw, normalized, or normalized minus ground state (normalized-GS enables the diff map, kinetics, and saving).")
+        self.comboBox_channel_num.setToolTip(u"Channel to display when Target = raw (0 = background).")
+        self.comboBox_cmap.setToolTip(u"Colormap for the 2D image display.")
+        self.spinBox_roix.setToolTip(u"Width, in pixels, of the draggable zoom ROI on the 2D image.")
+        self.spinBox_roiy.setToolTip(u"Height, in pixels, of the draggable zoom ROI on the 2D image.")
+        self.checkBox_kinetics_errorbar.setToolTip(u"Show error bars on the kinetics plot.")
+        self.pg_hdl_img2d.setToolTip(u"2D energy-vs-time (or delay) map of the selected target data.")
+        self.pg_hdl_vline.setToolTip(u"Vertical line-cut through the 2D map at the crosshair position.")
+        self.pg_hdl_hline.setToolTip(u"Horizontal line-cut through the 2D map at the crosshair position.")
+        self.pg_hdl_zoomin.setToolTip(u"Zoomed-in view of the region inside the ROI box.")
+        self.pg_hdl_kinetics.setToolTip(u"Kinetics trace(s) averaged within the enabled energy ROIs.")
+        self.pg_hdl_kinetics_err.setToolTip(u"Normalized kinetics uncertainty vs. number of scans averaged.")
+    # set_tool_tips
 

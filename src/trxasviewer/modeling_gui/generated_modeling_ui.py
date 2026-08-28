@@ -729,6 +729,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
+        self.set_tool_tips()
 
         self.comboBox_fit_tunit.setCurrentIndex(1)
         self.comboBox_bsl_tunit.setCurrentIndex(1)
@@ -736,6 +737,49 @@ class Ui_MainWindow(object):
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
+
+    def set_tool_tips(self):
+        # Kinetics Data
+        self.pushButton_load.setToolTip(u"Load a previously saved kinetics results file (.npz) for modeling.")
+        self.checkBox_kinetics_profiles.setToolTip(u"Show per-ROI kinetics profile plots alongside the diff-map and SVD view.")
+        self.tableView.setToolTip(u"Loaded datasets — double-click a row to make it the active dataset.")
+
+        # State-Matrix
+        self.spinBox_nstates.setToolTip(u"Number of excited states in the kinetic model (1–5).")
+        self.comboBox_model.setToolTip(u"State-transition topology: parallel (each state decays directly to ground), sequential (states decay in a chain), or advanced (edit each transition below freely).")
+
+        # Parameters
+        self.tableView_parameters.setToolTip(u"Time-constant parameters for the model's active transitions — edit each row's unit and Min/Max fit bounds; Fit Value is filled in after fitting.")
+
+        # Actions
+        self.pushButton_save_model.setToolTip(u"Save the current state matrix, model type, and fit parameters to a JSON file.")
+        self.pushButton_load_model.setToolTip(u"Load a state matrix, model type, and fit parameters from a saved JSON file.")
+        self.pushButton_updatemodel.setToolTip(u"Rebuild the decay diagram and parameter table from the current state matrix.")
+        self.pushButton_fit.setToolTip(u"Run multi-start kinetic fitting on the active dataset using the settings below.")
+        self.pushButton_plot.setToolTip(u"Refresh the global and per-profile fit plots for the active dataset.")
+
+        # Global / Profile Fitting plots
+        self.pg_diff.setToolTip(u"Raw, fitted, and residual ΔA maps for the current dataset, shown side by side.")
+        self.pg_gfit_svd.setToolTip(u"Singular-value spectrum of the dataset — use to judge how many kinetic components are resolvable.")
+        self.pg_gfit_display.setToolTip(u"Fitted species concentrations vs. time and species spectra vs. energy, from the global fit.")
+        self.pg_pfit_display.setToolTip(u"Per-ROI kinetics traces with the fitted model overlaid.")
+
+        # Fit Settings
+        self.spinBox_num_workers.setToolTip(u"Number of worker processes for parallel optimization (capped at the number of physical CPU cores).")
+        self.spinBox_num_tries.setToolTip(u"Number of random-start optimization attempts per profile; the best (lowest-loss) result is kept.")
+        self.comboBox_fit_method.setToolTip(u"IndividualFit fits each profile separately; JointFit fits all profiles together with shared kinetics.")
+        self.comboBox_opt_method.setToolTip(u"Optimizer used for fitting; RandomChoice picks a different method for each random start.")
+        self.comboBox_bsl_trange.setToolTip(u"Baseline correction model fit over the baseline time range below: Disabled, Constant, Linear, or Quadratic.")
+        self.comboBox_bsl_tunit.setToolTip(u"Time unit for the baseline range values.")
+        self.comboBox_fit_tunit.setToolTip(u"Time unit for the fit range values.")
+        self.doubleSpinBox_bsl_tmin.setToolTip(u"Start of the time window used to estimate the pre-zero baseline.")
+        self.doubleSpinBox_bsl_tmax.setToolTip(u"End of the time window used to estimate the pre-zero baseline.")
+        self.doubleSpinBox_fit_tmin.setToolTip(u"Start of the time window used for the kinetic fit.")
+        self.doubleSpinBox_fit_tmax.setToolTip(u"End of the time window used for the kinetic fit.")
+        self.checkBox_fit_trange.setToolTip(u"Restrict fitting to the time range below; when unchecked, fits the full available range.")
+        self.checkBox_show_groundstate.setToolTip(u"Include the ground-state trace in the concentration and spectra plots.")
+        self.progressBar_fit.setToolTip(u"Fitting progress across all random-start attempts.")
+    # set_tool_tips
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Kinetics-Modeling", None))

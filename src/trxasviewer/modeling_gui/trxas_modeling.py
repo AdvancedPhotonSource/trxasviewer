@@ -239,6 +239,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.graph_ax = self.graph_figure.add_subplot(111)
         self.graph_canvas = FigureCanvasQTAgg(self.graph_figure)
         self.graph_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.graph_canvas.setToolTip(u"Decay diagram for the current state matrix — states as nodes, enabled transitions as arrows.")
 
         layout = self.label_graph.parentWidget().layout()
         layout.replaceWidget(self.label_graph, self.graph_canvas)
