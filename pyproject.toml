@@ -53,8 +53,9 @@ dependencies = [
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt"]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt", "Pillow", "PyYAML"]
 docs = ["sphinx", "sphinx-rtd-theme"]
+pyinstaller = ["pyinstaller>=6.21"]
 
 [project.urls]
 bugs = "https://github.com/AdvancedPhotonSource/trxasviewer/issues"
