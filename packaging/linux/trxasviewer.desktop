@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=TrXASViewer
+Comment=Visualize and analyze Time-Resolved X-ray Absorption Spectroscopy datasets
+Exec=trxasviewer
+Icon=trxasviewer
+Terminal=false
+Categories=Science;
