@@ -10,17 +10,24 @@
 
 from pathlib import Path
 
+from PyInstaller.utils.hooks import copy_metadata
+
 # SPECPATH is the directory containing this spec file (set by PyInstaller),
 # not the file path itself. This spec lives at the repo root alongside
 # packaging/ and src/, so both anchors are that same directory.
 spec_dir = Path(SPECPATH)
 repo_root = spec_dir
 
+# Bundle trxasviewer's dist-info metadata so importlib.metadata.version()
+# resolves the real installed version inside the frozen build instead of
+# falling back to the PackageNotFoundError default in __init__.py.
+datas = copy_metadata('trxasviewer')
+
 a = Analysis(
     [str(spec_dir / 'packaging' / 'entrypoint.py')],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=datas,
     hiddenimports=[
         'trxasviewer',
         'trxasviewer.core',
@@ -85,7 +92,7 @@ if sys.platform == 'win32':
         upx_exclude=[],
         runtime_tmpdir=None,
         console=False,
-        disable_windowed_traceback=False,
+        disable_windowed_traceback=True,
         argv_emulation=False,
         target_arch=None,
         codesign_identity=None,
