@@ -1,6 +1,7 @@
 # Copyright © UChicago Argonne LLC
 # See LICENSE file for details
 import os
+import platform
 import sys
 import json
 import logging
@@ -959,6 +960,8 @@ def main_gui(rawfolder=None, syncbunch=None, autoload=True, cache_folder=None):
             cache_folder = None
 
     app = QApplication.instance() or QApplication(sys.argv)
+    if platform.system() == "Windows":
+        app.setStyle("Fusion")
     model = ViewerModel(cache_folder=cache_folder)
     view = ViewerView(syncbunch=syncbunch, autoload=autoload)
     controller = ViewerController(model, view)

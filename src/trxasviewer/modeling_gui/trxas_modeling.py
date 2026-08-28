@@ -1,6 +1,7 @@
 # Copyright © UChicago Argonne LLC
 # See LICENSE file for details
 import logging
+import platform
 import random
 import sys
 import json
@@ -667,6 +668,8 @@ def main_modeling_gui(args, **kwargs):
         from multiprocessing import freeze_support
         freeze_support()
     app = QApplication(sys.argv)
+    if platform.system() == "Windows":
+        app.setStyle("Fusion")
     window = TrXASModeler()
     window.show()
     sys.exit(app.exec())
