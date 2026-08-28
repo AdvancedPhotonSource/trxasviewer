@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'modeling.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.2
+## Created by: Qt User Interface Compiler version 6.10.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -133,10 +133,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m43.sizePolicy().hasHeightForWidth())
         self.checkBox_m43.setSizePolicy(sizePolicy5)
         self.checkBox_m43.setMaximumSize(QSize(80, 16777215))
-        font = QFont()
-        font.setFamilies([u"DejaVu Sans"])
-        font.setPointSize(12)
-        self.checkBox_m43.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m43, 3, 3, 1, 1)
 
@@ -145,7 +141,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m31.sizePolicy().hasHeightForWidth())
         self.checkBox_m31.setSizePolicy(sizePolicy5)
         self.checkBox_m31.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m31.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m31, 2, 1, 1, 1)
 
@@ -154,7 +149,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m11.sizePolicy().hasHeightForWidth())
         self.checkBox_m11.setSizePolicy(sizePolicy5)
         self.checkBox_m11.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m11.setFont(font)
         self.checkBox_m11.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m11, 0, 1, 1, 1)
@@ -165,7 +159,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m64.sizePolicy().hasHeightForWidth())
         self.checkBox_m64.setSizePolicy(sizePolicy5)
         self.checkBox_m64.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m64.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m64, 5, 4, 1, 1)
 
@@ -174,14 +167,12 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m33.sizePolicy().hasHeightForWidth())
         self.checkBox_m33.setSizePolicy(sizePolicy5)
         self.checkBox_m33.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m33.setFont(font)
         self.checkBox_m33.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m33, 2, 3, 1, 1)
 
         self.label_3 = QLabel(self.groupBox_5)
         self.label_3.setObjectName(u"label_3")
-        self.label_3.setFont(font)
 
         self.gridLayout_5.addWidget(self.label_3, 1, 0, 1, 1)
 
@@ -190,7 +181,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m22.sizePolicy().hasHeightForWidth())
         self.checkBox_m22.setSizePolicy(sizePolicy5)
         self.checkBox_m22.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m22.setFont(font)
         self.checkBox_m22.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m22, 1, 2, 1, 1)
@@ -200,7 +190,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m32.sizePolicy().hasHeightForWidth())
         self.checkBox_m32.setSizePolicy(sizePolicy5)
         self.checkBox_m32.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m32.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m32, 2, 2, 1, 1)
 
@@ -209,7 +198,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m61.sizePolicy().hasHeightForWidth())
         self.checkBox_m61.setSizePolicy(sizePolicy5)
         self.checkBox_m61.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m61.setFont(font)
         self.checkBox_m61.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m61, 5, 1, 1, 1)
@@ -220,7 +208,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m44.sizePolicy().hasHeightForWidth())
         self.checkBox_m44.setSizePolicy(sizePolicy5)
         self.checkBox_m44.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m44.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m44, 3, 4, 1, 1)
 
@@ -231,7 +218,6 @@ class Ui_MainWindow(object):
 
         self.label_5 = QLabel(self.groupBox_5)
         self.label_5.setObjectName(u"label_5")
-        self.label_5.setFont(font)
 
         self.gridLayout_5.addWidget(self.label_5, 3, 0, 1, 1)
 
@@ -241,7 +227,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m53.sizePolicy().hasHeightForWidth())
         self.checkBox_m53.setSizePolicy(sizePolicy5)
         self.checkBox_m53.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m53.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m53, 4, 3, 1, 1)
 
@@ -251,7 +236,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m41.sizePolicy().hasHeightForWidth())
         self.checkBox_m41.setSizePolicy(sizePolicy5)
         self.checkBox_m41.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m41.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m41, 3, 1, 1, 1)
 
@@ -261,13 +245,11 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m54.sizePolicy().hasHeightForWidth())
         self.checkBox_m54.setSizePolicy(sizePolicy5)
         self.checkBox_m54.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m54.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m54, 4, 4, 1, 1)
 
         self.label_2 = QLabel(self.groupBox_5)
         self.label_2.setObjectName(u"label_2")
-        self.label_2.setFont(font)
 
         self.gridLayout_5.addWidget(self.label_2, 0, 0, 1, 1)
 
@@ -277,7 +259,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m55.sizePolicy().hasHeightForWidth())
         self.checkBox_m55.setSizePolicy(sizePolicy5)
         self.checkBox_m55.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m55.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m55, 4, 5, 1, 1)
 
@@ -286,7 +267,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m63.sizePolicy().hasHeightForWidth())
         self.checkBox_m63.setSizePolicy(sizePolicy5)
         self.checkBox_m63.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m63.setFont(font)
         self.checkBox_m63.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m63, 5, 3, 1, 1)
@@ -296,13 +276,11 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m21.sizePolicy().hasHeightForWidth())
         self.checkBox_m21.setSizePolicy(sizePolicy5)
         self.checkBox_m21.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m21.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m21, 1, 1, 1, 1)
 
         self.label_6 = QLabel(self.groupBox_5)
         self.label_6.setObjectName(u"label_6")
-        self.label_6.setFont(font)
 
         self.gridLayout_5.addWidget(self.label_6, 4, 0, 1, 1)
 
@@ -312,13 +290,11 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m52.sizePolicy().hasHeightForWidth())
         self.checkBox_m52.setSizePolicy(sizePolicy5)
         self.checkBox_m52.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m52.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m52, 4, 2, 1, 1)
 
         self.label_4 = QLabel(self.groupBox_5)
         self.label_4.setObjectName(u"label_4")
-        self.label_4.setFont(font)
 
         self.gridLayout_5.addWidget(self.label_4, 2, 0, 1, 1)
 
@@ -327,7 +303,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m62.sizePolicy().hasHeightForWidth())
         self.checkBox_m62.setSizePolicy(sizePolicy5)
         self.checkBox_m62.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m62.setFont(font)
         self.checkBox_m62.setChecked(True)
 
         self.gridLayout_5.addWidget(self.checkBox_m62, 5, 2, 1, 1)
@@ -338,7 +313,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m51.sizePolicy().hasHeightForWidth())
         self.checkBox_m51.setSizePolicy(sizePolicy5)
         self.checkBox_m51.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m51.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m51, 4, 1, 1, 1)
 
@@ -348,7 +322,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m65.sizePolicy().hasHeightForWidth())
         self.checkBox_m65.setSizePolicy(sizePolicy5)
         self.checkBox_m65.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m65.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m65, 5, 5, 1, 1)
 
@@ -358,7 +331,6 @@ class Ui_MainWindow(object):
         sizePolicy5.setHeightForWidth(self.checkBox_m42.sizePolicy().hasHeightForWidth())
         self.checkBox_m42.setSizePolicy(sizePolicy5)
         self.checkBox_m42.setMaximumSize(QSize(80, 16777215))
-        self.checkBox_m42.setFont(font)
 
         self.gridLayout_5.addWidget(self.checkBox_m42, 3, 2, 1, 1)
 
@@ -435,9 +407,9 @@ class Ui_MainWindow(object):
         self.pg_gfit_display.setObjectName(u"pg_gfit_display")
         sizePolicy6.setHeightForWidth(self.pg_gfit_display.sizePolicy().hasHeightForWidth())
         self.pg_gfit_display.setSizePolicy(sizePolicy6)
-        font1 = QFont()
-        font1.setFamilies([u"DejaVu Sans"])
-        self.pg_gfit_display.setFont(font1)
+        font = QFont()
+        font.setFamilies([u"DejaVu Sans"])
+        self.pg_gfit_display.setFont(font)
 
         self.gridLayout_4.addWidget(self.pg_gfit_display, 2, 0, 1, 2)
 

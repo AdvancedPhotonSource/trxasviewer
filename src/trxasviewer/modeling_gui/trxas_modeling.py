@@ -198,6 +198,7 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         pg.setConfigOptions(imageAxisOrder="row-major")
         self.setupUi(self)
         self._init_graph_canvas()
+        self._init_state_matrix_tooltips()
         self.setWindowTitle(f"TrXASModeler v{__version__}")
         self.model = TrXASResultTableModel()
         self.tableView.setModel(self.model)
@@ -249,6 +250,44 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         # squeezed to a small fixed area instead of filling available space.
         self.groupBox_3.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.gridLayout_2.setRowStretch(1, 1)
+
+    def _init_state_matrix_tooltips(self):
+        """Explain the physical meaning of each State-Matrix checkbox.
+
+        checkBox_m{n+1}{m+1} follows the same (row=n, col=m) convention used
+        throughout this class (e.g. get_state_mat, build_parameter): m<n is a
+        transfer State(m+1)->State(n+1), n==m is the diagonal "state is active"
+        flag, and n==ground_row is the decay/recovery pathway to the ground state.
+        """
+        ground_row = MAX_STATES - 1
+        for n in range(MAX_STATES):
+            for m in range(n + 1):
+                widget = getattr(self, f"checkBox_m{n + 1}{m + 1}", None)
+                if widget is None:
+                    continue
+
+                if n == ground_row:
+                    summary = f"State {m + 1} → Ground State (recovery)"
+                    detail = (
+                        f"Adds fit parameter t_{m + 1}0: lifetime of State {m + 1} "
+                        "decaying back to the ground state (rate = 1/t)."
+                    )
+                elif n == m:
+                    summary = f"State {n + 1} is an active/source state"
+                    detail = (
+                        f"Marks State {n + 1} as independently populated at t=0. "
+                        "Does not add a fit parameter."
+                    )
+                else:
+                    summary = f"State {m + 1} → State {n + 1}"
+                    detail = (
+                        f"Adds fit parameter t_{m + 1}{n + 1}: lifetime for "
+                        f"population transfer from State {m + 1} into "
+                        f"State {n + 1} (rate = 1/t)."
+                    )
+
+                widget.setToolTip(f"{summary}\n{detail}")
+                widget.setStatusTip(f"{summary} — {detail}")
 
     def change_model(self):
         """

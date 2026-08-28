@@ -202,12 +202,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m34</string>
                 </property>
@@ -227,12 +221,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m13</string>
                 </property>
@@ -251,12 +239,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m11</string>
@@ -283,12 +265,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m40</string>
                 </property>
@@ -308,12 +284,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m33</string>
                 </property>
@@ -324,12 +294,6 @@
               </item>
               <item row="1" column="0">
                <widget class="QLabel" name="label_3">
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>State2</string>
                 </property>
@@ -348,12 +312,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m22</string>
@@ -377,12 +335,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m23</string>
                 </property>
@@ -401,12 +353,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m10</string>
@@ -433,12 +379,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m44</string>
                 </property>
@@ -453,12 +393,6 @@
               </item>
               <item row="3" column="0">
                <widget class="QLabel" name="label_5">
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>State4</string>
                 </property>
@@ -480,12 +414,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m35</string>
@@ -509,12 +437,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m14</string>
                 </property>
@@ -537,12 +459,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m45</string>
                 </property>
@@ -550,12 +466,6 @@
               </item>
               <item row="0" column="0">
                <widget class="QLabel" name="label_2">
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>State1</string>
                 </property>
@@ -578,12 +488,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m55</string>
                 </property>
@@ -602,12 +506,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m30</string>
@@ -631,12 +529,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m12</string>
                 </property>
@@ -644,12 +536,6 @@
               </item>
               <item row="4" column="0">
                <widget class="QLabel" name="label_6">
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>State5</string>
                 </property>
@@ -672,12 +558,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m25</string>
                 </property>
@@ -685,12 +565,6 @@
               </item>
               <item row="2" column="0">
                <widget class="QLabel" name="label_4">
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>State3</string>
                 </property>
@@ -709,12 +583,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m20</string>
@@ -741,12 +609,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m15</string>
                 </property>
@@ -769,12 +631,6 @@
                   <height>16777215</height>
                  </size>
                 </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
-                </property>
                 <property name="text">
                  <string>m50</string>
                 </property>
@@ -796,12 +652,6 @@
                   <width>80</width>
                   <height>16777215</height>
                  </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <family>DejaVu Sans</family>
-                  <pointsize>12</pointsize>
-                 </font>
                 </property>
                 <property name="text">
                  <string>m24</string>
