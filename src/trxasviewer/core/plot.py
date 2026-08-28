@@ -24,11 +24,6 @@ def _configure_matplotlib():
     if _MPL_CONFIGURED:
         return
     import matplotlib.pyplot as plt
-    try:
-        import scienceplots  # noqa: F401 — registers matplotlib styles
-        plt.style.use(["science", "no-latex"])
-    except ImportError:
-        pass
     plt.rcParams["pdf.fonttype"] = 42  # TrueType fonts for Illustrator compatibility
     plt.rcParams["font.size"] = 7
     plt.rcParams["font.sans-serif"] = "Arial"

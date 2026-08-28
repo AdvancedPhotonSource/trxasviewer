@@ -41,7 +41,6 @@ dependencies = [
     "numpy",
     "pyqtgraph",
     "matplotlib",
-    "scienceplots",
     "scipy",
     "h5py",
     "pandas",
@@ -53,13 +52,13 @@ dependencies = [
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt"]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt", "Pillow", "PyYAML"]
 docs = ["sphinx", "sphinx-rtd-theme"]
+pyinstaller = ["pyinstaller>=6.21"]
 
 [project.urls]
-bugs = "https://github.com/AZjk/trxasviewer/issues"
-changelog = "https://github.com/AZjk/trxasviewer/blob/master/changelog.md"
-homepage = "https://github.com/AZjk/trxasviewer"
+bugs = "https://github.com/AdvancedPhotonSource/trxasviewer/issues"
+homepage = "https://github.com/AdvancedPhotonSource/trxasviewer"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
