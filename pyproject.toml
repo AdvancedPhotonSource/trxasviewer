@@ -41,7 +41,6 @@ dependencies = [
     "numpy",
     "pyqtgraph",
     "matplotlib",
-    "scienceplots",
     "scipy",
     "h5py",
     "pandas",
