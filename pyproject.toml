@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -27,7 +27,7 @@ classifiers = [
     "Natural Language :: English",
 ]
 
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 keywords = [
     "X-ray absorption",
     "spectroscopy",
@@ -45,17 +45,15 @@ dependencies = [
     "scipy",
     "h5py",
     "pandas",
-    "graphviz",       # install graphviz binary first
-    "PySide6==6.8.3",
+    "PySide6",
     "psutil",
-    "pandas",
 ]
 
 [project.scripts]
 trxasviewer = "trxasviewer.cli:main"
 
 [project.optional-dependencies]
-dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff"]
+dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
@@ -72,6 +70,12 @@ local_scheme = "node-and-timestamp"
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+# Ruff
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = ["**/generated_ui.py", "**/generated_modeling_ui.py"]
 
 # Mypy
 [tool.mypy]
