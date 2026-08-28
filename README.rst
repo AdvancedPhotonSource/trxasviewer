@@ -9,8 +9,8 @@ A PySide6 GUI for visualizing and analyzing **Time-Resolved X-ray Absorption
 Spectroscopy (TrXAS)** datasets collected at synchrotron light sources such as
 the Advanced Photon Source (APS).
 
-* Free software: MIT license
-* Source: https://github.com/AZjk/trxasviewer
+* Free software: Apache Software License 2.0
+* Source: https://github.com/AdvancedPhotonSource/trxasviewer
 
 
 Features
@@ -45,9 +45,6 @@ Installation
 .. code-block:: bash
 
     pip install trxasviewer
-
-The ``graphviz`` Python package requires the Graphviz binaries to be installed
-separately (``apt install graphviz`` / ``brew install graphviz`` / conda).
 
 
 Usage
@@ -95,7 +92,7 @@ Development
 
 .. code-block:: bash
 
-    git clone https://github.com/AZjk/trxasviewer
+    git clone https://github.com/AdvancedPhotonSource/trxasviewer
     cd trxasviewer
     pip install -e ".[dev]"
     pytest tests/

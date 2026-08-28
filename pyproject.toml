@@ -57,9 +57,8 @@ dev = ["coverage", "pytest", "pytest-cov", "mypy", "ruff", "twine", "pytest-qt"]
 docs = ["sphinx", "sphinx-rtd-theme"]
 
 [project.urls]
-bugs = "https://github.com/AZjk/trxasviewer/issues"
-changelog = "https://github.com/AZjk/trxasviewer/blob/master/changelog.md"
-homepage = "https://github.com/AZjk/trxasviewer"
+bugs = "https://github.com/AdvancedPhotonSource/trxasviewer/issues"
+homepage = "https://github.com/AdvancedPhotonSource/trxasviewer"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
