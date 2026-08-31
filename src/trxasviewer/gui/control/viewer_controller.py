@@ -87,6 +87,7 @@ class ViewerController(QObject):
     # --- View event handlers ---
 
     def on_folder_selected(self, path: Path):
+        path = path.expanduser().resolve()
         if path.is_file():
             path = path.parent
         self._folder_index = scan_data_folder(path)

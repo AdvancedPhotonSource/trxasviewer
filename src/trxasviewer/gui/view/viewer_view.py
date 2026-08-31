@@ -27,7 +27,12 @@ from PySide6.QtWidgets import (
 )
 
 from trxasviewer import __version__
-from trxasviewer.core.utilities import format_time
+from trxasviewer.core.utilities import (
+    format_time,
+    compute_sync_max_bounds,
+    bunch_index_to_sync_time_us,
+    sync_time_us_to_bunch_index,
+)
 from trxasviewer.gui.view.generated_ui import Ui_MainWindow
 from trxasviewer.gui.view.widgets import (
     VlockedRectROI,
@@ -97,8 +102,15 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.toolButton_refresh.clicked.connect(self.reload_rawfolder)
         self.spinBox_syncbunch_number.editingFinished.connect(self._on_sync_param_changed)
         self.spinBox_syncbunch_number.editingFinished.connect(self.update_groundstate_label)
+        self.spinBox_syncbunch_number.valueChanged.connect(self._sync_time_from_bunch)
         self.doubleSpinBox_sync_time_us.valueChanged.connect(self._on_sync_param_changed)
+        self.doubleSpinBox_sync_time_us.valueChanged.connect(self._sync_bunch_from_time)
+        self.doubleSpinBox_sync_time_us.valueChanged.connect(self.update_groundstate_label)
         self.radioButton_sync_time.toggled.connect(self._on_sync_param_changed)
+        self.radioButton_sync_time.toggled.connect(self.doubleSpinBox_sync_time_us.setEnabled)
+        self.radioButton_sync_time.toggled.connect(self.update_groundstate_label)
+        self.radioButton_sync_bunch.toggled.connect(self.spinBox_syncbunch_number.setEnabled)
+        self.radioButton_sync_bunch.toggled.connect(self.update_groundstate_label)
         self.pushButton_select_savefname.setDisabled(True)
         self.comboBox_groundstate_method.currentIndexChanged.connect(
             self.update_groundstate_label
@@ -179,12 +191,58 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self._update_sync_timing_display(results)
 
     def _update_sync_timing_display(self, results: dict):
-        """Internal helper: updates the timing group-box title from results."""
+        """Internal helper: updates the timing group-box title and clamps the
+        sync bunch/time widgets to the loaded dataset's size, so a sync value
+        can't be entered that indexes past the end of the dataset's per-bunch
+        arrays (see compute_sync_max_bounds)."""
         bunch_mode = results["bunch_mode"]
         dt_ns = results["delta_t_s"] * 1e9
         self.groupBox_timing.setTitle(
             f"Sync Timing: [{bunch_mode}-bunch]:[{dt_ns:.3f} ns]"
         )
+        max_bunch_index, max_time_us = compute_sync_max_bounds(
+            results["shape"], results["delta_t_s"]
+        )
+        # Signals are blocked while adjusting bounds: otherwise Qt's own
+        # clamp-on-setMaximum for the *passive* (disabled) widget fires its
+        # valueChanged, which would run through _sync_time_from_bunch /
+        # _sync_bunch_from_time and overwrite the active widget's still-valid
+        # value before the authoritative resync below runs.
+        self._clamp_to_maximum(self.spinBox_syncbunch_number, max_bunch_index)
+        self._clamp_to_maximum(self.doubleSpinBox_sync_time_us, max_time_us)
+        # delta_t_s can change between datasets (different bunch modes), so
+        # re-derive the passive widget's value from whichever one is active.
+        if self.radioButton_sync_bunch.isChecked():
+            self._sync_time_from_bunch(self.spinBox_syncbunch_number.value())
+        else:
+            self._sync_bunch_from_time(self.doubleSpinBox_sync_time_us.value())
+
+    @staticmethod
+    def _clamp_to_maximum(widget, maximum):
+        """Set a spinbox's maximum and ensure its current value is <= it."""
+        widget.blockSignals(True)
+        widget.setMaximum(maximum)
+        if widget.value() > maximum:
+            widget.setValue(maximum)
+        widget.blockSignals(False)
+
+    def _sync_time_from_bunch(self, bunch_value: int):
+        """Mirror the bunch spinbox's value into the time spinbox (µs)."""
+        if self.results is None:
+            return
+        time_us = bunch_index_to_sync_time_us(bunch_value, self.results["delta_t_s"])
+        self.doubleSpinBox_sync_time_us.blockSignals(True)
+        self.doubleSpinBox_sync_time_us.setValue(time_us)
+        self.doubleSpinBox_sync_time_us.blockSignals(False)
+
+    def _sync_bunch_from_time(self, time_us: float):
+        """Mirror the time spinbox's value (µs) into the bunch spinbox."""
+        if self.results is None:
+            return
+        bunch_value = sync_time_us_to_bunch_index(time_us, self.results["delta_t_s"])
+        self.spinBox_syncbunch_number.blockSignals(True)
+        self.spinBox_syncbunch_number.setValue(bunch_value)
+        self.spinBox_syncbunch_number.blockSignals(False)
 
     def clear_display(self):
         self.image = None
@@ -220,6 +278,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     def update_folder_ui(self, path: Path, combos: list, folder_index):
         self.lineEdit_rawfolder.setText(str(path))
         self.folder_index = folder_index
+        self.proxy_model.set_root_path(path)
         self.proxy_model.update_type_db(folder_index.type_db)
         self.comboBox_fileindex_prefix.clear()
         self.comboBox_fileindex_prefix.addItems(combos)
@@ -332,6 +391,13 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             source_index = self.proxy_model.mapToSource(proxy_index)
             if source_index.isValid():
                 file_paths.append(self.fs_model.filePath(source_index))
+        if file_paths and self.folder_index is None:
+            self.show_warning(
+                "No Raw Data Folder Selected",
+                "Please select a raw data folder before choosing files.",
+            )
+            self._on_folder_button_clicked()
+            return
         self.files_selected.emit(file_paths)
 
     def _on_save_clicked(self):
@@ -526,29 +592,42 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             "Open the TrXAS Kinetic Modeler to fit kinetics to a rate-equation model."
         )
 
+    def _current_sync_index(self):
+        """Bunch-index equivalent of the current sync setting, or None if not
+        resolvable yet (time-sync mode before any dataset has been loaded)."""
+        if self.radioButton_sync_bunch.isChecked():
+            return self.spinBox_syncbunch_number.value()
+        if self.results and self.results.get("delta_t_s"):
+            return sync_time_us_to_bunch_index(
+                self.doubleSpinBox_sync_time_us.value(), self.results["delta_t_s"]
+            )
+        return None
+
     def update_groundstate_label(self):
         text = self.comboBox_groundstate_method.currentText()
-        sync_is_bunch = self.radioButton_sync_bunch.isChecked()
-        sync_bunch_val = self.spinBox_syncbunch_number.value()
+        num_bunches = self.results.get("bunch_mode") if self.results else None
+        sync_index = self._current_sync_index()
         if text == "orbital-average":
             self.label_groundstate_num.setText("Number of orbitals:")
-            if sync_is_bunch and self.results is not None:
-                num_bunches = self.results.get("bunch_mode", None)
-                if num_bunches:
-                    max_orbitals = max(1, sync_bunch_val // num_bunches)
-                    self.spinBox_groundstate_number.setMaximum(max_orbitals)
-                    if self.spinBox_groundstate_number.value() > max_orbitals:
-                        self.spinBox_groundstate_number.setValue(max_orbitals)
-                else:
-                    self.spinBox_groundstate_number.setMaximum(999999)
+            if sync_index is not None and num_bunches:
+                max_orbitals = sync_index // num_bunches
+                if max_orbitals < 1:
+                    self.comboBox_groundstate_method.setCurrentText("bunch-average")
+                    return
+                self.spinBox_groundstate_number.setMaximum(max_orbitals)
+                if self.spinBox_groundstate_number.value() > max_orbitals:
+                    self.spinBox_groundstate_number.setValue(max_orbitals)
             else:
                 self.spinBox_groundstate_number.setMaximum(999999)
         elif text == "bunch-average":
             self.label_groundstate_num.setText("Number of bunches:")
-            if sync_is_bunch:
-                self.spinBox_groundstate_number.setMaximum(sync_bunch_val)
-                if self.spinBox_groundstate_number.value() > sync_bunch_val:
-                    self.spinBox_groundstate_number.setValue(sync_bunch_val)
+            if sync_index is not None:
+                max_bunches = max(1, sync_index)
+                self.spinBox_groundstate_number.setMaximum(max_bunches)
+                if self.spinBox_groundstate_number.value() > max_bunches:
+                    self.spinBox_groundstate_number.setValue(max_bunches)
+            else:
+                self.spinBox_groundstate_number.setMaximum(999999)
 
     def reload_rawfolder(self):
         raw_folder = self.lineEdit_rawfolder.text()
