@@ -105,9 +105,12 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.spinBox_syncbunch_number.valueChanged.connect(self._sync_time_from_bunch)
         self.doubleSpinBox_sync_time_us.valueChanged.connect(self._on_sync_param_changed)
         self.doubleSpinBox_sync_time_us.valueChanged.connect(self._sync_bunch_from_time)
+        self.doubleSpinBox_sync_time_us.valueChanged.connect(self.update_groundstate_label)
         self.radioButton_sync_time.toggled.connect(self._on_sync_param_changed)
         self.radioButton_sync_time.toggled.connect(self.doubleSpinBox_sync_time_us.setEnabled)
+        self.radioButton_sync_time.toggled.connect(self.update_groundstate_label)
         self.radioButton_sync_bunch.toggled.connect(self.spinBox_syncbunch_number.setEnabled)
+        self.radioButton_sync_bunch.toggled.connect(self.update_groundstate_label)
         self.pushButton_select_savefname.setDisabled(True)
         self.comboBox_groundstate_method.currentIndexChanged.connect(
             self.update_groundstate_label
@@ -589,29 +592,42 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             "Open the TrXAS Kinetic Modeler to fit kinetics to a rate-equation model."
         )
 
+    def _current_sync_index(self):
+        """Bunch-index equivalent of the current sync setting, or None if not
+        resolvable yet (time-sync mode before any dataset has been loaded)."""
+        if self.radioButton_sync_bunch.isChecked():
+            return self.spinBox_syncbunch_number.value()
+        if self.results and self.results.get("delta_t_s"):
+            return sync_time_us_to_bunch_index(
+                self.doubleSpinBox_sync_time_us.value(), self.results["delta_t_s"]
+            )
+        return None
+
     def update_groundstate_label(self):
         text = self.comboBox_groundstate_method.currentText()
-        sync_is_bunch = self.radioButton_sync_bunch.isChecked()
-        sync_bunch_val = self.spinBox_syncbunch_number.value()
+        num_bunches = self.results.get("bunch_mode") if self.results else None
+        sync_index = self._current_sync_index()
         if text == "orbital-average":
             self.label_groundstate_num.setText("Number of orbitals:")
-            if sync_is_bunch and self.results is not None:
-                num_bunches = self.results.get("bunch_mode", None)
-                if num_bunches:
-                    max_orbitals = max(1, sync_bunch_val // num_bunches)
-                    self.spinBox_groundstate_number.setMaximum(max_orbitals)
-                    if self.spinBox_groundstate_number.value() > max_orbitals:
-                        self.spinBox_groundstate_number.setValue(max_orbitals)
-                else:
-                    self.spinBox_groundstate_number.setMaximum(999999)
+            if sync_index is not None and num_bunches:
+                max_orbitals = sync_index // num_bunches
+                if max_orbitals < 1:
+                    self.comboBox_groundstate_method.setCurrentText("bunch-average")
+                    return
+                self.spinBox_groundstate_number.setMaximum(max_orbitals)
+                if self.spinBox_groundstate_number.value() > max_orbitals:
+                    self.spinBox_groundstate_number.setValue(max_orbitals)
             else:
                 self.spinBox_groundstate_number.setMaximum(999999)
         elif text == "bunch-average":
             self.label_groundstate_num.setText("Number of bunches:")
-            if sync_is_bunch:
-                self.spinBox_groundstate_number.setMaximum(sync_bunch_val)
-                if self.spinBox_groundstate_number.value() > sync_bunch_val:
-                    self.spinBox_groundstate_number.setValue(sync_bunch_val)
+            if sync_index is not None:
+                max_bunches = max(1, sync_index)
+                self.spinBox_groundstate_number.setMaximum(max_bunches)
+                if self.spinBox_groundstate_number.value() > max_bunches:
+                    self.spinBox_groundstate_number.setValue(max_bunches)
+            else:
+                self.spinBox_groundstate_number.setMaximum(999999)
 
     def reload_rawfolder(self):
         raw_folder = self.lineEdit_rawfolder.text()
