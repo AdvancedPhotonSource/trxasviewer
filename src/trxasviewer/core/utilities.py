@@ -102,6 +102,60 @@ def prepare_binning_matrix(
     return mat, nobin_laserd_idx
 
 
+def compute_sync_max_bounds(shape, delta_t_s):
+    """Compute the largest valid sync bunch index and sync time for a dataset.
+
+    The sync value (bunch index or, equivalently, time) is used to index directly
+    into per-bunch arrays of length ``num_orbitals * num_bunches`` during
+    ground-state subtraction and binning (see ``TrXASDataset.subtract_groundstate``
+    and ``prepare_binning_matrix``). A sync value at or beyond that length raises
+    ``IndexError: index ... is out of bounds``, so GUI widgets that accept a sync
+    value must be clamped to these bounds.
+
+    Args:
+        shape: Dataset shape tuple ``(num_channels, num_orbitals, num_bunches)``.
+        delta_t_s: Per-bunch time spacing in seconds.
+
+    Returns:
+        Tuple ``(max_bunch_index, max_time_us)``.
+    """
+    _, num_orbitals, num_bunches = shape
+    total_bunches = num_orbitals * num_bunches
+    max_bunch_index = max(0, total_bunches - 1)
+    max_time_us = max_bunch_index * delta_t_s * 1e6
+    return max_bunch_index, max_time_us
+
+
+def bunch_index_to_sync_time_us(bunch_index, delta_t_s):
+    """Convert a sync bunch index to the equivalent sync time in microseconds.
+
+    Args:
+        bunch_index: Bunch index (0-based).
+        delta_t_s: Per-bunch time spacing in seconds.
+
+    Returns:
+        Equivalent sync time in microseconds.
+    """
+    return bunch_index * delta_t_s * 1e6
+
+
+def sync_time_us_to_bunch_index(time_us, delta_t_s):
+    """Convert a sync time in microseconds to the equivalent bunch index.
+
+    Truncates the same way as ``TrXASDataset.subtract_groundstate`` does for
+    ``sync_type="time"`` (``int(sync_value_s / delta_t_s)``), so the bunch index
+    displayed in the GUI matches the index actually used during processing.
+
+    Args:
+        time_us: Sync time in microseconds.
+        delta_t_s: Per-bunch time spacing in seconds.
+
+    Returns:
+        Equivalent bunch index (truncated towards zero).
+    """
+    return int(time_us / (delta_t_s * 1e6))
+
+
 def format_time(input_time, as_string=True):
     """
     Convert time in seconds to a human-readable string or its components.

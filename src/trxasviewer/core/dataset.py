@@ -648,7 +648,7 @@ class TrXASDataset:
 
     def subtract_groundstate(
         self,
-        sync_type="time",
+        sync_type="bunch",
         sync_value=1820,
         gs_method="per_bunch",
         gs_value=5,

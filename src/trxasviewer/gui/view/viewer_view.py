@@ -27,7 +27,12 @@ from PySide6.QtWidgets import (
 )
 
 from trxasviewer import __version__
-from trxasviewer.core.utilities import format_time
+from trxasviewer.core.utilities import (
+    format_time,
+    compute_sync_max_bounds,
+    bunch_index_to_sync_time_us,
+    sync_time_us_to_bunch_index,
+)
 from trxasviewer.gui.view.generated_ui import Ui_MainWindow
 from trxasviewer.gui.view.widgets import (
     VlockedRectROI,
@@ -97,8 +102,12 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self.toolButton_refresh.clicked.connect(self.reload_rawfolder)
         self.spinBox_syncbunch_number.editingFinished.connect(self._on_sync_param_changed)
         self.spinBox_syncbunch_number.editingFinished.connect(self.update_groundstate_label)
+        self.spinBox_syncbunch_number.valueChanged.connect(self._sync_time_from_bunch)
         self.doubleSpinBox_sync_time_us.valueChanged.connect(self._on_sync_param_changed)
+        self.doubleSpinBox_sync_time_us.valueChanged.connect(self._sync_bunch_from_time)
         self.radioButton_sync_time.toggled.connect(self._on_sync_param_changed)
+        self.radioButton_sync_time.toggled.connect(self.doubleSpinBox_sync_time_us.setEnabled)
+        self.radioButton_sync_bunch.toggled.connect(self.spinBox_syncbunch_number.setEnabled)
         self.pushButton_select_savefname.setDisabled(True)
         self.comboBox_groundstate_method.currentIndexChanged.connect(
             self.update_groundstate_label
@@ -179,12 +188,58 @@ class ViewerView(QMainWindow, Ui_MainWindow):
         self._update_sync_timing_display(results)
 
     def _update_sync_timing_display(self, results: dict):
-        """Internal helper: updates the timing group-box title from results."""
+        """Internal helper: updates the timing group-box title and clamps the
+        sync bunch/time widgets to the loaded dataset's size, so a sync value
+        can't be entered that indexes past the end of the dataset's per-bunch
+        arrays (see compute_sync_max_bounds)."""
         bunch_mode = results["bunch_mode"]
         dt_ns = results["delta_t_s"] * 1e9
         self.groupBox_timing.setTitle(
             f"Sync Timing: [{bunch_mode}-bunch]:[{dt_ns:.3f} ns]"
         )
+        max_bunch_index, max_time_us = compute_sync_max_bounds(
+            results["shape"], results["delta_t_s"]
+        )
+        # Signals are blocked while adjusting bounds: otherwise Qt's own
+        # clamp-on-setMaximum for the *passive* (disabled) widget fires its
+        # valueChanged, which would run through _sync_time_from_bunch /
+        # _sync_bunch_from_time and overwrite the active widget's still-valid
+        # value before the authoritative resync below runs.
+        self._clamp_to_maximum(self.spinBox_syncbunch_number, max_bunch_index)
+        self._clamp_to_maximum(self.doubleSpinBox_sync_time_us, max_time_us)
+        # delta_t_s can change between datasets (different bunch modes), so
+        # re-derive the passive widget's value from whichever one is active.
+        if self.radioButton_sync_bunch.isChecked():
+            self._sync_time_from_bunch(self.spinBox_syncbunch_number.value())
+        else:
+            self._sync_bunch_from_time(self.doubleSpinBox_sync_time_us.value())
+
+    @staticmethod
+    def _clamp_to_maximum(widget, maximum):
+        """Set a spinbox's maximum and ensure its current value is <= it."""
+        widget.blockSignals(True)
+        widget.setMaximum(maximum)
+        if widget.value() > maximum:
+            widget.setValue(maximum)
+        widget.blockSignals(False)
+
+    def _sync_time_from_bunch(self, bunch_value: int):
+        """Mirror the bunch spinbox's value into the time spinbox (µs)."""
+        if self.results is None:
+            return
+        time_us = bunch_index_to_sync_time_us(bunch_value, self.results["delta_t_s"])
+        self.doubleSpinBox_sync_time_us.blockSignals(True)
+        self.doubleSpinBox_sync_time_us.setValue(time_us)
+        self.doubleSpinBox_sync_time_us.blockSignals(False)
+
+    def _sync_bunch_from_time(self, time_us: float):
+        """Mirror the time spinbox's value (µs) into the bunch spinbox."""
+        if self.results is None:
+            return
+        bunch_value = sync_time_us_to_bunch_index(time_us, self.results["delta_t_s"])
+        self.spinBox_syncbunch_number.blockSignals(True)
+        self.spinBox_syncbunch_number.setValue(bunch_value)
+        self.spinBox_syncbunch_number.blockSignals(False)
 
     def clear_display(self):
         self.image = None
