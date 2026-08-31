@@ -332,6 +332,13 @@ class ViewerView(QMainWindow, Ui_MainWindow):
             source_index = self.proxy_model.mapToSource(proxy_index)
             if source_index.isValid():
                 file_paths.append(self.fs_model.filePath(source_index))
+        if file_paths and self.folder_index is None:
+            self.show_warning(
+                "No Raw Data Folder Selected",
+                "Please select a raw data folder before choosing files.",
+            )
+            self._on_folder_button_clicked()
+            return
         self.files_selected.emit(file_paths)
 
     def _on_save_clicked(self):
