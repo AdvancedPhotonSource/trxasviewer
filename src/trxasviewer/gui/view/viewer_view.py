@@ -220,6 +220,7 @@ class ViewerView(QMainWindow, Ui_MainWindow):
     def update_folder_ui(self, path: Path, combos: list, folder_index):
         self.lineEdit_rawfolder.setText(str(path))
         self.folder_index = folder_index
+        self.proxy_model.set_root_path(path)
         self.proxy_model.update_type_db(folder_index.type_db)
         self.comboBox_fileindex_prefix.clear()
         self.comboBox_fileindex_prefix.addItems(combos)

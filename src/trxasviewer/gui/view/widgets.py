@@ -495,9 +495,36 @@ class DatasetFilterModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._type_db: dict = {}
+        self._root_path: Path | None = None
 
     def update_type_db(self, type_db: dict):
         self._type_db = type_db
+        self.invalidateRowsFilter()
+
+    def set_root_path(self, path):
+        """Record the folder shown as the tree view's root.
+
+        Directories are otherwise hidden from the tree (datasets are assumed
+        to live flat inside a folder, no sub-folders), but the root folder
+        itself and its ancestors must still pass the filter — QSortFilterProxyModel
+        needs the whole ancestor chain to be "accepted" to resolve mapFromSource()
+        for the root, otherwise setRootIndex() receives an invalid index and the
+        tree renders empty.
+
+        Rows above the root (e.g. "/", "/scratch") get cached as rejected the
+        first time the tree view queries them — before any folder is selected,
+        `_root_path` is still None so every directory fails the filter. Without
+        invalidating, that stale rejection sticks even after `_root_path` is set
+        here, which is why we force a re-evaluation.
+        """
+        self._root_path = Path(path) if path is not None else None
+        self.invalidateRowsFilter()
+
+    def _is_root_or_ancestor(self, full_path) -> bool:
+        if self._root_path is None:
+            return False
+        p = Path(full_path)
+        return p == self._root_path or p in self._root_path.parents
 
     def filterAcceptsRow(self, source_row, source_parent):
         """Override this method to filter out non-dataset files."""
@@ -510,6 +537,8 @@ class DatasetFilterModel(QSortFilterProxyModel):
         if Path(full_path).name == CACHE_PATH:
             return False
         scan_type = self.get_scan_type(full_path)
+        if scan_type == "directory":
+            return self._is_root_or_ancestor(full_path)
         return scan_type != "invalid"
 
     def get_scan_type(self, full_path):
