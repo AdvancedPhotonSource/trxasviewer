@@ -2,8 +2,8 @@
 TrXASViewer
 ===========
 
-.. image:: https://img.shields.io/pypi/v/trxasviewer.svg
-        :target: https://pypi.python.org/pypi/trxasviewer
+.. image:: https://img.shields.io/pypi/v/trxasviewer.svg?cacheSeconds=300
+        :target: https://pypi.org/project/trxasviewer/
 
 A PySide6 GUI for visualizing and analyzing **Time-Resolved X-ray Absorption
 Spectroscopy (TrXAS)** datasets collected at synchrotron light sources such as
@@ -42,9 +42,24 @@ Features
 Installation
 ------------
 
+**Via pip** (requires Python 3.10+):
+
 .. code-block:: bash
 
     pip install trxasviewer
+
+**Standalone executable** (no Python required): single-file builds for
+Windows, macOS, and Linux are attached to each
+`GitHub Release <https://github.com/AdvancedPhotonSource/trxasviewer/releases>`_:
+
+* Windows: ``trxasviewer-<version>-windows.exe``
+* macOS: ``trxasviewer-<version>-macos.dmg`` (signed and notarized)
+* Linux: ``trxasviewer-<version>-x86_64.AppImage`` (make executable with
+  ``chmod +x`` before running)
+
+Double-clicking the executable launches the viewer GUI directly; run it
+from a terminal with a ``model`` argument to open the kinetic modeler
+instead.
 
 
 Usage
