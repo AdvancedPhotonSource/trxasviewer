@@ -18,6 +18,8 @@ def test_core_modules_importable():
     assert callable(create_initial_state_array)
     assert hasattr(fitting, "global_fit_kinetic_model")
     assert hasattr(graph, "draw_decay_graph_with_top_nodes")
+    assert hasattr(graph, "is_graphviz_available")
+    assert hasattr(graph, "render_decay_graph_graphviz")
 
 
 def test_io_importable():

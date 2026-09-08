@@ -1,14 +1,21 @@
 # Copyright © UChicago Argonne LLC
 # See LICENSE file for details
 import io
+import shutil
 from collections import deque, defaultdict
 
 import matplotlib
 matplotlib.use("Agg")
+from graphviz import Digraph
 from matplotlib import pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 from .fitting import _get_initial_state_indices, find_initial_states, create_initial_state_array  # noqa: F401
+
+
+def is_graphviz_available():
+    """Whether the Graphviz `dot` executable is discoverable on PATH."""
+    return shutil.which("dot") is not None
 
 
 def verify_decay_paths(adj_matrix):
@@ -163,6 +170,20 @@ def _order_by_barycenter(by_level, edges, max_level, iterations=4):
     return order
 
 
+def _color_for(state, top_nodes):
+    if state in top_nodes:
+        return "lightgreen"
+    elif state == "GS":
+        return "lightblue"
+    return "lightcoral"
+
+
+def _edge_label(from_node, to_node):
+    from_index = from_node.replace("S", "")
+    to_index = to_node.replace("S", "").replace("G", "0")
+    return f"t_{from_index}{to_index}"
+
+
 def render_decay_graph(ax, adjacent_matrix):
     """
     Draw the decay graph onto an existing matplotlib Axes, with automated labeling.
@@ -193,13 +214,6 @@ def render_decay_graph(ax, adjacent_matrix):
         for i, state in enumerate(row):
             pos[state] = (i - (n - 1) / 2.0, -lvl)
 
-    def color_for(state):
-        if state in top_nodes:
-            return "lightgreen"
-        elif state == "GS":
-            return "lightblue"
-        return "lightcoral"
-
     ax.clear()
     box_w, box_h = 0.6, 0.35
 
@@ -213,19 +227,16 @@ def render_decay_graph(ax, adjacent_matrix):
                 arrowstyle="-|>", mutation_scale=12, color="black", zorder=1,
             ))
 
-            from_index = from_node.replace("S", "")
-            to_index = to_node.replace("S", "").replace("G", "0")
-            text_label = f"t_{from_index}{to_index}"
             mx, my = (x0 + x1) / 2, (y0 + y1) / 2
             ax.text(
-                mx, my, text_label, fontsize=8, ha="center", va="center",
+                mx, my, _edge_label(from_node, to_node), fontsize=8, ha="center", va="center",
                 bbox=dict(boxstyle="round,pad=0.2", fc="plum", ec="none"), zorder=3,
             )
 
     for state, (x, y) in pos.items():
         ax.add_patch(FancyBboxPatch(
             (x - box_w / 2, y - box_h / 2), box_w, box_h,
-            boxstyle="square,pad=0.0", fc=color_for(state), ec="black", zorder=2,
+            boxstyle="square,pad=0.0", fc=_color_for(state, top_nodes), ec="black", zorder=2,
         ))
         ax.text(x, y, state, fontsize=10, ha="center", va="center", zorder=4)
 
@@ -233,6 +244,52 @@ def render_decay_graph(ax, adjacent_matrix):
     ax.set_ylim(-max_level - 1, 1)
     ax.axis("off")
     return True, None
+
+
+def render_decay_graph_graphviz(adjacent_matrix):
+    """
+    Render the decay graph via Graphviz's `dot` layout engine, which handles
+    edge routing and level alignment on complex/branchy models better than
+    the matplotlib renderer. Requires the `dot` executable on PATH — check
+    is_graphviz_available() first. See render_decay_graph for the color
+    scheme and adjacent_matrix format.
+
+    Returns:
+    - (True, png_bytes) on success, or (False, error_message) if the matrix
+      is invalid.
+    """
+    flag, msg = verify_decay_paths(adjacent_matrix)
+    if not flag:
+        return False, msg
+
+    top_nodes, edges, by_level, max_level = _compute_levels_and_edges(adjacent_matrix)
+
+    dot = Digraph(format="png")
+    dot.attr(rankdir="TB", dpi="300")
+
+    # Invisible nodes/edges chain the levels top-to-bottom so `rank=same`
+    # subgraphs below align horizontally instead of collapsing together.
+    for lvl in range(max_level + 1):
+        dot.node(f"level_{lvl}", label="", shape="point", width="0", style="invis")
+    for lvl in range(max_level):
+        dot.edge(f"level_{lvl}", f"level_{lvl + 1}", style="invis")
+
+    for lvl in range(max_level + 1):
+        with dot.subgraph() as s:
+            s.attr(rank="same")
+            s.node(f"level_{lvl}")
+            for state in by_level[lvl]:
+                s.node(state, shape="rectangle", style="filled", fillcolor=_color_for(state, top_nodes))
+
+    for from_node, to_nodes in edges.items():
+        for to_node in to_nodes:
+            html_label = (
+                '<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">'
+                f'<TR><TD BGCOLOR="plum">{_edge_label(from_node, to_node)}</TD></TR></TABLE>>'
+            )
+            dot.edge(from_node, to_node, label=html_label)
+
+    return True, dot.pipe(format="png")
 
 
 def draw_decay_graph_with_top_nodes(

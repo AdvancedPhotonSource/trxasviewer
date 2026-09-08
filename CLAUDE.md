@@ -51,7 +51,7 @@ src/trxasviewer/
 │   ├── file_io.py               # get_scan_type, FolderIndex, scan_data_folder, NFS helpers
 │   ├── result.py                # TrXASResult (container with lazy SVD)
 │   ├── fitting.py               # ODE-based kinetic model, global_fit_kinetic_model
-│   ├── graph.py                 # Matplotlib decay diagram rendering
+│   ├── graph.py                 # Decay diagram rendering — Graphviz when available, matplotlib fallback
 │   ├── io.py                    # save_results_with_progress, save_as_hdf5/json/origin
 │   ├── plot.py                  # Matplotlib export plots (lazy import)
 │   └── constants.py             # TIME_SCALES, SCALE_TO_TIME
@@ -122,6 +122,8 @@ Dataset NPZ cache goes to a user-specified `--cachefolder` (off by default). The
 ### Kinetic modeling (`fitting.py`)
 
 Rate matrices are constructed from user-defined adjacency parameters → ODEs solved with `scipy.integrate.solve_ivp` → concentrations multiplied by species spectra → residuals minimized with `scipy.optimize.minimize`. Multi-start optimization uses multiprocessing for robustness.
+
+The modeler GUI's decay diagram (`TrXASModeler._render_decay_diagram`) renders via Graphviz's `dot` layout engine when it's found on `PATH` (`is_graphviz_available()`), falling back to `core/graph.py`'s matplotlib renderer otherwise. Availability is checked once per session; a missing install shows an OS-specific instructional dialog on that first check only, never again. The `graphviz` PyPI package is a pure-Python subprocess wrapper (no C extension), so it's always safe to import — only calls that invoke `dot` can fail if the binary isn't installed.
 
 ### Constants
 

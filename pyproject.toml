@@ -46,6 +46,7 @@ dependencies = [
     "pandas",
     "PySide6",
     "psutil",
+    "graphviz",       # install graphviz binary first
 ]
 
 [project.scripts]
