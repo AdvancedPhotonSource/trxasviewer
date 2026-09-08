@@ -2,9 +2,12 @@
 # See LICENSE file for details
 import numpy as np
 import pytest
+import trxasviewer.core.graph as graph
 from trxasviewer.core.graph import (
     verify_decay_paths,
     draw_decay_graph_with_top_nodes,
+    is_graphviz_available,
+    render_decay_graph_graphviz,
     _compute_levels_and_edges,
     _order_by_barycenter,
     _count_crossings,
@@ -84,6 +87,31 @@ def test_draw_graph_file_output(tmp_path, sequential_adj):
     written = tmp_path / "decay_graph.png"
     assert written.exists()
     assert written.read_bytes()[:4] == b"\x89PNG"
+
+
+def test_is_graphviz_available_true_when_dot_on_path(monkeypatch):
+    monkeypatch.setattr(graph.shutil, "which", lambda name: "/usr/bin/dot")
+    assert is_graphviz_available() is True
+
+
+def test_is_graphviz_available_false_when_dot_missing(monkeypatch):
+    monkeypatch.setattr(graph.shutil, "which", lambda name: None)
+    assert is_graphviz_available() is False
+
+
+@pytest.mark.skipif(not is_graphviz_available(), reason="graphviz 'dot' binary not found on PATH")
+def test_graphviz_render_returns_png_bytes(sequential_adj):
+    flag, result = render_decay_graph_graphviz(sequential_adj)
+    assert flag
+    assert isinstance(result, bytes)
+    assert result[:4] == b"\x89PNG"
+
+
+@pytest.mark.skipif(not is_graphviz_available(), reason="graphviz 'dot' binary not found on PATH")
+def test_graphviz_render_invalid_returns_error(broken_adj):
+    flag, result = render_decay_graph_graphviz(broken_adj)
+    assert not flag
+    assert isinstance(result, str)
 
 
 def test_barycenter_reduces_crossings(branchy_adj):

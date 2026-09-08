@@ -1,5 +1,6 @@
 # Copyright © UChicago Argonne LLC
 # See LICENSE file for details
+import io
 import logging
 import platform
 import random
@@ -9,6 +10,7 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+import matplotlib.image as mpimg
 import numpy as np
 import pandas as pd
 import psutil
@@ -29,13 +31,14 @@ from trxasviewer.core.constants import TIME_SCALES
 from trxasviewer.core.fitting import run_single_optimization
 from trxasviewer.modeling_gui.generated_modeling_ui import Ui_MainWindow
 from trxasviewer.gui.view.pg_plot import plot_kinetics_profile
-from trxasviewer.core.graph import render_decay_graph
+from trxasviewer.core.graph import is_graphviz_available, render_decay_graph, render_decay_graph_graphviz
 from trxasviewer.core.result import TrXASResult
 from trxasviewer.core.utilities import NumpyEncoder
 from trxasviewer.gui.view.widgets import (
     ParameterTableModel,
     TrXASResultTableModel,
     show_error_dialog,
+    show_warning_dialog,
 )
 
 CONFIG_FILE = Path.home() / ".trxasviewer" / "config.json"
@@ -202,6 +205,8 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self._init_graph_canvas()
         self._init_state_matrix_tooltips()
+        self._graphviz_checked = False
+        self._graphviz_available = False
         self.setWindowTitle(f"TrXASModeler v{__version__}")
         self.model = TrXASResultTableModel()
         self.tableView.setModel(self.model)
@@ -370,11 +375,66 @@ class TrXASModeler(QMainWindow, Ui_MainWindow):
         adj_matrix[-1][0:max_idx] = state[-1][0:max_idx]
         return adj_matrix
 
+    def _warn_graphviz_missing(self):
+        system = platform.system()
+        if system == "Darwin":
+            instructions = "Install it with Homebrew:\n\n    brew install graphviz"
+        elif system == "Linux":
+            instructions = (
+                "Install it with your package manager, e.g.:\n\n"
+                "    sudo apt install graphviz   (Debian/Ubuntu)\n"
+                "    sudo dnf install graphviz   (Fedora/RHEL)"
+            )
+        else:
+            instructions = (
+                "Download the installer from https://graphviz.org/download/ "
+                "and make sure to add it to your PATH during installation."
+            )
+        show_warning_dialog(
+            self,
+            title="Graphviz not found",
+            message=(
+                "Graphviz was not found on this system, so decay diagrams will "
+                "use a simpler built-in renderer that may not lay out complex "
+                f"models as cleanly.\n\nFor better layouts, install Graphviz:\n\n{instructions}"
+            ),
+        )
+
+    def _render_decay_diagram(self, adj_matrix):
+        """
+        Render the decay diagram onto the live graph canvas, preferring
+        Graphviz's layout engine when available and falling back to the
+        matplotlib renderer otherwise. Graphviz availability is checked once
+        per session; a missing install triggers an instructional dialog only
+        on that first check.
+        """
+        if not self._graphviz_checked:
+            self._graphviz_checked = True
+            self._graphviz_available = is_graphviz_available()
+            if not self._graphviz_available:
+                self._warn_graphviz_missing()
+
+        if self._graphviz_available:
+            try:
+                flag, result = render_decay_graph_graphviz(adj_matrix)
+            except Exception:
+                flag = False
+            if flag:
+                image = mpimg.imread(io.BytesIO(result), format="png")
+                self.graph_ax.clear()
+                self.graph_ax.imshow(image)
+                self.graph_ax.axis("off")
+                return True, None
+            # Falls through to the matplotlib renderer, which re-validates
+            # the matrix and reports the same error if it's actually invalid.
+
+        return render_decay_graph(self.graph_ax, adj_matrix)
+
     def draw_graph(self):
         adj_matrix = self.get_state_mat()
         self.build_parameter(adj_matrix)
         # visualize the graph directly onto the live canvas
-        flag, msg = render_decay_graph(self.graph_ax, adj_matrix)
+        flag, msg = self._render_decay_diagram(adj_matrix)
         if not flag:
             self.graph_ax.clear()
             self.graph_ax.axis("off")
